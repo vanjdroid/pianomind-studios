@@ -2150,12 +2150,17 @@ function render(page) {
   // ── HOME ──
   else if (page === 'home') {
     const homeData = loadScores();
-    h += `<div style="display:flex;align-items:center;gap:1rem;margin-top:1rem">
-            ${pebbles('happy', 120)}
-            <div>
-              <p class="speech"><strong>Pebbles says:</strong> 'Welcome! I'm Pebbles the dino, your music buddy!'</p>
-            </div>
-          </div>`;
+    var noPeb = getMode() !== 'cartoon' || localStorage.getItem('pms_pebbles') === 'off';
+    if (!noPeb) {
+      h += `<div style="display:flex;align-items:center;gap:1rem;margin-top:1rem">
+              ${pebbles('happy', 120)}
+              <div>
+                <p class="speech"><strong>Pebbles says:</strong> 'Welcome! I'm Pebbles the dino, your music buddy!'</p>
+              </div>
+            </div>`;
+    } else {
+      h += `<p class="speech" style="margin-top:1rem">Welcome to PianoMind Studios!</p>`;
+    }
     h += `<div class="card">`;
     h += `<div class="input-wrap"><label>What is your name?</label>
           <input id="nameIn" type="text" value="${S.name}" placeholder="Type your name..."></div>`;
@@ -3369,8 +3374,8 @@ function render(page) {
 
   h += '</div>';
 
-  // Strip Pebbles speech in non-cartoon modes
-  if (getMode() !== 'cartoon') {
+  // Strip Pebbles speech when Pebbles is off or in non-cartoon modes
+  if (getMode() !== 'cartoon' || localStorage.getItem('pms_pebbles') === 'off') {
     h = h.replaceAll("<strong>Pebbles says:</strong> '", '');
     h = h.replaceAll("<strong>Pebbles asks:</strong> '", '');
     h = h.replaceAll("<strong>Pebbles says:</strong>", '');
