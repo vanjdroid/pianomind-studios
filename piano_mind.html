@@ -567,37 +567,43 @@ body.mode-neon {
   background-image: url('bg_neon.png');
   color: #e0e0e0;
 }
-body.mode-neon h1 { color: #e0e0e0; }
+body.mode-neon h1 { color: #e0e0e0; text-shadow: 0 0 20px rgba(0,200,255,0.4); }
 body.mode-neon .card {
-  background: rgba(15,15,15,0.85);
-  border: 1px solid rgba(0,200,255,0.25);
-  box-shadow: 0 0 18px rgba(0,200,255,0.08);
+  background: rgba(12,12,12,0.9);
+  border: 1px solid rgba(0,200,255,0.35);
+  box-shadow: 0 0 25px rgba(0,200,255,0.12), inset 0 0 15px rgba(0,200,255,0.03);
 }
 body.mode-neon .speech { color: #ccc; }
 body.mode-neon .speech strong { color: #e0e0e0; }
 body.mode-neon .btn {
-  background: #111 !important;
+  background: #0e0e0e !important;
   color: #e0e0e0 !important;
-  border: 1px solid rgba(0,200,255,0.35) !important;
-  box-shadow: 0 0 12px rgba(0,200,255,0.15);
+  border: 1px solid rgba(0,200,255,0.45) !important;
+  box-shadow: 0 0 16px rgba(0,200,255,0.2), inset 0 0 8px rgba(0,200,255,0.05);
+  text-shadow: 0 0 8px rgba(0,200,255,0.3);
+  transition: all 0.2s ease;
 }
 body.mode-neon .btn:hover {
-  background: #1a1a1a !important;
-  box-shadow: 0 0 22px rgba(0,200,255,0.3);
+  background: #151515 !important;
+  box-shadow: 0 0 30px rgba(0,200,255,0.4), inset 0 0 12px rgba(0,200,255,0.08);
+  border-color: rgba(0,200,255,0.6) !important;
+  text-shadow: 0 0 12px rgba(0,200,255,0.5);
 }
 body.mode-neon .welcome-card {
-  background: rgba(10,10,10,0.9);
-  border: 1px solid rgba(0,200,255,0.3);
-  box-shadow: 0 0 30px rgba(0,200,255,0.1);
+  background: rgba(8,8,8,0.92);
+  border: 1px solid rgba(0,200,255,0.4);
+  box-shadow: 0 0 40px rgba(0,200,255,0.15), 0 0 80px rgba(0,200,255,0.05);
 }
 body.mode-neon .welcome-play {
-  background: linear-gradient(135deg, #111, #1a1a1a) !important;
+  background: linear-gradient(135deg, #0e0e0e, #151515) !important;
   color: #e0e0e0 !important;
-  border: 1px solid rgba(0,200,255,0.4) !important;
-  box-shadow: 0 0 20px rgba(0,200,255,0.25);
+  border: 1px solid rgba(0,200,255,0.5) !important;
+  box-shadow: 0 0 30px rgba(0,200,255,0.3), 0 0 60px rgba(0,200,255,0.1);
+  text-shadow: 0 0 10px rgba(0,200,255,0.4);
 }
 body.mode-neon .welcome-play:hover {
-  box-shadow: 0 0 35px rgba(0,200,255,0.4) !important;
+  box-shadow: 0 0 45px rgba(0,200,255,0.5), 0 0 90px rgba(0,200,255,0.15) !important;
+  border-color: rgba(0,200,255,0.7) !important;
 }
 body.mode-neon .welcome-title { color: #e0e0e0; }
 body.mode-neon .welcome-sub { color: #aaa; }
@@ -1831,6 +1837,7 @@ const S = {
   hanonEx: 0, hanonBar: 0, hanonBpm: 80,
   hanonPracticing: false, hanonCurrentIdx: 0, hanonCorrect: 0, hanonErrorFlash: false,
   hanonPlaying: false,
+  tutorialStep: 0,
 };
 
 
@@ -2062,6 +2069,7 @@ function nextRound(game) {
 
 function pebbles(mood, width) {
   width = width || 140;
+  if (localStorage.getItem('pms_pebbles') === 'off') return '';
   if (currentOutfit !== 'default') {
     return `<img class="pebbles" src="pebbles_${mood}_${currentOutfit}.png" width="${width}" alt="Pebbles" onerror="this.src='pebbles_${mood}.png';this.onerror=function(){this.style.display='none'}">`;
   }
@@ -2093,8 +2101,50 @@ function render(page) {
     h += `<div class="welcome-title">Piano Mind<br>Studios</div>`;
     h += `<div class="welcome-sub">Your music practice buddy!</div>`;
     h += `</div>`;
-    h += `<button class="welcome-play" onclick="render('home')">▶ Play</button>`;
+    h += `<button class="welcome-play" onclick="if(!localStorage.getItem('pms_tutorial_done')){render('tutorial')}else{render('home')}">▶ Play</button>`;
     h += `</div>`;
+  }
+
+  // ── TUTORIAL ──
+  else if (page === 'tutorial') {
+    var tStep = S.tutorialStep || 0;
+    var tSteps = [
+      { title: 'Welcome!', icon: '👋', text: 'This is PianoMind Studios — an app that helps you practise music skills like ear training, note reading, and more.' },
+      { title: 'Home Screen', icon: '🏠', text: 'The home screen has three tabs: Play (games and practice), Tools (scales, metronome, Hanon exercises), and Learn (music theory and grade exercises).' },
+      { title: 'Ear Training', icon: '🎵', text: 'The app plays two notes. You listen and decide if the second note was higher or lower. There are 5 difficulty levels — start easy and work up.' },
+      { title: 'Note Reading', icon: '🎼', text: 'A note appears on the staff. You type its name. You can practise treble clef, bass clef, or both. Sharps and flats included at higher levels.' },
+      { title: 'Intervals & Chords', icon: '🎹', text: 'Learn to recognise the distance between two notes (intervals) and the sound of different chord types — major, minor, diminished, and more.' },
+      { title: 'Scale Explorer', icon: '🎶', text: 'See and hear scales drawn on the staff. You can play along with your instrument using the microphone — the app listens and tracks your notes.' },
+      { title: 'Hanon Exercises', icon: '🎹', text: 'All 20 Hanon Book 1 exercises. Hear each bar, step through the full exercise, and practise along with the microphone at any speed.' },
+      { title: 'XP & Achievements', icon: '⭐', text: 'Every game earns XP. Level up and unlock achievements. Check your stats on the home screen.' },
+      { title: 'Settings', icon: '⚙️', text: 'Change your app style (Cartoon, Smooth, or Neon), pick a background theme, turn Pebbles on or off, and more. Make it yours.' },
+      { title: 'You are ready!', icon: '🚀', text: 'That is everything you need to know. Pick any game and start practising. Have fun!' }
+    ];
+    var step = tSteps[tStep];
+    var isLast = tStep >= tSteps.length - 1;
+    var isFirst = tStep === 0;
+
+    h += `<h1>📖 Tutorial</h1>`;
+    h += `<div class="card" style="text-align:center;padding:1.5rem 1.2rem">`;
+    h += `<div style="font-size:3rem;margin-bottom:0.4rem">${step.icon}</div>`;
+    h += `<div style="font-size:1.3rem;font-weight:700;color:#0f2744;margin-bottom:0.5rem">${step.title}</div>`;
+    h += `<p style="font-size:1.05rem;line-height:1.7;color:#2c3e50">${step.text}</p>`;
+    h += `<div style="margin-top:1rem;font-size:0.85rem;color:#6b7fa3;font-weight:600">Step ${tStep + 1} of ${tSteps.length}</div>`;
+    h += `<div class="progress-wrap" style="margin:0.5rem 0"><div class="progress-fill" style="width:${((tStep + 1) / tSteps.length * 100).toFixed(0)}%"></div></div>`;
+    h += `</div>`;
+
+    h += `<div class="btn-row" style="margin-top:0.6rem">`;
+    if (!isFirst) {
+      h += `<button class="btn btn-lilac" onclick="S.tutorialStep=${tStep - 1};render('tutorial')">◀ Back</button>`;
+    }
+    if (!isLast) {
+      h += `<button class="btn btn-mint" onclick="S.tutorialStep=${tStep + 1};render('tutorial')">Next ▶</button>`;
+    } else {
+      h += `<button class="btn btn-mint" onclick="localStorage.setItem('pms_tutorial_done','yes');S.tutorialStep=0;render('home')">Let's go! 🎵</button>`;
+    }
+    h += `</div>`;
+
+    h += `<button class="btn btn-coral btn-wide" style="margin-top:0.4rem" onclick="localStorage.setItem('pms_tutorial_done','yes');S.tutorialStep=0;render('home')">Skip tutorial</button>`;
   }
 
   // ── HOME ──
@@ -2630,6 +2680,22 @@ function render(page) {
             <button class="btn ${sfxOn ? 'btn-mint' : 'btn-lilac'}" onclick="setSfx(true)">🔊 On</button>
             <button class="btn ${!sfxOn ? 'btn-coral' : 'btn-lilac'}" onclick="setSfx(false)">🔇 Off</button>
           </div>`;
+    h += `</div>`;
+
+    // Pebbles toggle
+    var pebOn = localStorage.getItem('pms_pebbles') !== 'off';
+    h += `<div class="card">`;
+    h += `<p class="section-label">Pebbles the Dino</p>`;
+    h += `<div class="btn-row">
+            <button class="btn ${pebOn ? 'btn-mint' : 'btn-lilac'}" onclick="localStorage.setItem('pms_pebbles','on');render('settings')">🦕 On</button>
+            <button class="btn ${!pebOn ? 'btn-coral' : 'btn-lilac'}" onclick="localStorage.setItem('pms_pebbles','off');render('settings')">👻 Off</button>
+          </div>`;
+    h += `</div>`;
+
+    // Tutorial
+    h += `<div class="card">`;
+    h += `<p class="section-label">Tutorial</p>`;
+    h += `<button class="btn btn-blue btn-wide" onclick="localStorage.removeItem('pms_tutorial_done');render('tutorial')">📖 Replay Tutorial</button>`;
     h += `</div>`;
 
     h += `<button class="btn btn-blue btn-wide" style="margin-top:0.4rem" onclick="render('about')">💜 All About PianoMind Studios</button>`;
@@ -3302,6 +3368,22 @@ function render(page) {
   }
 
   h += '</div>';
+
+  // Strip Pebbles speech in non-cartoon modes
+  if (getMode() !== 'cartoon') {
+    h = h.replaceAll("<strong>Pebbles says:</strong> '", '');
+    h = h.replaceAll("<strong>Pebbles asks:</strong> '", '');
+    h = h.replaceAll("<strong>Pebbles says:</strong>", '');
+    h = h.replaceAll("<strong>Pebbles asks:</strong>", '');
+    h = h.replaceAll("!'</p>", '!</p>');
+    h = h.replaceAll("?'</p>", '?</p>');
+    h = h.replaceAll(".'</p>", '.</p>');
+    h = h.replaceAll("'</p>", '</p>');
+    h = h.replaceAll("!'</span>", '!</span>');
+    h = h.replaceAll("?'</span>", '?</span>');
+    h = h.replaceAll("'</span>", '</span>');
+  }
+
   app.innerHTML = h;
 
   // Draw staff after DOM update
