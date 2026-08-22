@@ -2656,13 +2656,20 @@ function render(page) {
               <button class="btn btn-coral" onclick="startFromHome('metronome')">⏱ Metronome</button>
               <button class="btn btn-pink" onclick="startFromHome('hanon')">🎹 Hanon</button>
             </div>`;
+      h += `<div class="btn-row">
+              <button class="btn btn-mint${pulseClass('rhythm',homeData)}" onclick="startFromHome('rhythm')">🥁 Rhythm</button>
+              <button class="btn btn-lilac" onclick="startFromHome('sightread')">📖 Sight Reading</button>
+            </div>`;
+      h += `<div class="btn-row">
+              <button class="btn btn-coral" onclick="render('pouch')">🎒 Tricky Notes</button>
+            </div>`;
     } else if (S.homeTab === 'learn') {
       h += `<div class="btn-row">
               <button class="btn btn-pink" onclick="startFromHome('theory')">📖 Music Theory</button>
               <button class="btn btn-blue" onclick="startFromHome('exercises')">📝 Grade Exercises</button>
             </div>`;
       h += `<div class="btn-row">
-              <button class="btn btn-mint btn-wide" onclick="startFromHome('songs')">🎵 Song Library</button>
+              <button class="btn btn-mint" onclick="startFromHome('songs')">🎵 Song Library</button>
             </div>`;
     } else if (S.homeTab === 'me') {
       h += `<div class="btn-row">
@@ -2683,15 +2690,8 @@ function render(page) {
               <button class="btn btn-pink${pulseClass('chord',homeData)}" onclick="startFromHome('chord')">🎸 Chords</button>
             </div>`;
       h += `<div class="btn-row">
-              <button class="btn btn-mint${pulseClass('rhythm',homeData)}" onclick="startFromHome('rhythm')">🥁 Rhythm Training</button>
-              <button class="btn btn-lilac" onclick="startFromHome('sightread')">📖 Sight Reading</button>
-            </div>`;
-      h += `<div class="btn-row">
+              <button class="btn btn-lilac" onclick="startFromHome('melody')">🎶 Melody Echo</button>
               <button class="btn btn-blue" onclick="startFromHome('daily')">⭐ Daily Challenge</button>
-              <button class="btn btn-pink" onclick="startFromHome('melody')">🎶 Melody Echo</button>
-            </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-coral" onclick="render('pouch')">🎒 Tricky Notes</button>
             </div>`;
     }
     h += `</div>`;
