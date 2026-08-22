@@ -5220,20 +5220,22 @@ function sightReadLoop() {
     }
   }
 
-  // Auto-advance: if time runs out on a note, mark it missed
-  const lvl = SIGHTREAD_LEVELS[S.sightReadLevel];
-  const msPerNote = 60000 / lvl.bpm;
-  const elapsed = performance.now() - sightReadScrollStart;
-  const expectedIdx = Math.floor(elapsed / msPerNote);
-  while (S.sightReadIdx < expectedIdx && S.sightReadIdx < S.sightReadNotes.length) {
-    if (!S.sightReadNotes[S.sightReadIdx].hit) {
-      S.sightReadNotes[S.sightReadIdx].missed = true;
+  // Auto-advance: if time runs out on a note, mark it missed (songs wait for each note)
+  if (!S.songPlayPage) {
+    const lvl = SIGHTREAD_LEVELS[S.sightReadLevel];
+    const msPerNote = 60000 / lvl.bpm;
+    const elapsed = performance.now() - sightReadScrollStart;
+    const expectedIdx = Math.floor(elapsed / msPerNote);
+    while (S.sightReadIdx < expectedIdx && S.sightReadIdx < S.sightReadNotes.length) {
+      if (!S.sightReadNotes[S.sightReadIdx].hit) {
+        S.sightReadNotes[S.sightReadIdx].missed = true;
+      }
+      S.sightReadIdx++;
     }
-    S.sightReadIdx++;
+    if (S.sightReadIdx >= S.sightReadNotes.length) { finishSightReading(); return; }
   }
-  if (S.sightReadIdx >= S.sightReadNotes.length) { finishSightReading(); return; }
 
-  // Draw the scrolling staff
+  // Draw the staff
   drawSightReadStaff();
 
   sightReadRaf = requestAnimationFrame(sightReadLoop);
@@ -5259,53 +5261,107 @@ function drawSightReadStaff() {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 
-  const nowX = 60;
-  ctx.strokeStyle = sc.accent + '88';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([5,5]);
-  ctx.beginPath(); ctx.moveTo(nowX, 20); ctx.lineTo(nowX, H - 20); ctx.stroke();
-  ctx.setLineDash([]);
+  if (S.songPlayPage) {
+    // ── SONG MODE: static staff, wait for each note ──
+    var total = S.sightReadNotes.length;
+    var winSize = 12;
+    var winStart = Math.max(0, S.sightReadIdx - 2);
+    var winEnd = Math.min(total, winStart + winSize);
+    if (winEnd >= total) { winStart = Math.max(0, total - winSize); winEnd = total; }
+    var visNotes = S.sightReadNotes.slice(winStart, winEnd);
+    var noteStart = 30, noteEnd = W - 15;
+    var gap = visNotes.length > 1 ? (noteEnd - noteStart) / (visNotes.length - 1) : 0;
 
-  const lvl = SIGHTREAD_LEVELS[S.sightReadLevel];
-  const msPerNote = 60000 / lvl.bpm;
-  const elapsed = performance.now() - sightReadScrollStart;
-  const pxPerMs = 0.15;
-
-  S.sightReadNotes.forEach((note, i) => {
-    const noteTime = i * msPerNote;
-    const x = nowX + (noteTime - elapsed) * pxPerMs;
-    if (x < -30 || x > W + 30) return;
-    const y = yOf(note.h);
-
-    ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
-    for (let l = -1; note.h <= l; l--) { const ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-14,ly); ctx.lineTo(x+14,ly); ctx.stroke(); }
-    for (let l = 5; note.h >= l; l++) { const ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-14,ly); ctx.lineTo(x+14,ly); ctx.stroke(); }
-
-    let color = sc.note;
-    if (note.hit) color = '#4CAF50';
-    else if (note.missed) color = '#e53935';
-    else if (i === S.sightReadIdx) color = sc.accent;
-
-    ctx.fillStyle = color;
-    ctx.beginPath(); ctx.ellipse(x, y, 9, 7, -0.15, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = color;
-    ctx.font = '600 10px Quicksand';
-    ctx.textAlign = 'center';
-    ctx.fillText(note.name, x, H - 8);
-  });
-
-  if (S.sightReadIdx < S.sightReadNotes.length) {
-    const target = S.sightReadNotes[S.sightReadIdx];
-    ctx.fillStyle = sc.accent;
-    ctx.font = '700 14px Quicksand';
+    // Song title + score
+    ctx.fillStyle = sc.text;
+    ctx.font = '700 13px Quicksand';
     ctx.textAlign = 'left';
-    ctx.fillText('Play: ' + target.name, 10, 18);
-  }
+    if (S.sightReadIdx < total) ctx.fillText('Play: ' + S.sightReadNotes[S.sightReadIdx].name, 10, 16);
+    ctx.textAlign = 'right';
+    ctx.fillText(S.sightReadScore + '/' + total, W - 10, 16);
 
-  ctx.fillStyle = sc.note;
-  ctx.font = '700 13px Quicksand';
-  ctx.textAlign = 'right';
-  ctx.fillText(S.sightReadScore + '/' + S.sightReadNotes.length, W - 10, 18);
+    visNotes.forEach(function(note, vi) {
+      var realIdx = winStart + vi;
+      var x = noteStart + vi * gap;
+      var y = yOf(note.h);
+
+      ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
+      for (var l = -1; note.h <= l; l--) { var ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-12,ly); ctx.lineTo(x+12,ly); ctx.stroke(); }
+      for (var l = 5; note.h >= l; l++) { var ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-12,ly); ctx.lineTo(x+12,ly); ctx.stroke(); }
+
+      var color = sc.note;
+      if (note.hit) color = '#4CAF50';
+      else if (realIdx === S.sightReadIdx) color = sc.accent;
+
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.ellipse(x, y, 8, 6, -0.15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.font = '600 9px Quicksand';
+      ctx.textAlign = 'center';
+      ctx.fillText(note.name, x, H - 6);
+    });
+
+    // Ring around current note
+    if (S.sightReadIdx < total) {
+      var curVi = S.sightReadIdx - winStart;
+      if (curVi >= 0 && curVi < visNotes.length) {
+        var cx = noteStart + curVi * gap;
+        var cy = yOf(visNotes[curVi].h);
+        ctx.strokeStyle = sc.accent;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.ellipse(cx, cy, 12, 10, -0.15, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+  } else {
+    // ── SIGHT-READ MODE: scrolling ──
+    const nowX = 60;
+    ctx.strokeStyle = sc.accent + '88';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(nowX, 20); ctx.lineTo(nowX, H - 20); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const lvl = SIGHTREAD_LEVELS[S.sightReadLevel];
+    const msPerNote = 60000 / lvl.bpm;
+    const elapsed = performance.now() - sightReadScrollStart;
+    const pxPerMs = 0.15;
+
+    S.sightReadNotes.forEach((note, i) => {
+      const noteTime = i * msPerNote;
+      const x = nowX + (noteTime - elapsed) * pxPerMs;
+      if (x < -30 || x > W + 30) return;
+      const y = yOf(note.h);
+
+      ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
+      for (let l = -1; note.h <= l; l--) { const ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-14,ly); ctx.lineTo(x+14,ly); ctx.stroke(); }
+      for (let l = 5; note.h >= l; l++) { const ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-14,ly); ctx.lineTo(x+14,ly); ctx.stroke(); }
+
+      let color = sc.note;
+      if (note.hit) color = '#4CAF50';
+      else if (note.missed) color = '#e53935';
+      else if (i === S.sightReadIdx) color = sc.accent;
+
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.ellipse(x, y, 9, 7, -0.15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.font = '600 10px Quicksand';
+      ctx.textAlign = 'center';
+      ctx.fillText(note.name, x, H - 8);
+    });
+
+    if (S.sightReadIdx < S.sightReadNotes.length) {
+      const target = S.sightReadNotes[S.sightReadIdx];
+      ctx.fillStyle = sc.accent;
+      ctx.font = '700 14px Quicksand';
+      ctx.textAlign = 'left';
+      ctx.fillText('Play: ' + target.name, 10, 18);
+    }
+
+    ctx.fillStyle = sc.note;
+    ctx.font = '700 13px Quicksand';
+    ctx.textAlign = 'right';
+    ctx.fillText(S.sightReadScore + '/' + S.sightReadNotes.length, W - 10, 18);
+  }
 }
 
 function finishSightReading() {
