@@ -1275,9 +1275,9 @@ function getPouchNotes() {
 // ═══════════════════════════════════
 
 function newMelodyRound() {
-  var pool = S.melodyLevel === 'hard' ? [...PIANO_WHITE, ...PIANO_BLACK].filter(function(k) { return k.n >= -9 && k.n <= 7; }) : PIANO_WHITE.slice(0, 8);
+  var pool = S.melodyLevel === 'hard' ? [...PIANO_WHITE, ...PIANO_BLACK].filter(function(k) { return k.n >= -9 && k.n <= 7; }) : S.melodyLevel === 'beginner' ? PIANO_WHITE.slice(0, 3) : PIANO_WHITE.slice(0, 8);
   var notes = [];
-  var count = S.melodyLevel === 'easy' ? 3 : S.melodyLevel === 'medium' ? 4 : 5;
+  var count = S.melodyLevel === 'beginner' ? 2 : S.melodyLevel === 'easy' ? 3 : S.melodyLevel === 'medium' ? 4 : 5;
   for (var i = 0; i < count; i++) {
     var note = pick(pool);
     notes.push({ n: note.n, name: note.flat ? note.name + '/' + note.flat : note.name });
@@ -2367,22 +2367,34 @@ function playMixerProgression() {
   if (S.mixerChords.length === 0) return;
   stopMixerPlay();
   S.mixerPlaying = true;
-  render('chord_mixer');
   var beatDur = 0.55;
   var idx = 0;
+
+  // Show stop button
+  var controlsEl = document.getElementById('mixerControls');
+  if (controlsEl) controlsEl.innerHTML = '<button class="btn btn-coral" onclick="stopMixerPlay();render(\'chord_mixer\')">⏹ Stop</button>';
 
   function playNext() {
     if (idx >= S.mixerChords.length || !S.mixerPlaying) {
       S.mixerPlaying = false;
-      render('chord_mixer');
+      // Reset all highlights
+      var blocks = document.querySelectorAll('.mixer-chord');
+      blocks.forEach(function(el) { el.style.background = 'rgba(255,255,255,0.5)'; el.style.color = '#0f2744'; el.style.borderColor = 'rgba(0,0,0,0.08)'; });
+      if (controlsEl) render('chord_mixer');
       return;
     }
     var notes = getMixerChordNotes(S.mixerChords[idx], S.mixerKey);
     var ctx = getAudioCtx(); ctx.resume();
     var now = ctx.currentTime + 0.05;
     notes.forEach(function(n) { makeNote(ctx, noteToFreq(n), now, beatDur * 0.9, 0.25); });
-    S.mixerCurrentChord = idx;
-    render('chord_mixer');
+
+    // Highlight current chord without re-rendering
+    var blocks = document.querySelectorAll('.mixer-chord');
+    blocks.forEach(function(el, i) {
+      if (i === idx) { el.style.background = '#7c6fef'; el.style.color = '#fff'; el.style.borderColor = '#7c6fef'; }
+      else { el.style.background = 'rgba(255,255,255,0.5)'; el.style.color = '#0f2744'; el.style.borderColor = 'rgba(0,0,0,0.08)'; }
+    });
+
     idx++;
     mixerPlayTimer = setTimeout(playNext, beatDur * 1000);
   }
@@ -2402,11 +2414,11 @@ function stopMixerPlay() {
 
 function newEarRound() {
   let pool;
-  if (S.level === '1') pool = PIANO_WHITE.slice(0, 7);
+  if (S.level === '0') pool = PIANO_WHITE.slice(0, 3); // Beginner: C, D, E only
+  else if (S.level === '1') pool = PIANO_WHITE.slice(0, 7);
   else if (S.level === '2') pool = PIANO_WHITE;
   else pool = [...PIANO_WHITE, ...PIANO_BLACK];
 
-  // Level 4 & 5: use full pool
   if (S.level === '4' || S.level === '5') pool = [...PIANO_WHITE, ...PIANO_BLACK];
 
   const note = pick(pool);
@@ -2415,24 +2427,22 @@ function newEarRound() {
   S.earTargetFlat = note.flat || '';
   S.earFeedback = null;
 
-  // Level 5: two-note sequence — pick a second note
   if (S.level === '5') {
     let note2 = pick(pool);
     while (note2.n === note.n) note2 = pick(pool);
     S.earTarget2N = note2.n;
     S.earTarget2Name = note2.name;
     S.earTarget2Flat = note2.flat || '';
-    S.earStep = 1; // which note we're answering (1 or 2)
+    S.earStep = 1;
   } else {
     S.earTarget2N = null;
     S.earStep = 0;
   }
 
-  // Build multiple-choice buttons
   const allNames = pool.map(n => n.flat ? n.name+'/'+n.flat : n.name);
   const unique = [...new Set(allNames)];
   const correct = note.flat ? note.name+'/'+note.flat : note.name;
-  const numChoices = (S.level === '4' || S.level === '5') ? 6 : 4;
+  const numChoices = S.level === '0' ? 3 : (S.level === '4' || S.level === '5') ? 6 : 4;
   const choices = new Set([correct]);
   while (choices.size < Math.min(numChoices, unique.length)) choices.add(pick(unique));
   S.earChoices = [...choices].sort(() => Math.random() - 0.5);
@@ -2440,7 +2450,13 @@ function newEarRound() {
 
 function newNoteRound() {
   let spot, clef, names, heights, acc;
-  if (S.level === '1') {
+  if (S.level === '0') {
+    spot = randInt(0, 2); // Only C, D, E
+    clef = 'treble';
+    names = TREBLE_NAMES;
+    heights = HEIGHTS;
+    acc = 'natural';
+  } else if (S.level === '1') {
     spot = randInt(0, 12);
     clef = S.chosenClef;
     names = clef === 'treble' ? TREBLE_NAMES : BASS_NAMES;
@@ -2487,7 +2503,8 @@ function newNoteRound() {
 }
 
 function newIntervalRound() {
-  const pool = S.level==='1' ? EASY_INT : S.level==='2' ? MEDIUM_INT : HARD_INT;
+  const BEGINNER_INT = ['Major 3rd','Perfect 5th'];
+  const pool = S.level==='0' ? BEGINNER_INT : S.level==='1' ? EASY_INT : S.level==='2' ? MEDIUM_INT : HARD_INT;
   const avail = pool.filter(n => INTERVAL_PAIRS[n]?.length);
   const intName = pick(avail);
   const pair = pick(INTERVAL_PAIRS[intName]);
@@ -2495,11 +2512,11 @@ function newIntervalRound() {
   else { S.intH1 = pair[1]; S.intH2 = pair[0]; }
   S.intCorrect = intName;
   S.intFeedback = null;
-  // Levels 4-5: ear-based (play audio, more choices)
   S.intEarMode = (S.level === '4' || S.level === '5');
-  const numChoices = S.intEarMode ? 6 : 4;
+  const numChoices = S.level === '0' ? 3 : S.intEarMode ? 6 : 4;
   const choices = new Set([intName]);
   while (choices.size < Math.min(numChoices, avail.length)) choices.add(pick(avail));
+  S.intChoices = [...choices].sort(() => Math.random() - 0.5);
   S.intChoices = [...choices].sort(() => Math.random() - 0.5);
   S.intKeys = [S.intH1, S.intH2].map(h => {
     const idx = (h + 1) * 2;
@@ -2508,7 +2525,8 @@ function newIntervalRound() {
 }
 
 function newChordRound() {
-  const types = S.level==='1' ? EASY_CHORDS : S.level==='2' ? MED_CHORDS :
+  const BEGINNER_CHORDS = ['Major','Minor'];
+  const types = S.level==='0' ? BEGINNER_CHORDS : S.level==='1' ? EASY_CHORDS : S.level==='2' ? MED_CHORDS :
     (S.level==='4' || S.level==='5') ? HARD_CHORDS : HARD_CHORDS;
   // Levels 4-5: ear only (no staff shown)
   S.chordEarOnly = (S.level === '4' || S.level === '5');
@@ -2799,7 +2817,10 @@ function render(page) {
     });
     h += `</div>`;
     h += `<div class="btn-row">
+            <button class="btn btn-lilac" onclick="startGame('ear','0',selectedRounds)">🌱 Beginner</button>
             <button class="btn btn-blue" onclick="startGame('ear','1',selectedRounds)">😊 Easy</button>
+          </div>`;
+    h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="startGame('ear','2',selectedRounds)">🤔 Medium</button>
             <button class="btn btn-coral" onclick="startGame('ear','3',selectedRounds)">🔥 Hard</button>
           </div>`;
@@ -2807,7 +2828,7 @@ function render(page) {
             <button class="btn btn-pink" onclick="startGame('ear','4',selectedRounds)">⚡ Expert</button>
             <button class="btn btn-lilac" onclick="startGame('ear','5',selectedRounds)">👑 Master</button>
           </div>`;
-    h += `<p class="caption">Easy = 1 octave · Medium = 2 oct · Hard = sharps · Expert = 6 choices · Master = 2-note melody</p>`;
+    h += `<p class="caption">Beginner = 3 notes, C-E · Easy = 1 octave · Medium = 2 oct · Hard = sharps · Expert = 6 choices · Master = 2-note melody</p>`;
     h += `</div>`;
   }
 
@@ -2883,7 +2904,10 @@ function render(page) {
     });
     h += `</div>`;
     h += `<div class="btn-row">
+            <button class="btn btn-lilac" onclick="startGame('note','0',selectedRounds,'treble')">🌱 Beginner</button>
             <button class="btn btn-blue" onclick="S.total=selectedRounds;S.level='1';render('note_clef')">😊 Easy</button>
+          </div>`;
+    h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="startGame('note','2',selectedRounds)">🤔 Medium</button>
             <button class="btn btn-coral" onclick="startGame('note','3',selectedRounds)">🔥 Hard</button>
           </div>`;
@@ -2891,7 +2915,7 @@ function render(page) {
             <button class="btn btn-pink" onclick="startGame('note','4',selectedRounds)">⚡ Bass Clef</button>
             <button class="btn btn-lilac" onclick="startGame('note','5',selectedRounds)">👑 Master</button>
           </div>`;
-    h += `<p class="caption">Easy = naturals · Medium = sharps/flats · Hard = extended · Bass Clef = bass only · Master = everything</p>`;
+    h += `<p class="caption">Beginner = C, D, E only · Easy = naturals · Medium = sharps/flats · Hard = extended · Master = everything</p>`;
     h += `</div>`;
   }
 
@@ -2972,7 +2996,10 @@ function render(page) {
     });
     h += `</div>`;
     h += `<div class="btn-row">
+            <button class="btn btn-lilac" onclick="startGame('interval','0',selectedRounds)">🌱 Beginner</button>
             <button class="btn btn-blue" onclick="startGame('interval','1',selectedRounds)">😊 Easy</button>
+          </div>`;
+    h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="startGame('interval','2',selectedRounds)">🤔 Medium</button>
             <button class="btn btn-coral" onclick="startGame('interval','3',selectedRounds)">🔥 Hard</button>
           </div>`;
@@ -2980,7 +3007,7 @@ function render(page) {
             <button class="btn btn-pink" onclick="startGame('interval','4',selectedRounds)">⚡ By Ear</button>
             <button class="btn btn-lilac" onclick="startGame('interval','5',selectedRounds)">👑 Master</button>
           </div>`;
-    h += `<p class="caption">Easy-Hard = visual · By Ear = listen & name · Master = 6 choices, no staff</p>`;
+    h += `<p class="caption">Beginner = 3rds & 5ths only · Easy-Hard = visual · By Ear = listen · Master = everything</p>`;
     h += `</div>`;
   }
 
@@ -3052,7 +3079,10 @@ function render(page) {
     });
     h += `</div>`;
     h += `<div class="btn-row">
+            <button class="btn btn-lilac" onclick="startGame('chord','0',selectedRounds)">🌱 Beginner</button>
             <button class="btn btn-blue" onclick="startGame('chord','1',selectedRounds)">😊 Easy</button>
+          </div>`;
+    h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="startGame('chord','2',selectedRounds)">🤔 Medium</button>
             <button class="btn btn-coral" onclick="startGame('chord','3',selectedRounds)">🔥 Hard</button>
           </div>`;
@@ -3060,7 +3090,7 @@ function render(page) {
             <button class="btn btn-pink" onclick="startGame('chord','4',selectedRounds)">⚡ By Ear</button>
             <button class="btn btn-lilac" onclick="startGame('chord','5',selectedRounds)">👑 Master</button>
           </div>`;
-    h += `<p class="caption">Easy-Hard = see + hear · By Ear = hear only · Master = all chords, 6 choices, hear only</p>`;
+    h += `<p class="caption">Beginner = Major vs Minor only · Easy-Hard = see + hear · By Ear = hear only · Master = everything</p>`;
     h += `</div>`;
   }
 
@@ -3349,18 +3379,13 @@ function render(page) {
       S.mixerChords.forEach(function(degIdx, i) {
         var deg = MIXER_DEGREES[degIdx];
         var chordName = getMixerChordName(degIdx);
-        var playing = S.mixerPlaying && S.mixerCurrentChord === i;
-        h += `<div style="background:${playing?'#7c6fef':'rgba(255,255,255,0.5)'};color:${playing?'#fff':'#0f2744'};padding:0.5rem 0.7rem;border-radius:12px;font-weight:700;font-size:0.9rem;cursor:pointer;border:2px solid ${playing?'#7c6fef':'rgba(0,0,0,0.08)'};transition:all 0.15s" onclick="playMixerChord(${degIdx})">${chordName}<div style="font-size:0.65rem;font-weight:600;opacity:0.7">${deg.roman}</div></div>`;
+        h += `<div class="mixer-chord" style="background:rgba(255,255,255,0.5);color:#0f2744;padding:0.5rem 0.7rem;border-radius:12px;font-weight:700;font-size:0.9rem;cursor:pointer;border:2px solid rgba(0,0,0,0.08);transition:all 0.15s" onclick="playMixerChord(${degIdx})">${chordName}<div style="font-size:0.65rem;font-weight:600;opacity:0.7">${deg.roman}</div></div>`;
       });
       h += `</div>`;
 
       // Controls
-      h += `<div style="display:flex;gap:0.3rem;margin-top:0.5rem;justify-content:center">`;
-      if (!S.mixerPlaying) {
-        h += `<button class="btn btn-mint" onclick="playMixerProgression()">▶ Play</button>`;
-      } else {
-        h += `<button class="btn btn-coral" onclick="stopMixerPlay();render('chord_mixer')">⏹ Stop</button>`;
-      }
+      h += `<div id="mixerControls" style="display:flex;gap:0.3rem;margin-top:0.5rem;justify-content:center">`;
+      h += `<button class="btn btn-mint" onclick="playMixerProgression()">▶ Play</button>`;
       h += `<button class="btn btn-lilac" onclick="S.mixerChords.pop();stopMixerPlay();render('chord_mixer')">↩ Undo</button>`;
       h += `<button class="btn btn-coral" onclick="S.mixerChords=[];stopMixerPlay();render('chord_mixer')">🗑 Clear</button>`;
       h += `</div>`;
@@ -3457,11 +3482,14 @@ function render(page) {
     h += `<div class="card">`;
     h += `<p class="speech"><strong>Pebbles says:</strong> 'Listen to the melody, then play it back!'</p>`;
     h += `<div class="btn-row">
+            <button class="btn btn-lilac" onclick="S.melodyLevel='beginner';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🌱 Beginner</button>
             <button class="btn btn-blue" onclick="S.melodyLevel='easy';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">😊 Easy</button>
+          </div>`;
+    h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="S.melodyLevel='medium';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🤔 Medium</button>
             <button class="btn btn-coral" onclick="S.melodyLevel='hard';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🔥 Hard</button>
           </div>`;
-    h += `<p class="caption">Easy = 3 notes, C octave · Medium = 4 notes · Hard = 5 notes with sharps</p>`;
+    h += `<p class="caption">Beginner = 2 notes, C-D-E · Easy = 3 notes · Medium = 4 notes · Hard = 5 notes with sharps</p>`;
     h += `</div>`;
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
   }
