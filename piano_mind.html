@@ -1140,6 +1140,189 @@ function saveScore(game, level, score, total) {
     }
     localStorage.setItem('pms_scores', JSON.stringify(data));
   } catch(e) {}
+  trackDaily(game, score, total);
+}
+
+// ═══════════════════════════════════
+//  DAILY PROGRESS TRACKING
+// ═══════════════════════════════════
+
+function loadDaily() {
+  try { return JSON.parse(localStorage.getItem('pms_daily') || '{}'); } catch(e) { return {}; }
+}
+
+function trackDaily(game, score, total) {
+  var data = loadDaily();
+  var today = new Date().toISOString().slice(0, 10);
+  if (!data[today]) data[today] = { games: {}, scores: [] };
+  data[today].games[game] = (data[today].games[game] || 0) + 1;
+  if (score !== undefined && total) {
+    data[today].scores.push(Math.round(score / total * 100));
+  }
+  var keys = Object.keys(data).sort();
+  while (keys.length > 30) { delete data[keys.shift()]; }
+  try { localStorage.setItem('pms_daily', JSON.stringify(data)); } catch(e) {}
+}
+
+function getLast7Days() {
+  var days = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(Date.now() - i * 86400000);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+// ═══════════════════════════════════
+//  CHART DRAWING
+// ═══════════════════════════════════
+
+function drawLineChart(canvasId, labels, values, title) {
+  var c = document.getElementById(canvasId);
+  if (!c) return;
+  var ctx = c.getContext('2d');
+  var W = c.width, H = c.height;
+  var sc = staffColors();
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = sc.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  var pad = { top: 35, right: 15, bottom: 35, left: 40 };
+  var cW = W - pad.left - pad.right;
+  var cH = H - pad.top - pad.bottom;
+  var maxV = Math.max(Math.max.apply(null, values), 10);
+
+  ctx.fillStyle = sc.text;
+  ctx.font = '700 13px Quicksand';
+  ctx.textAlign = 'center';
+  ctx.fillText(title, W / 2, 18);
+
+  ctx.strokeStyle = sc.lines;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, H - pad.bottom);
+  ctx.lineTo(W - pad.right, H - pad.bottom);
+  ctx.stroke();
+
+  for (var g = 0; g <= 4; g++) {
+    var yVal = Math.round(maxV / 4 * g);
+    var y = H - pad.bottom - (cH * g / 4);
+    ctx.strokeStyle = sc.lines + '33';
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    ctx.fillStyle = sc.text;
+    ctx.font = '600 10px Quicksand';
+    ctx.textAlign = 'right';
+    ctx.fillText(yVal + '%', pad.left - 5, y + 4);
+  }
+
+  if (values.length > 1) {
+    var stepX = cW / (values.length - 1);
+
+    // Fill area under line
+    ctx.fillStyle = sc.accent + '22';
+    ctx.beginPath();
+    ctx.moveTo(pad.left, H - pad.bottom);
+    values.forEach(function(v, i) {
+      ctx.lineTo(pad.left + i * stepX, H - pad.bottom - (v / maxV * cH));
+    });
+    ctx.lineTo(pad.left + (values.length - 1) * stepX, H - pad.bottom);
+    ctx.closePath();
+    ctx.fill();
+
+    // Line
+    ctx.strokeStyle = sc.accent;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    values.forEach(function(v, i) {
+      var x = pad.left + i * stepX;
+      var y = H - pad.bottom - (v / maxV * cH);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dots
+    values.forEach(function(v, i) {
+      var x = pad.left + i * stepX;
+      var y = H - pad.bottom - (v / maxV * cH);
+      ctx.fillStyle = sc.bg;
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = sc.accent;
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
+  ctx.fillStyle = sc.text;
+  ctx.font = '600 9px Quicksand';
+  ctx.textAlign = 'center';
+  labels.forEach(function(label, i) {
+    var x = values.length > 1 ? pad.left + i * (cW / (values.length - 1)) : pad.left + cW / 2;
+    ctx.fillText(label, x, H - pad.bottom + 15);
+  });
+}
+
+function drawBarChart(canvasId, labels, values, title) {
+  var c = document.getElementById(canvasId);
+  if (!c) return;
+  var ctx = c.getContext('2d');
+  var W = c.width, H = c.height;
+  var sc = staffColors();
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = sc.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  var pad = { top: 35, right: 15, bottom: 40, left: 35 };
+  var cW = W - pad.left - pad.right;
+  var cH = H - pad.top - pad.bottom;
+  var maxV = Math.max(Math.max.apply(null, values), 1);
+
+  ctx.fillStyle = sc.text;
+  ctx.font = '700 13px Quicksand';
+  ctx.textAlign = 'center';
+  ctx.fillText(title, W / 2, 18);
+
+  ctx.strokeStyle = sc.lines;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, H - pad.bottom);
+  ctx.lineTo(W - pad.right, H - pad.bottom);
+  ctx.stroke();
+
+  var barColors = ['#f7b0a6','#b2ebd8','#a2cafb','#c1c3ea','#e1bcd8','#fbfac6','#f7b0a6'];
+  var gap = cW / labels.length;
+  var barW = Math.min(36, gap * 0.65);
+
+  labels.forEach(function(label, i) {
+    var x = pad.left + gap * i + gap / 2 - barW / 2;
+    var barH = maxV > 0 ? (values[i] / maxV) * cH : 0;
+    var y = H - pad.bottom - barH;
+
+    ctx.fillStyle = barColors[i % barColors.length];
+    ctx.fillRect(x, y, barW, barH);
+
+    // Rounded top
+    if (barH > 4) {
+      ctx.beginPath();
+      ctx.arc(x + barW / 2, y + 3, barW / 2, Math.PI, 0);
+      ctx.fill();
+    }
+
+    if (values[i] > 0) {
+      ctx.fillStyle = sc.text;
+      ctx.font = '700 10px Quicksand';
+      ctx.textAlign = 'center';
+      ctx.fillText(values[i], x + barW / 2, y - 5);
+    }
+
+    ctx.fillStyle = sc.text;
+    ctx.font = '600 8px Quicksand';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x + barW / 2, H - pad.bottom + 14);
+  });
 }
 function loadScores() {
   try { return JSON.parse(localStorage.getItem('pms_scores') || '{}'); } catch(e) { return {}; }
@@ -2328,6 +2511,7 @@ function render(page) {
             </div>`;
       h += `<div class="btn-row">
               <button class="btn btn-blue" onclick="startFromHome('daily')">⭐ Daily Challenge</button>
+              <button class="btn btn-pink" onclick="render('progress')">📊 Progress</button>
             </div>`;
     }
     h += `</div>`;
@@ -2816,6 +3000,43 @@ function render(page) {
     h += `</div>`;
 
     h += `<button class="btn btn-blue btn-wide" style="margin-top:0.4rem" onclick="render('about')">💜 All About PianoMind Studios</button>`;
+
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
+  }
+
+  // ── PROGRESS PAGE ──
+  else if (page === 'progress') {
+    h += `<h1>📊 My Progress</h1>`;
+
+    // Line chart — daily average score
+    h += `<div class="card" style="padding:0.8rem">`;
+    h += `<canvas id="lineChartCanvas" width="460" height="240" style="display:block;max-width:100%;border-radius:12px"></canvas>`;
+    h += `</div>`;
+
+    // Bar chart — activity breakdown
+    h += `<div class="card" style="padding:0.8rem">`;
+    h += `<canvas id="barChartCanvas" width="460" height="240" style="display:block;max-width:100%;border-radius:12px"></canvas>`;
+    h += `</div>`;
+
+    // Summary stats
+    var daily = loadDaily();
+    var allGames = {};
+    var totalSessions = 0;
+    Object.keys(daily).forEach(function(day) {
+      var d = daily[day];
+      if (d.games) {
+        Object.keys(d.games).forEach(function(g) {
+          allGames[g] = (allGames[g] || 0) + d.games[g];
+          totalSessions += d.games[g];
+        });
+      }
+    });
+    var daysActive = Object.keys(daily).length;
+
+    h += `<div class="card" style="text-align:center">`;
+    h += `<p style="font-size:1.1rem;font-weight:700;color:#0f2744;margin:0.3rem 0">📅 ${daysActive} day${daysActive !== 1 ? 's' : ''} active</p>`;
+    h += `<p style="font-size:0.9rem;color:#6b7fa3">🎮 ${totalSessions} total sessions played</p>`;
+    h += `</div>`;
 
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
   }
@@ -3527,6 +3748,29 @@ function render(page) {
   if (page === 'hanon') {
     var hn = getHanonBarNotes(S.hanonEx, S.hanonBar);
     drawHanonStaff('hanonStaffCanvas', hn, S.hanonCurrentIdx);
+  }
+  if (page === 'progress') {
+    var daily = loadDaily();
+    var days7 = getLast7Days();
+    var lineLabels = days7.map(function(d) { return d.slice(5); }); // "08-21"
+    var lineValues = days7.map(function(d) {
+      var day = daily[d];
+      if (!day || !day.scores || day.scores.length === 0) return 0;
+      var sum = day.scores.reduce(function(a, b) { return a + b; }, 0);
+      return Math.round(sum / day.scores.length);
+    });
+    drawLineChart('lineChartCanvas', lineLabels, lineValues, 'Average Score (Last 7 Days)');
+
+    var actNames = ['Ear', 'Notes', 'Int.', 'Chord', 'Rhythm', 'Hanon', 'Scale'];
+    var actKeys = ['ear', 'note', 'interval', 'chord', 'rhythm', 'hanon', 'scale'];
+    var actValues = actKeys.map(function(key) {
+      var total = 0;
+      Object.keys(daily).forEach(function(d) {
+        if (daily[d].games && daily[d].games[key]) total += daily[d].games[key];
+      });
+      return total;
+    });
+    drawBarChart('barChartCanvas', actNames, actValues, 'Sessions by Activity');
   }
 
   // Auto-play tones
