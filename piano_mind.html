@@ -556,8 +556,6 @@ body.mode-smooth .alert-success { background: rgba(200,230,200,0.6); }
 body.mode-smooth .alert-warning { background: rgba(240,220,200,0.5); }
 body.mode-smooth .alert-error { background: rgba(240,200,200,0.6); }
 body.mode-smooth .section-label { color: #555; }
-body.mode-smooth .pebbles { display: none; }
-body.mode-smooth .welcome-pebbles { display: none; }
 
 /* ═══════════════════════════════
    MODE: NEON
@@ -622,8 +620,6 @@ body.mode-neon .alert-warning { background: rgba(255,200,0,0.15); color: #ffddaa
 body.mode-neon .alert-error { background: rgba(255,50,50,0.15); color: #ffaaaa; }
 body.mode-neon .section-label { color: #aaa; }
 body.mode-neon .input-wrap input { background: #1a1a1a; color: #e0e0e0; border: 1px solid rgba(0,200,255,0.25); }
-body.mode-neon .pebbles { display: none; }
-body.mode-neon .welcome-pebbles { display: none; }
 body.mode-neon .theme-card { background: #111; border-color: rgba(0,200,255,0.2); }
 body.mode-neon .theme-card.active { border-color: #00c8ff; box-shadow: 0 0 10px rgba(0,200,255,0.3); }
 body.mode-neon .theme-name { color: #ccc; }
@@ -2110,8 +2106,8 @@ function render(page) {
     var tStep = S.tutorialStep || 0;
     var tSteps = [
       { title: 'Welcome!', icon: '👋', text: 'This is PianoMind Studios — an app that helps you practise music skills like ear training, note reading, and more.' },
-      { title: 'Home Screen', icon: '🏠', text: 'The home screen has three tabs: Play (games and practice), Tools (scales, metronome, Hanon exercises), and Learn (music theory and grade exercises).' },
-      { title: 'Ear Training', icon: '🎵', text: 'The app plays two notes. You listen and decide if the second note was higher or lower. There are 5 difficulty levels — start easy and work up.' },
+      { title: 'Home Screen', icon: '🏠', text: 'The home screen has four tabs: Play (games and practice), Tools (scales, metronome, Hanon exercises), Learn (music theory and grade exercises), and Settings.' },
+      { title: 'Ear Training', icon: '🎵', text: 'The app plays a note. You listen and pick which note it is from a set of choices. Five levels — from one octave up to two-note melodies with sharps.' },
       { title: 'Note Reading', icon: '🎼', text: 'A note appears on the staff. You type its name. You can practise treble clef, bass clef, or both. Sharps and flats included at higher levels.' },
       { title: 'Intervals & Chords', icon: '🎹', text: 'Learn to recognise the distance between two notes (intervals) and the sound of different chord types — major, minor, diminished, and more.' },
       { title: 'Scale Explorer', icon: '🎶', text: 'See and hear scales drawn on the staff. You can play along with your instrument using the microphone — the app listens and tracks your notes.' },
@@ -4331,6 +4327,11 @@ function getMode() {
 
 function setMode(mode) {
   try { localStorage.setItem('pms_mode', mode); } catch(e) {}
+  if (mode === 'smooth' || mode === 'neon') {
+    localStorage.setItem('pms_pebbles', 'off');
+  } else {
+    localStorage.setItem('pms_pebbles', 'on');
+  }
   applyMode();
   render('settings');
 }
