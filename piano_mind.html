@@ -1983,7 +1983,7 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
 
   // Scale label
   const root = SCALE_ROOTS[S.scaleRoot];
-  ctx.fillStyle = '#2c5f8a';
+  ctx.fillStyle = sc.text;
   ctx.font = '700 15px Quicksand';
   ctx.textAlign = 'center';
   ctx.fillText(root.name + ' ' + S.scaleType, W / 2, 16);
@@ -2003,7 +2003,7 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
     const y = yOf(note.h);
 
     // Ledger lines
-    ctx.strokeStyle = '#3a5a7a'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
     for (let l = -1; note.h <= l; l--) {
       const ly = yOf(l);
       ctx.beginPath(); ctx.moveTo(x - ledgerW, ly); ctx.lineTo(x + ledgerW, ly); ctx.stroke();
@@ -2013,8 +2013,8 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
       ctx.beginPath(); ctx.moveTo(x - ledgerW, ly); ctx.lineTo(x + ledgerW, ly); ctx.stroke();
     }
 
-    // Color: completed=green, current=purple/red, upcoming=dark
-    let color = '#1a2a3a';
+    // Color: completed=green, current=purple/red, upcoming=mode-aware
+    let color = sc.note;
     if (i < currentIdx) color = '#4CAF50';
     else if (i === currentIdx && S.scalePracticing) {
       color = S.scaleErrorFlash ? '#e53935' : '#7c6fef';
@@ -2492,10 +2492,10 @@ function render(page) {
               <button class="btn btn-mint" onclick="startFromHome('stats')">📊 My Progress</button>
               <button class="btn btn-lilac" onclick="startFromHome('achievements')">🏆 Achievements</button>
             </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-coral" onclick="startFromHome('wardrobe')">👗 Pebbles Wardrobe</button>
-              <button class="btn btn-blue" onclick="startFromHome('settings')">⚙️ Settings</button>
-            </div>`;
+      h += `<div class="btn-row">`;
+      if (showPebbles()) h += `<button class="btn btn-coral" onclick="startFromHome('wardrobe')">👗 Pebbles Wardrobe</button>`;
+      h += `<button class="btn btn-blue" onclick="startFromHome('settings')">⚙️ Settings</button>`;
+      h += `</div>`;
     } else {
       h += `<div class="btn-row">
               <button class="btn btn-blue${pulseClass('ear',homeData)}" onclick="startFromHome('ear')">🎵 Ear Training</button>
@@ -3011,41 +3011,9 @@ function render(page) {
 
     h += `<button class="btn btn-blue btn-wide" style="margin-top:0.4rem" onclick="render('about')">💜 All About PianoMind Studios</button>`;
 
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
-  }
-
-  // ── PROGRESS PAGE ──
-  else if (page === 'progress') {
-    h += `<h1>📊 My Progress</h1>`;
-
-    // Line chart — daily average score
-    h += `<div class="card" style="padding:0.8rem">`;
-    h += `<canvas id="lineChartCanvas" width="460" height="240" style="display:block;max-width:100%;border-radius:12px"></canvas>`;
-    h += `</div>`;
-
-    // Bar chart — activity breakdown
-    h += `<div class="card" style="padding:0.8rem">`;
-    h += `<canvas id="barChartCanvas" width="460" height="240" style="display:block;max-width:100%;border-radius:12px"></canvas>`;
-    h += `</div>`;
-
-    // Summary stats
-    var daily = loadDaily();
-    var allGames = {};
-    var totalSessions = 0;
-    Object.keys(daily).forEach(function(day) {
-      var d = daily[day];
-      if (d.games) {
-        Object.keys(d.games).forEach(function(g) {
-          allGames[g] = (allGames[g] || 0) + d.games[g];
-          totalSessions += d.games[g];
-        });
-      }
-    });
-    var daysActive = Object.keys(daily).length;
-
-    h += `<div class="card" style="text-align:center">`;
-    h += `<p style="font-size:1.1rem;font-weight:700;color:#0f2744;margin:0.3rem 0">📅 ${daysActive} day${daysActive !== 1 ? 's' : ''} active</p>`;
-    h += `<p style="font-size:0.9rem;color:#6b7fa3">🎮 ${totalSessions} total sessions played</p>`;
+    h += `<div class="card">`;
+    h += `<p class="section-label">Data</p>`;
+    h += `<button class="btn btn-coral btn-wide" onclick="if(confirm('This will erase ALL your scores, XP, achievements, and progress. Are you sure?')){localStorage.clear();location.reload();}">🗑 Reset All Data</button>`;
     h += `</div>`;
 
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
@@ -4146,7 +4114,7 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
       ctx.beginPath(); ctx.moveTo(x - ledgerW, ly); ctx.lineTo(x + ledgerW, ly); ctx.stroke();
     }
 
-    var color = '#1a2a3a';
+    var color = sc.note;
     if (currentIdx !== undefined && currentIdx !== null) {
       if (i < currentIdx) color = '#4CAF50';
       else if (i === currentIdx && S.hanonPracticing) {
@@ -4165,7 +4133,7 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
     ctx.fillText(note.name, x, y - NRY - 5);
 
     if (note.finger) {
-      ctx.fillStyle = '#6b7fa3';
+      ctx.fillStyle = sc.text;
       ctx.font = '700 11px Quicksand';
       ctx.fillText(note.finger, x, y + NRY + 14);
     }
@@ -5276,30 +5244,28 @@ function drawSightReadStaff() {
   if (!c) return;
   const ctx = c.getContext('2d');
   const W = c.width, H = c.height;
+  const sc = staffColors();
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#d4e8fc';
+  ctx.fillStyle = sc.bg;
   ctx.fillRect(0, 0, W, H);
 
   const LS = 20;
   const bottomLine = H * 0.65;
   function yOf(h) { return bottomLine - h * LS; }
 
-  // Staff lines
-  ctx.strokeStyle = '#3a5a7a'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
   for (let i = 0; i < 5; i++) {
     const y = yOf(i);
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 
-  // "Now" line
   const nowX = 60;
-  ctx.strokeStyle = 'rgba(124,111,239,0.5)';
+  ctx.strokeStyle = sc.accent + '88';
   ctx.lineWidth = 2;
   ctx.setLineDash([5,5]);
   ctx.beginPath(); ctx.moveTo(nowX, 20); ctx.lineTo(nowX, H - 20); ctx.stroke();
   ctx.setLineDash([]);
 
-  // Notes
   const lvl = SIGHTREAD_LEVELS[S.sightReadLevel];
   const msPerNote = 60000 / lvl.bpm;
   const elapsed = performance.now() - sightReadScrollStart;
@@ -5309,42 +5275,34 @@ function drawSightReadStaff() {
     const noteTime = i * msPerNote;
     const x = nowX + (noteTime - elapsed) * pxPerMs;
     if (x < -30 || x > W + 30) return;
-
     const y = yOf(note.h);
 
-    // Ledger lines
-    ctx.strokeStyle = '#3a5a7a'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
     for (let l = -1; note.h <= l; l--) { const ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-14,ly); ctx.lineTo(x+14,ly); ctx.stroke(); }
     for (let l = 5; note.h >= l; l++) { const ly = yOf(l); ctx.beginPath(); ctx.moveTo(x-14,ly); ctx.lineTo(x+14,ly); ctx.stroke(); }
 
-    // Color
-    let color = '#1a2a3a';
+    let color = sc.note;
     if (note.hit) color = '#4CAF50';
     else if (note.missed) color = '#e53935';
-    else if (i === S.sightReadIdx) color = '#7c6fef';
+    else if (i === S.sightReadIdx) color = sc.accent;
 
-    // Note head
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.ellipse(x, y, 9, 7, -0.15, 0, Math.PI * 2); ctx.fill();
-
-    // Note name below
     ctx.fillStyle = color;
     ctx.font = '600 10px Quicksand';
     ctx.textAlign = 'center';
     ctx.fillText(note.name, x, H - 8);
   });
 
-  // Current target label
   if (S.sightReadIdx < S.sightReadNotes.length) {
     const target = S.sightReadNotes[S.sightReadIdx];
-    ctx.fillStyle = '#7c6fef';
+    ctx.fillStyle = sc.accent;
     ctx.font = '700 14px Quicksand';
     ctx.textAlign = 'left';
     ctx.fillText('Play: ' + target.name, 10, 18);
   }
 
-  // Score
-  ctx.fillStyle = '#0f2744';
+  ctx.fillStyle = sc.note;
   ctx.font = '700 13px Quicksand';
   ctx.textAlign = 'right';
   ctx.fillText(S.sightReadScore + '/' + S.sightReadNotes.length, W - 10, 18);
