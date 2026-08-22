@@ -2306,7 +2306,94 @@ const S = {
   // Melody Echo
   melodyLevel: 'easy', melodyNotes: [], melodyPlayerNotes: [], melodyPhase: 'listen',
   melodyFeedback: null, melodyScore: 0, melodyRound: 0, melodyTotal: 5,
+  // Guard flag — prevents double-saving on re-render
+  resultScored: false,
+  // Chord Mixer
+  mixerKey: 0, mixerChords: [], mixerPlaying: false,
 };
+
+// ═══════════════════════════════════
+//  CHORD PROGRESSION MIXER
+// ═══════════════════════════════════
+
+const MIXER_KEYS = [
+  {name:'C',semi:0},{name:'D♭',semi:1},{name:'D',semi:2},{name:'E♭',semi:3},
+  {name:'E',semi:4},{name:'F',semi:5},{name:'G♭',semi:6},{name:'G',semi:7},
+  {name:'A♭',semi:8},{name:'A',semi:9},{name:'B♭',semi:10},{name:'B',semi:11}
+];
+
+const MIXER_DEGREES = [
+  {roman:'I',   name:'Major',  type:'maj', offset:0,  intervals:[0,4,7]},
+  {roman:'ii',  name:'Minor',  type:'min', offset:2,  intervals:[0,3,7]},
+  {roman:'iii', name:'Minor',  type:'min', offset:4,  intervals:[0,3,7]},
+  {roman:'IV',  name:'Major',  type:'maj', offset:5,  intervals:[0,4,7]},
+  {roman:'V',   name:'Major',  type:'maj', offset:7,  intervals:[0,4,7]},
+  {roman:'vi',  name:'Minor',  type:'min', offset:9,  intervals:[0,3,7]},
+  {roman:'vii°',name:'Dim',    type:'dim', offset:11, intervals:[0,3,6]},
+];
+
+const MIXER_PRESETS = [
+  {name:'Pop Classic', chords:[0,4,5,3], label:'I – V – vi – IV'},
+  {name:'50s Doo-Wop', chords:[0,5,3,4], label:'I – vi – IV – V'},
+  {name:'Blues', chords:[0,0,3,3,4,3,0,0], label:'I – I – IV – IV – V – IV – I – I'},
+  {name:'Pachelbel', chords:[0,4,5,2,3,0,3,4], label:'I – V – vi – iii – IV – I – IV – V'},
+  {name:'Sad', chords:[5,3,0,4], label:'vi – IV – I – V'},
+];
+
+function getMixerChordNotes(degreeIdx, keySemi) {
+  var deg = MIXER_DEGREES[degreeIdx];
+  var rootNote = -9 + keySemi + deg.offset;
+  return deg.intervals.map(function(i) { return rootNote + i; });
+}
+
+function getMixerChordName(degreeIdx) {
+  var key = MIXER_KEYS[S.mixerKey];
+  var deg = MIXER_DEGREES[degreeIdx];
+  var noteNames = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+  var rootIdx = (S.mixerKey + deg.offset) % 12;
+  return noteNames[rootIdx] + (deg.type === 'min' ? 'm' : deg.type === 'dim' ? '°' : '');
+}
+
+var mixerPlayTimer = null;
+
+function playMixerChord(degreeIdx) {
+  var notes = getMixerChordNotes(degreeIdx, S.mixerKey);
+  var ctx = getAudioCtx(); ctx.resume();
+  var now = ctx.currentTime + 0.05;
+  notes.forEach(function(n) { makeNote(ctx, noteToFreq(n), now, 0.6, 0.25); });
+}
+
+function playMixerProgression() {
+  if (S.mixerChords.length === 0) return;
+  stopMixerPlay();
+  S.mixerPlaying = true;
+  render('chord_mixer');
+  var beatDur = 0.55;
+  var idx = 0;
+
+  function playNext() {
+    if (idx >= S.mixerChords.length || !S.mixerPlaying) {
+      S.mixerPlaying = false;
+      render('chord_mixer');
+      return;
+    }
+    var notes = getMixerChordNotes(S.mixerChords[idx], S.mixerKey);
+    var ctx = getAudioCtx(); ctx.resume();
+    var now = ctx.currentTime + 0.05;
+    notes.forEach(function(n) { makeNote(ctx, noteToFreq(n), now, beatDur * 0.9, 0.25); });
+    S.mixerCurrentChord = idx;
+    render('chord_mixer');
+    idx++;
+    mixerPlayTimer = setTimeout(playNext, beatDur * 1000);
+  }
+
+  playNext();
+}
+
+function stopMixerPlay() {
+  S.mixerPlaying = false;
+  if (mixerPlayTimer) { clearTimeout(mixerPlayTimer); mixerPlayTimer = null; }
+}
 
 
 // ═══════════════════════════════════
@@ -2561,6 +2648,7 @@ function render(page) {
   if (page !== 'scale_explorer' && S.scalePracticing) stopScalePractice();
   if (page !== 'hanon' && S.hanonPracticing) stopHanonPractice();
   if (page !== 'hanon' && S.hanonPlaying) stopHanonPlay();
+  if (page !== 'chord_mixer' && S.mixerPlaying) stopMixerPlay();
   if (page !== 'rhythm_play') clearRhythmTimers();
   if (page !== 'sightread_play' && page !== 'song_play' && S.sightReadPlaying) stopSightReading();
   S.page = page;
@@ -2671,6 +2759,7 @@ function render(page) {
             </div>`;
       h += `<div class="btn-row">
               <button class="btn btn-mint" onclick="startFromHome('songs')">🎵 Song Library</button>
+              <button class="btn btn-coral" onclick="render('chord_mixer')">🎛 Chord Mixer</button>
             </div>`;
     } else if (S.homeTab === 'me') {
       h += `<div class="btn-row">
@@ -2775,7 +2864,7 @@ function render(page) {
     }
     saveScore('ear', S.level, S.score, S.total);
     if (S.isDaily) saveDailyScore(S.score, S.total);
-    finishRound('ear');
+    if (!S.resultScored) { S.resultScored = true; finishRound('ear'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('ear_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
@@ -2864,7 +2953,7 @@ function render(page) {
     }
     saveScore('note', S.level, S.score, S.total);
     if (S.isDaily) saveDailyScore(S.score, S.total);
-    finishRound('note');
+    if (!S.resultScored) { S.resultScored = true; finishRound('note'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('note_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
@@ -2944,7 +3033,7 @@ function render(page) {
     }
     saveScore('interval', S.level, S.score, S.total);
     if (S.isDaily) saveDailyScore(S.score, S.total);
-    finishRound('interval');
+    if (!S.resultScored) { S.resultScored = true; finishRound('interval'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('interval_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
@@ -3022,7 +3111,7 @@ function render(page) {
     }
     saveScore('chord', S.level, S.score, S.total);
     if (S.isDaily) saveDailyScore(S.score, S.total);
-    finishRound('chord');
+    if (!S.resultScored) { S.resultScored = true; finishRound('chord'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('chord_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
@@ -3216,6 +3305,82 @@ function render(page) {
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('settings')">\u2B05 Back to Settings</button>`;
   }
 
+  // ── CHORD MIXER ──
+  else if (page === 'chord_mixer') {
+    h += `<h1>🎛 Chord Mixer</h1>`;
+    if (showPebbles()) {
+      h += `<div style="display:flex;align-items:center;gap:0.7rem;margin:0.3rem 0">`;
+      h += pebbles('happy', 80);
+      h += `<p class="speech"><strong>Pebbles says:</strong> 'Build your own chord progression!'</p>`;
+      h += `</div>`;
+    } else {
+      h += `<p class="speech" style="margin:0.3rem 0">Build your own chord progression!</p>`;
+    }
+
+    // Key picker
+    h += `<div class="card">`;
+    h += `<p class="section-label">Key</p>`;
+    h += `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center">`;
+    MIXER_KEYS.forEach(function(k, i) {
+      var active = i === S.mixerKey;
+      h += `<div class="round-opt${active?' active':''}" onclick="S.mixerKey=${i};stopMixerPlay();render('chord_mixer')">${k.name}</div>`;
+    });
+    h += `</div></div>`;
+
+    // Chord buttons
+    h += `<div class="card">`;
+    h += `<p class="section-label">Tap to add chords</p>`;
+    h += `<div class="btn-row">`;
+    var mixColors = ['btn-coral','btn-lilac','btn-lilac','btn-mint','btn-blue','btn-pink','btn-coral'];
+    MIXER_DEGREES.forEach(function(deg, i) {
+      h += `<button class="btn ${mixColors[i]}" style="flex:1;padding:0.4rem 0.2rem;font-size:0.8rem" onclick="S.mixerChords.push(${i});stopMixerPlay();render('chord_mixer')">${deg.roman}</button>`;
+    });
+    h += `</div>`;
+    h += `<p class="caption" style="text-align:center;margin-top:0.3rem">Major = uppercase · Minor = lowercase · ° = diminished</p>`;
+    h += `</div>`;
+
+    // Current progression display
+    h += `<div class="card">`;
+    h += `<p class="section-label">Your Progression</p>`;
+    if (S.mixerChords.length === 0) {
+      h += `<p style="text-align:center;color:#6b7fa3;font-size:0.9rem">Tap chords above to start building!</p>`;
+    } else {
+      h += `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;margin:0.4rem 0">`;
+      S.mixerChords.forEach(function(degIdx, i) {
+        var deg = MIXER_DEGREES[degIdx];
+        var chordName = getMixerChordName(degIdx);
+        var playing = S.mixerPlaying && S.mixerCurrentChord === i;
+        h += `<div style="background:${playing?'#7c6fef':'rgba(255,255,255,0.5)'};color:${playing?'#fff':'#0f2744'};padding:0.5rem 0.7rem;border-radius:12px;font-weight:700;font-size:0.9rem;cursor:pointer;border:2px solid ${playing?'#7c6fef':'rgba(0,0,0,0.08)'};transition:all 0.15s" onclick="playMixerChord(${degIdx})">${chordName}<div style="font-size:0.65rem;font-weight:600;opacity:0.7">${deg.roman}</div></div>`;
+      });
+      h += `</div>`;
+
+      // Controls
+      h += `<div style="display:flex;gap:0.3rem;margin-top:0.5rem;justify-content:center">`;
+      if (!S.mixerPlaying) {
+        h += `<button class="btn btn-mint" onclick="playMixerProgression()">▶ Play</button>`;
+      } else {
+        h += `<button class="btn btn-coral" onclick="stopMixerPlay();render('chord_mixer')">⏹ Stop</button>`;
+      }
+      h += `<button class="btn btn-lilac" onclick="S.mixerChords.pop();stopMixerPlay();render('chord_mixer')">↩ Undo</button>`;
+      h += `<button class="btn btn-coral" onclick="S.mixerChords=[];stopMixerPlay();render('chord_mixer')">🗑 Clear</button>`;
+      h += `</div>`;
+    }
+    h += `</div>`;
+
+    // Presets
+    h += `<div class="card">`;
+    h += `<p class="section-label">Try a Famous Progression</p>`;
+    MIXER_PRESETS.forEach(function(preset) {
+      h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">`;
+      h += `<div><span style="font-weight:700;font-size:0.9rem">${preset.name}</span><br><span style="font-size:0.75rem;color:#6b7fa3">${preset.label}</span></div>`;
+      h += `<button class="btn btn-blue" style="padding:0.3rem 0.7rem;font-size:0.8rem" onclick="S.mixerChords=[${preset.chords}];stopMixerPlay();render('chord_mixer')">Load</button>`;
+      h += `</div>`;
+    });
+    h += `</div>`;
+
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="stopMixerPlay();render('home')">🏠 Home</button>`;
+  }
+
   // ── DAILY CHALLENGE ──
   else if (page === 'daily') {
     const dg = getDailyGame();
@@ -3266,7 +3431,15 @@ function render(page) {
         h += `<span style="font-size:0.75rem;color:#6b7fa3;margin-left:0.4rem">${from} · missed ${note.count}×</span>`;
         h += `</div>`;
         h += `<div style="display:flex;gap:0.3rem">`;
-        h += `<button class="btn btn-blue" style="padding:0.3rem 0.6rem;font-size:0.8rem" onclick="playNote(${PIANO_WHITE.find(function(k){return k.name===note.name.replace(/#|b/g,'')})?PIANO_WHITE.find(function(k){return k.name===note.name.replace(/#|b/g,'')}).n:0})">🔊</button>`;
+        var pouchNoteNum = (function(nn) {
+          var base = {C:-9,D:-7,E:-5,F:-4,G:-2,A:0,B:2};
+          var letter = nn.charAt(0).toUpperCase();
+          var num = base[letter] || 0;
+          if (nn.indexOf('#') > -1) num++;
+          if (nn.toLowerCase().indexOf('b') > -1 && nn.length > 1) num--;
+          return num;
+        })(note.name);
+        h += `<button class="btn btn-blue" style="padding:0.3rem 0.6rem;font-size:0.8rem" onclick="playNote(${pouchNoteNum})">🔊</button>`;
         h += `<button class="btn btn-mint" style="padding:0.3rem 0.6rem;font-size:0.8rem" onclick="removeFromPouch('${note.name}');render('pouch')">✓ Got it</button>`;
         h += `</div>`;
         h += `</div>`;
@@ -3336,7 +3509,6 @@ function render(page) {
     if (S.melodyScore === S.melodyTotal) {
       h += pebbles('happy');
       h += `<div class="alert alert-success">🌸 Perfect echo!</div>`;
-      setTimeout(confetti, 300);
     } else if (S.melodyScore >= S.melodyTotal * 0.6) {
       h += pebbles('happy');
       h += `<div class="alert alert-success">Nice work!</div>`;
@@ -3344,8 +3516,12 @@ function render(page) {
       h += pebbles('thinking');
       h += `<div class="alert alert-warning">Keep practising — your ears will get sharper!</div>`;
     }
-    saveScore('melody', S.melodyLevel, S.melodyScore, S.melodyTotal);
-    finishRound('melody');
+    if (!S.resultScored) {
+      S.resultScored = true;
+      saveScore('melody', S.melodyLevel, S.melodyScore, S.melodyTotal);
+      finishRound('melody');
+      if (S.melodyScore === S.melodyTotal) setTimeout(confetti, 300);
+    }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('melody_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
@@ -4087,6 +4263,7 @@ function setHomeTab(tab) {
 }
 
 function startFromHome(game) {
+  S.resultScored = false;
   const nameIn = $('nameIn');
   if (nameIn) S.name = nameIn.value.trim() || 'Player';
   S.isDaily = false;
