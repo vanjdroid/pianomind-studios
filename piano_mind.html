@@ -2511,7 +2511,6 @@ function render(page) {
             </div>`;
       h += `<div class="btn-row">
               <button class="btn btn-blue" onclick="startFromHome('daily')">⭐ Daily Challenge</button>
-              <button class="btn btn-pink" onclick="render('progress')">📊 Progress</button>
             </div>`;
     }
     h += `</div>`;
@@ -2856,6 +2855,17 @@ function render(page) {
     h += `<div class="stat-card"><div class="stat-num">${data._played || 0}</div><div class="stat-label">Games Played</div></div>`;
     h += `<div class="stat-card"><div class="stat-num">${data._streak || 0} 🔥</div><div class="stat-label">Day Streak</div></div>`;
     h += `</div>`;
+
+    // Line chart — improvement over time
+    h += `<div class="card" style="padding:0.8rem">`;
+    h += `<canvas id="lineChartCanvas" width="460" height="220" style="display:block;max-width:100%;border-radius:12px"></canvas>`;
+    h += `</div>`;
+
+    // Bar chart — activity breakdown
+    h += `<div class="card" style="padding:0.8rem">`;
+    h += `<canvas id="barChartCanvas" width="460" height="220" style="display:block;max-width:100%;border-radius:12px"></canvas>`;
+    h += `</div>`;
+
     h += `<div class="card">`;
     h += `<p style="font-weight:700;font-size:0.95rem;margin-bottom:0.5rem">Best Scores</p>`;
     const gms = [{k:'ear',e:'🎵',n:'Ear Training'},{k:'note',e:'🎼',n:'Note Reading'},
@@ -3749,10 +3759,10 @@ function render(page) {
     var hn = getHanonBarNotes(S.hanonEx, S.hanonBar);
     drawHanonStaff('hanonStaffCanvas', hn, S.hanonCurrentIdx);
   }
-  if (page === 'progress') {
+  if (page === 'stats') {
     var daily = loadDaily();
     var days7 = getLast7Days();
-    var lineLabels = days7.map(function(d) { return d.slice(5); }); // "08-21"
+    var lineLabels = days7.map(function(d) { return d.slice(5); });
     var lineValues = days7.map(function(d) {
       var day = daily[d];
       if (!day || !day.scores || day.scores.length === 0) return 0;
