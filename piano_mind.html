@@ -2063,9 +2063,14 @@ function nextRound(game) {
 //  RENDERING
 // ═══════════════════════════════════
 
+// Single source of truth for Pebbles visibility
+function showPebbles() {
+  return localStorage.getItem('pms_pebbles') !== 'off';
+}
+
 function pebbles(mood, width) {
   width = width || 140;
-  if (localStorage.getItem('pms_pebbles') === 'off') return '';
+  if (!showPebbles()) return '';
   if (currentOutfit !== 'default') {
     return `<img class="pebbles" src="pebbles_${mood}_${currentOutfit}.png" width="${width}" alt="Pebbles" onerror="this.src='pebbles_${mood}.png';this.onerror=function(){this.style.display='none'}">`;
   }
@@ -2146,8 +2151,7 @@ function render(page) {
   // ── HOME ──
   else if (page === 'home') {
     const homeData = loadScores();
-    var noPeb = getMode() !== 'cartoon' || localStorage.getItem('pms_pebbles') === 'off';
-    if (!noPeb) {
+    if (showPebbles()) {
       h += `<div style="display:flex;align-items:center;gap:1rem;margin-top:1rem">
               ${pebbles('happy', 120)}
               <div>
@@ -2632,7 +2636,7 @@ function render(page) {
     const sfxOn = sfxEnabled();
     const curMode = getMode();
     h += `<h1>⚙️ Settings</h1>`;
-    if (curMode === 'cartoon') {
+    if (showPebbles()) {
       h += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.4rem">${pebbles('happy', 90)}
               <p class="speech"><strong>Pebbles says:</strong> 'Make the app your own, ${S.name}!'</p>
             </div>`;
@@ -2684,7 +2688,7 @@ function render(page) {
     h += `</div>`;
 
     // Pebbles toggle
-    var pebOn = localStorage.getItem('pms_pebbles') !== 'off';
+    var pebOn = showPebbles();
     h += `<div class="card">`;
     h += `<p class="section-label">Pebbles the Dino</p>`;
     h += `<div class="btn-row">
@@ -3370,8 +3374,8 @@ function render(page) {
 
   h += '</div>';
 
-  // Strip Pebbles speech when Pebbles is off or in non-cartoon modes
-  if (getMode() !== 'cartoon' || localStorage.getItem('pms_pebbles') === 'off') {
+  // Strip Pebbles speech when Pebbles is hidden
+  if (!showPebbles()) {
     h = h.replaceAll("<strong>Pebbles says:</strong> '", '');
     h = h.replaceAll("<strong>Pebbles asks:</strong> '", '');
     h = h.replaceAll("<strong>Pebbles says:</strong>", '');
