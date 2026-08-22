@@ -1620,52 +1620,49 @@ function sfxAchievement() {
 //  STAFF DRAWING (Canvas)
 // ═══════════════════════════════════
 
+function staffColors() {
+  var mode = getMode();
+  if (mode === 'neon') return { bg: '#0e0e0e', lines: '#444', text: '#aaa', note: '#e0e0e0', accent: '#00c8ff', green: '#00cc88', red: '#ff4466', purple: '#aa88ff' };
+  if (mode === 'smooth') return { bg: '#f2f2f2', lines: '#aaa', text: '#666', note: '#333', accent: '#666', green: '#4CAF50', red: '#e53935', purple: '#7c6fef' };
+  return { bg: '#d4e8fc', lines: '#3a5a7a', text: '#2c5f8a', note: '#1a2a3a', accent: '#7c6fef', green: '#4CAF50', red: '#e53935', purple: '#7c6fef' };
+}
+
 function drawStaff(canvasId, noteHeight, accidental, clef) {
   const c = $(canvasId);
   const ctx = c.getContext('2d');
   const W = c.width, H = c.height;
   ctx.clearRect(0, 0, W, H);
+  const sc = staffColors();
 
-  // Background
-  ctx.fillStyle = '#a2cafb';
+  ctx.fillStyle = sc.bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Staff geometry
   const staffLeft = 40, staffRight = W - 40;
   const lineSpacing = 28;
-  const bottomLine = H / 2 + lineSpacing * 2; // y of line 0
-
+  const bottomLine = H / 2 + lineSpacing * 2;
   function yOf(h) { return bottomLine - h * lineSpacing; }
 
-  // Draw 5 staff lines
-  ctx.strokeStyle = '#1a2a3a';
+  ctx.strokeStyle = sc.lines;
   ctx.lineWidth = 2;
   for (let i = 0; i < 5; i++) {
     const y = yOf(i);
-    ctx.beginPath();
-    ctx.moveTo(staffLeft, y);
-    ctx.lineTo(staffRight, y);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(staffLeft, y); ctx.lineTo(staffRight, y); ctx.stroke();
   }
 
-  // Ledger lines
   const noteX = W / 2;
   const ledgerHalf = 22;
-  ctx.lineWidth = 2;
   if (noteHeight <= -1) { const y = yOf(-1); ctx.beginPath(); ctx.moveTo(noteX-ledgerHalf, y); ctx.lineTo(noteX+ledgerHalf, y); ctx.stroke(); }
   if (noteHeight <= -2) { const y = yOf(-2); ctx.beginPath(); ctx.moveTo(noteX-ledgerHalf, y); ctx.lineTo(noteX+ledgerHalf, y); ctx.stroke(); }
   if (noteHeight >= 5)  { const y = yOf(5);  ctx.beginPath(); ctx.moveTo(noteX-ledgerHalf, y); ctx.lineTo(noteX+ledgerHalf, y); ctx.stroke(); }
   if (noteHeight >= 6)  { const y = yOf(6);  ctx.beginPath(); ctx.moveTo(noteX-ledgerHalf, y); ctx.lineTo(noteX+ledgerHalf, y); ctx.stroke(); }
 
-  // Note head (filled ellipse)
   const ny = yOf(noteHeight);
-  ctx.fillStyle = '#1a2a3a';
+  ctx.fillStyle = sc.note;
   ctx.beginPath();
   ctx.ellipse(noteX, ny, 12, 9, -0.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Accidental
-  ctx.fillStyle = '#1a2a3a';
+  ctx.fillStyle = sc.note;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const accX = noteX - 28;
@@ -1679,8 +1676,7 @@ function drawStaff(canvasId, noteHeight, accidental, clef) {
     ctx.font = '24px serif'; ctx.fillText('𝄫', accX, ny);
   }
 
-  // Clef title
-  ctx.fillStyle = '#2c5f8a';
+  ctx.fillStyle = sc.text;
   ctx.font = '700 22px Quicksand';
   ctx.textAlign = 'center';
   ctx.fillText(clef.charAt(0).toUpperCase() + clef.slice(1) + ' Clef', W / 2, 28);
@@ -1691,7 +1687,8 @@ function drawIntervalStaff(canvasId, h1, h2) {
   const ctx = c.getContext('2d');
   const W = c.width, H = c.height;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#a2cafb';
+  const sc = staffColors();
+  ctx.fillStyle = sc.bg;
   ctx.fillRect(0, 0, W, H);
 
   const staffLeft = 40, staffRight = W - 40;
@@ -1699,7 +1696,7 @@ function drawIntervalStaff(canvasId, h1, h2) {
   const bottomLine = H / 2 + lineSpacing * 2;
   function yOf(h) { return bottomLine - h * lineSpacing; }
 
-  ctx.strokeStyle = '#1a2a3a';
+  ctx.strokeStyle = sc.lines;
   ctx.lineWidth = 2;
   for (let i = 0; i < 5; i++) {
     const y = yOf(i);
@@ -1713,11 +1710,11 @@ function drawIntervalStaff(canvasId, h1, h2) {
     if (h <= -2) { const y=yOf(-2); ctx.beginPath(); ctx.moveTo(x-lh,y); ctx.lineTo(x+lh,y); ctx.stroke(); }
     if (h >= 5)  { const y=yOf(5);  ctx.beginPath(); ctx.moveTo(x-lh,y); ctx.lineTo(x+lh,y); ctx.stroke(); }
     if (h >= 6)  { const y=yOf(6);  ctx.beginPath(); ctx.moveTo(x-lh,y); ctx.lineTo(x+lh,y); ctx.stroke(); }
-    ctx.fillStyle = '#1a2a3a';
+    ctx.fillStyle = sc.note;
     ctx.beginPath(); ctx.ellipse(x, yOf(h), 12, 9, -0.2, 0, Math.PI * 2); ctx.fill();
   });
 
-  ctx.fillStyle = '#2c5f8a';
+  ctx.fillStyle = sc.text;
   ctx.font = '700 22px Quicksand';
   ctx.textAlign = 'center';
   ctx.fillText('What interval?', W / 2, 28);
@@ -1729,7 +1726,8 @@ function drawChordStaff(canvasId, heights, accidentals, clef) {
   const ctx = c.getContext('2d');
   const W = c.width, H = c.height;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#a2cafb';
+  const sc = staffColors();
+  ctx.fillStyle = sc.bg;
   ctx.fillRect(0, 0, W, H);
 
   const staffLeft = 40, staffRight = W - 40;
@@ -1737,7 +1735,7 @@ function drawChordStaff(canvasId, heights, accidentals, clef) {
   const bottomLine = H / 2 + lineSpacing * 2;
   function yOf(h) { return bottomLine - h * lineSpacing; }
 
-  ctx.strokeStyle = '#1a2a3a';
+  ctx.strokeStyle = sc.lines;
   ctx.lineWidth = 2;
   for (let i = 0; i < 5; i++) {
     const y = yOf(i);
@@ -1754,27 +1752,24 @@ function drawChordStaff(canvasId, heights, accidentals, clef) {
     const y=yOf(ledger); ctx.beginPath(); ctx.moveTo(noteX-lh,y); ctx.lineTo(noteX+lh,y); ctx.stroke();
   }
 
-  // Draw note heads and accidentals
   let prevAccX = -999;
   heights.forEach((h, i) => {
     const ny = yOf(h);
-    ctx.fillStyle = '#1a2a3a';
+    ctx.fillStyle = sc.note;
     ctx.beginPath(); ctx.ellipse(noteX, ny, 12, 9, -0.2, 0, Math.PI * 2); ctx.fill();
-
     const acc = accidentals[i];
     if (acc !== 'natural') {
       let accX = noteX - 30;
       if (Math.abs(ny - prevAccX) < 24) accX -= 18;
-      ctx.fillStyle = '#1a2a3a';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = sc.note;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       if (acc === 'sharp') { ctx.font = '700 28px Quicksand'; ctx.fillText('#', accX, ny - 2); }
       else if (acc === 'flat') { ctx.font = '28px serif'; ctx.fillText('♭', accX, ny - 2); }
       prevAccX = ny;
     }
   });
 
-  ctx.fillStyle = '#2c5f8a';
+  ctx.fillStyle = sc.text;
   ctx.font = '700 22px Quicksand';
   ctx.textAlign = 'center';
   ctx.fillText(clef.charAt(0).toUpperCase() + clef.slice(1) + ' Clef', W / 2, 28);
@@ -1787,7 +1782,8 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
   const ctx = c.getContext('2d');
   const W = c.width, H = c.height;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#d4e8fc';
+  const sc = staffColors();
+  ctx.fillStyle = sc.bg;
   ctx.fillRect(0, 0, W, H);
 
   const staffLeft = 20, staffRight = W - 20;
@@ -1795,8 +1791,7 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
   const bottomLine = H * 0.65;
   function yOf(h) { return bottomLine - h * LS; }
 
-  // 5 staff lines
-  ctx.strokeStyle = '#3a5a7a';
+  ctx.strokeStyle = sc.lines;
   ctx.lineWidth = 1.5;
   for (let i = 0; i < 5; i++) {
     const y = yOf(i);
@@ -2367,7 +2362,7 @@ function render(page) {
     const r = S.roundNum, total = S.total;
     const fb = S.earFeedback;
 
-    h += `<h1>🎵 Round ${r+1} of ${total}</h1>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎵 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
     h += progressBar(r, total);
 
     if (S.level === '5' && S.earTarget2N != null) {
@@ -2462,7 +2457,7 @@ function render(page) {
     const r = S.roundNum, total = S.total;
     const fb = S.noteFeedback;
 
-    h += `<h1>🎼 Round ${r+1} of ${total}</h1>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎼 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
     h += progressBar(r, total);
     h += `<canvas id="staffCanvas" width="400" height="260"></canvas>`;
 
@@ -2539,7 +2534,7 @@ function render(page) {
   else if (page === 'interval_play') {
     const r = S.roundNum, total = S.total;
     const fb = S.intFeedback;
-    h += `<h1>🎶 Round ${r+1} of ${total}</h1>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎶 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
     h += progressBar(r, total);
     if (S.intEarMode) {
       h += `<div class="play-btn" onclick="if(S.intKeys.length>=2)playTones(S.intKeys[0],S.intKeys[1],0.6);else if(S.intKeys[0])playNote(S.intKeys[0])">🔊 Hear the interval</div>`;
@@ -2619,7 +2614,7 @@ function render(page) {
   else if (page === 'chord_play') {
     const r = S.roundNum, total = S.total;
     const fb = S.chordFeedback;
-    h += `<h1>🎸 Round ${r+1} of ${total}</h1>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎸 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
     h += progressBar(r, total);
     if (!S.chordEarOnly) {
       h += `<canvas id="chordCanvas" width="360" height="260" style="display:block;margin:0.5rem auto;border-radius:14px"></canvas>`;
@@ -2988,8 +2983,9 @@ function render(page) {
     h += `<div><p class="speech"><strong>Hanon ${hEx.num}:</strong> ${hanonDescs[S.hanonEx]}</p></div>`;
     h += `</div>`;
 
-    // Exercise picker — 4×5 grid
+    // Exercise picker — 4×5 grid with progress
     var hanonBtnClasses = ['btn-coral','btn-mint','btn-blue','btn-lilac','btn-pink'];
+    var hanonProg = loadHanonProgress();
     h += `<div class="card">`;
     for (var row = 0; row < 5; row++) {
       var btnClass = hanonBtnClasses[row];
@@ -2997,16 +2993,21 @@ function render(page) {
       for (var col = 0; col < 4; col++) {
         var eIdx = row * 4 + col;
         var active = eIdx === S.hanonEx;
-        h += `<button class="btn ${btnClass}" style="flex:1;padding:0.4rem 0.2rem;font-size:0.8rem;${active?'outline:3px solid #0f2744;outline-offset:-3px;font-weight:800':''}" onclick="S.hanonEx=${eIdx};S.hanonBar=0;S.hanonCurrentIdx=0;S.hanonCorrect=0;stopHanonPractice();stopHanonPlay();render('hanon')">${HANON_EXERCISES[eIdx].num}</button>`;
+        var exKey = 'ex' + HANON_EXERCISES[eIdx].num;
+        var prog = hanonProg[exKey] || {};
+        var mark = prog.completed ? ' ✓' : prog.listened ? ' ♪' : '';
+        h += `<button class="btn ${btnClass}" style="flex:1;padding:0.4rem 0.2rem;font-size:0.8rem;${active?'outline:3px solid #0f2744;outline-offset:-3px;font-weight:800':''}" onclick="S.hanonEx=${eIdx};S.hanonBar=0;S.hanonCurrentIdx=0;S.hanonCorrect=0;stopHanonPractice();stopHanonPlay();render('hanon')">${HANON_EXERCISES[eIdx].num}${mark}</button>`;
       }
       h += `</div>`;
     }
     h += `</div>`;
 
-    // Exercise info — fingering + pattern
+    // Exercise info — fingering + pattern + progress
+    var exProg = hanonProg['ex' + hEx.num] || {};
     h += `<div class="card" style="text-align:center">`;
     h += `<div style="font-size:0.8rem;color:#6b7fa3;margin:0.2rem 0">RH: ${hEx.rh.join(' \u2013 ')}  \u00b7  LH: ${hEx.lh.join(' \u2013 ')}</div>`;
     h += `<div style="font-size:0.8rem;color:#6b7fa3">Notes: ${hBarNotes.map(function(n){return n.name}).join(' \u2013 ')}</div>`;
+    if (exProg.bestBpm) h += `<div style="font-size:0.8rem;color:#4CAF50;font-weight:700;margin-top:0.2rem">Best: ${exProg.bestBpm} BPM ✓</div>`;
     h += `</div>`;
 
     // Staff with bar navigation
@@ -3181,7 +3182,7 @@ function render(page) {
   // ── RHYTHM PLAY ──
   else if (page === 'rhythm_play') {
     const phase = S.rhythmPhase;
-    h += `<h1>🥁 Rhythm Training</h1>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🥁 Rhythm Training</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="clearRhythmTimers();render('home')">✕ Quit</button></div>`;
     h += `<div class="card" style="text-align:center">`;
     h += `<div class="rhythm-staff">`;
     S.rhythmPattern.forEach(type => {
@@ -3770,6 +3771,7 @@ function playHanonBar() {
   notes.forEach(function(note, i) {
     makeNote(ctx, noteToFreq(note.noteNum), now + i * beatDur, beatDur * 0.85, 0.3);
   });
+  saveHanonProgress(HANON_EXERCISES[S.hanonEx].num, 'listened');
 }
 
 function playHanonFull() {
@@ -3821,6 +3823,23 @@ function stopHanonPlay() {
   if (hanonPlayTimer) { clearTimeout(hanonPlayTimer); hanonPlayTimer = null; }
 }
 
+function loadHanonProgress() {
+  try { return JSON.parse(localStorage.getItem('pms_hanon') || '{}'); } catch(e) { return {}; }
+}
+
+function saveHanonProgress(exNum, type, bpm) {
+  var data = loadHanonProgress();
+  var key = 'ex' + exNum;
+  if (!data[key]) data[key] = {};
+  if (type === 'listened') data[key].listened = true;
+  if (type === 'practiced') data[key].practiced = true;
+  if (type === 'completed') {
+    data[key].completed = true;
+    if (!data[key].bestBpm || bpm > data[key].bestBpm) data[key].bestBpm = bpm;
+  }
+  try { localStorage.setItem('pms_hanon', JSON.stringify(data)); } catch(e) {}
+}
+
 // ═══════════════════════════════════
 //  HANON STAFF DRAWING
 // ═══════════════════════════════════
@@ -3831,7 +3850,8 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
   var ctx = c.getContext('2d');
   var W = c.width, H = c.height;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#d4e8fc';
+  var sc = staffColors();
+  ctx.fillStyle = sc.bg;
   ctx.fillRect(0, 0, W, H);
 
   var staffLeft = 20, staffRight = W - 20;
@@ -3839,7 +3859,7 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
   var bottomLine = H * 0.62;
   function yOf(ht) { return bottomLine - ht * LS; }
 
-  ctx.strokeStyle = '#3a5a7a'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
   for (var i = 0; i < 5; i++) {
     var y = yOf(i);
     ctx.beginPath(); ctx.moveTo(staffLeft, y); ctx.lineTo(staffRight, y); ctx.stroke();
@@ -3847,7 +3867,7 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
 
   var ex = HANON_EXERCISES[S.hanonEx];
   var asc = S.hanonBar < HANON_BARS;
-  ctx.fillStyle = '#2c5f8a';
+  ctx.fillStyle = sc.text;
   ctx.font = '700 13px Quicksand';
   ctx.textAlign = 'center';
   ctx.fillText('Ex. ' + ex.num + ' \u2014 ' + (asc ? 'Ascending' : 'Descending') + ' bar ' + (asc ? S.hanonBar + 1 : S.hanonBar - HANON_BARS + 1), W / 2, 15);
@@ -3862,7 +3882,7 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
     var x = noteStart + i * gap;
     var y = yOf(note.h);
 
-    ctx.strokeStyle = '#3a5a7a'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = sc.lines; ctx.lineWidth = 1.5;
     for (var l = -1; note.h <= l; l--) {
       var ly = yOf(l);
       ctx.beginPath(); ctx.moveTo(x - ledgerW, ly); ctx.lineTo(x + ledgerW, ly); ctx.stroke();
@@ -3985,6 +4005,7 @@ function hanonPitchLoop() {
                   stopHanonPractice();
                   confetti();
                   addXP(50);
+                  saveHanonProgress(HANON_EXERCISES[S.hanonEx].num, 'completed', S.hanonBpm);
                   var hd = loadScores();
                   hd._hanonCompleted = (hd._hanonCompleted || 0) + 1;
                   try { localStorage.setItem('pms_scores', JSON.stringify(hd)); } catch(e) {}

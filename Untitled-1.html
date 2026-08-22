@@ -1,0 +1,62 @@
+<style>
+/* Base Theme Colors (Default) */
+:root {
+  --bg-color: #a2cafb; /* Soft sky blue */
+  --cloud-color: rgba(255, 255, 255, 0.4);
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  background-color: var(--bg-color);
+  overflow: hidden;
+  font-family: 'Quicksand', sans-serif;
+  position: relative;
+}
+
+/* Drifting Clouds Animation */
+.cloud {
+  position: absolute;
+  background: var(--cloud-color);
+  border-radius: 50px;
+  filter: blur(8px);
+  animation: drift linear infinite;
+  z-index: -1;
+}
+
+.cloud:nth-child(1) { width: 120px; height: 40px; top: 15%; left: -150px; animation-duration: 25s; }
+.cloud:nth-child(2) { width: 200px; height: 60px; top: 40%; left: -250px; animation-duration: 35s; }
+.cloud:nth-child(3) { width: 150px; height: 50px; top: 75%; left: -200px; animation-duration: 20s; }
+
+@keyframes drift {
+  to { transform: translateX(120vw); }
+}
+
+/* Floating Music Notes */
+.music-note {
+  position: absolute;
+  bottom: -50px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 2rem;
+  animation: floatUp 10s ease-in-out infinite;
+  z-index: -1;
+}
+
+.music-note:nth-child(4) { left: 20%; animation-duration: 8s; animation-delay: 1s; }
+.music-note:nth-child(5) { left: 50%; animation-duration: 12s; animation-delay: 3s; font-size: 3rem; }
+.music-note:nth-child(6) { left: 80%; animation-duration: 9s; animation-delay: 0s; }
+
+@keyframes floatUp {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+</style>
+
+<!-- Add this right inside your <body> tag -->
+<div class="cloud"></div>
+<div class="cloud"></div>
+<div class="cloud"></div>
+<div class="music-note">🎵</div>
+<div class="music-note">🎶</div>
+<div class="music-note">🎼</div>
