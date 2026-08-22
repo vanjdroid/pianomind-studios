@@ -692,7 +692,7 @@ body.mode-neon .theme-name { color: #ccc; }
 
   /* Welcome screen mobile */
   .welcome-wrap {
-    margin-top: -2rem;
+    margin-top: 0;
   }
   .welcome-card {
     padding: 1.5rem 1.2rem;
@@ -4002,7 +4002,13 @@ function render(page) {
 
   app.innerHTML = h;
 
-  // Draw staff after DOM update
+  // Make titles clickable to go home
+  if (page !== 'home' && page !== 'welcome' && page !== 'tutorial') {
+    app.querySelectorAll('h1').forEach(function(el) {
+      el.style.cursor = 'pointer';
+      el.onclick = function() { render('home'); };
+    });
+  }
   if (page === 'note_play') {
     drawStaff('staffCanvas', S.noteHeight, S.noteAccidental, S.noteClef);
     if (!S.noteFeedback) setTimeout(() => $('noteAns')?.focus(), 100);
