@@ -4203,6 +4203,24 @@ function render(page) {
     h = h.replaceAll("!'</span>", '!</span>');
     h = h.replaceAll("?'</span>", '?</span>');
     h = h.replaceAll("'</span>", '</span>');
+    // Also strip Pebbles name from compliments, questions, tips
+    h = h.replaceAll('Pebbles is so proud', 'So proud of you');
+    h = h.replaceAll("Pebbles can't believe", "Can't believe");
+    h = h.replaceAll('Pebbles believed in you', 'Believed in you');
+    h = h.replaceAll('Pebbles is doing a happy dance', 'Time for a happy dance');
+    h = h.replaceAll('Pebbles is speechless', 'Speechless');
+    h = h.replaceAll('Pebbles needs to sit down', 'That was incredible');
+    h = h.replaceAll('Pebbles is impressed', 'Impressive');
+    h = h.replaceAll('Pebbles gives you a big claw up', 'Big thumbs up');
+    h = h.replaceAll('Pebbles says try again', 'Try again');
+    h = h.replaceAll('Pebbles believes in you', 'You can do it');
+    h = h.replaceAll('Pebbles played a note', 'A note was played');
+    h = h.replaceAll('Pebbles played a chord', 'A chord was played');
+    h = h.replaceAll('Pebbles is curious', "Let's see");
+    h = h.replaceAll('Pebbles wants to know', 'Think about it');
+    h = h.replaceAll('Pebbles is so impressed', 'Impressive');
+    h = h.replaceAll('Even Pebbles gets confused', 'Everyone gets confused');
+    h = h.replaceAll('Pebbles', 'PianoMind');
   }
 
   app.innerHTML = h;
