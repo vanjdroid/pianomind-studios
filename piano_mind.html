@@ -435,9 +435,9 @@ canvas {
 .section-label { font-size:0.75rem; font-weight:700; color:#6b7fa3; text-transform:uppercase; letter-spacing:1.5px; margin:0.8rem 0 0.2rem 0.3rem; }
 
 /* ── Home page tabs ── */
-.home-tabs { display:flex; gap:0; margin:0.6rem 0; background:rgba(255,255,255,0.25); border-radius:18px; padding:3px; }
-.home-tab { flex:1; text-align:center; padding:0.5rem 0.3rem; border-radius:15px; font-weight:700; font-size:0.8rem; cursor:pointer; transition:all 0.2s; color:#6b7fa3; }
-.home-tab.active { background:rgba(255,255,255,0.7); color:#0f2744; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+.home-tabs { display:flex; gap:0; margin:0.6rem 0 0; border-bottom:2px solid rgba(0,0,0,0.08); }
+.home-tab { flex:1; text-align:center; padding:0.6rem 0.3rem; font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s; color:#6b7fa3; border-bottom:3px solid transparent; margin-bottom:-2px; }
+.home-tab.active { color:#0f2744; border-bottom-color:#7c6fef; }
 
 /* ── Pulse for active-streak button ── */
 @keyframes pulseBtn {
@@ -2730,78 +2730,84 @@ function render(page) {
   // ── HOME ──
   else if (page === 'home') {
     const homeData = loadScores();
-    if (showPebbles()) {
-      h += `<div style="display:flex;align-items:center;gap:1rem;margin-top:1rem">
-              ${pebbles('happy', 120)}
-              <div>
-                <p class="speech"><strong>Pebbles says:</strong> 'Welcome! I'm Pebbles the dino, your music buddy!'</p>
-              </div>
-            </div>`;
-    } else {
-      h += `<p class="speech" style="margin-top:3rem">Welcome to PianoMind Studios!</p>`;
-    }
-    h += `<div class="card">`;
-    h += `<div class="input-wrap"><label>What is your name?</label>
-          <input id="nameIn" type="text" value="${S.name}" placeholder="Type your name..."></div>`;
-    h += xpBarHtml();
-    h += `</div>`;
+    var streak = homeData._streak || 0;
+    var played = homeData._played || 0;
+    var lvl = parseInt(localStorage.getItem('pms_level') || '1', 10);
 
-    h += `<div class="home-tabs">
+    // Tabs at the top
+    h += `<div class="home-tabs" style="margin-top:0.3rem">
             <div class="home-tab${S.homeTab==='practice'?' active':''}" onclick="setHomeTab('practice')">🎮 Practice</div>
             <div class="home-tab${S.homeTab==='tools'?' active':''}" onclick="setHomeTab('tools')">🎵 Tools</div>
             <div class="home-tab${S.homeTab==='learn'?' active':''}" onclick="setHomeTab('learn')">📚 Learn</div>
             <div class="home-tab${S.homeTab==='me'?' active':''}" onclick="setHomeTab('me')">🏆 Me</div>
           </div>`;
 
-    h += `<div class="card">`;
+    // Welcome banner
+    h += `<div class="card" style="padding:1rem 1.2rem;margin-top:0.5rem">`;
+    h += `<div style="display:flex;align-items:center;gap:0.8rem">`;
+    if (showPebbles()) h += pebbles('happy', 70);
+    h += `<div style="flex:1">`;
+    h += `<div style="font-size:1.3rem;font-weight:700;color:#0f2744">Welcome back, <span style="color:#7c6fef">${S.name || 'Student'}</span>!</div>`;
+    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin-top:0.15rem">Level ${lvl} · PianoMind Studios</div>`;
+    h += `</div></div>`;
+    h += `<div style="margin-top:0.5rem"><input id="nameIn" type="text" value="${S.name}" placeholder="Your name..." style="font-size:0.85rem;padding:0.35rem 0.6rem;border:1px solid rgba(0,0,0,0.1);border-radius:10px;width:100%;background:rgba(255,255,255,0.5)"></div>`;
+    h += `</div>`;
+
+    // Stats row
+    h += `<div style="display:flex;gap:0.4rem;margin:0.4rem 0">`;
+    h += `<div class="card" style="flex:1;padding:0.6rem;margin:0"><div style="font-size:0.7rem;color:#6b7fa3">Day Streak</div><div style="font-size:1.3rem;font-weight:700">${streak} 🔥</div></div>`;
+    h += `<div class="card" style="flex:1;padding:0.6rem;margin:0"><div style="font-size:0.7rem;color:#6b7fa3">Games Played</div><div style="font-size:1.3rem;font-weight:700">${played}</div></div>`;
+    h += `<div class="card" style="flex:1;padding:0.6rem;margin:0"><div style="font-size:0.7rem;color:#6b7fa3">Level</div><div style="font-size:1.3rem;font-weight:700">${lvl} ⭐</div></div>`;
+    h += `</div>`;
+
+    // XP bar
+    h += `<div class="card" style="padding:0.5rem 0.8rem;margin-bottom:0.3rem">`;
+    h += xpBarHtml();
+    h += `</div>`;
+
+    // Feature cards — all in one card
+    var items = [];
     if (S.homeTab === 'tools') {
-      h += `<div class="btn-row">
-              <button class="btn btn-lilac" onclick="startFromHome('piano')">🎹 Piano Keys</button>
-              <button class="btn btn-blue" onclick="startFromHome('scales')">🎵 Scale Explorer</button>
-            </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-coral" onclick="startFromHome('metronome')">⏱ Metronome</button>
-              <button class="btn btn-pink" onclick="startFromHome('hanon')">🎹 Hanon</button>
-            </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-mint${pulseClass('rhythm',homeData)}" onclick="startFromHome('rhythm')">🥁 Rhythm</button>
-              <button class="btn btn-lilac" onclick="startFromHome('sightread')">📖 Sight Reading</button>
-            </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-coral" onclick="render('pouch')">🎒 Tricky Notes</button>
-            </div>`;
+      items = [
+        {go:"startFromHome('piano')",icon:'🎹',name:'Piano Keys',desc:'A 2-octave keyboard you can play right here — tap or click the keys to hear notes'},
+        {go:"startFromHome('scales')",icon:'🎵',name:'Scale Explorer',desc:'Pick any scale in any key, see it on the staff, hear it played, and follow along with your microphone'},
+        {go:"startFromHome('hanon')",icon:'🎹',name:'Hanon Exercises',desc:'All 20 Book 1 exercises with note display, fingering, speed control, and mic practice'},
+        {go:"startFromHome('metronome')",icon:'⏱',name:'Metronome',desc:'Visual pendulum with tap tempo — set any BPM and time signature'},
+        {go:"startFromHome('rhythm')",icon:'🥁',name:'Rhythm Training',desc:'The app plays a rhythm pattern, you tap it back — tests your timing accuracy'},
+        {go:"startFromHome('sightread')",icon:'📖',name:'Sight Reading',desc:'Notes scroll across the staff while you play them on your instrument using the microphone'},
+        {go:"render('pouch')",icon:'🎒',name:'Tricky Notes',desc:'Notes you got wrong are collected here — listen to them and mark them off as you learn them'},
+      ];
     } else if (S.homeTab === 'learn') {
-      h += `<div class="btn-row">
-              <button class="btn btn-pink" onclick="startFromHome('theory')">📖 Music Theory</button>
-              <button class="btn btn-blue" onclick="startFromHome('exercises')">📝 Grade Exercises</button>
-            </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-mint" onclick="startFromHome('songs')">🎵 Song Library</button>
-              <button class="btn btn-coral" onclick="render('chord_mixer')">🎛 Chord Mixer</button>
-            </div>`;
+      items = [
+        {go:"startFromHome('theory')",icon:'📖',name:'Music Theory',desc:'Step-by-step lessons covering the staff, accidentals, scales, time signatures, intervals, and the circle of fifths'},
+        {go:"startFromHome('exercises')",icon:'📝',name:'Grade Exercises',desc:'Multiple-choice theory questions sorted by grade — from Grade 1 basics to Grade 6 and beyond'},
+        {go:"startFromHome('songs')",icon:'🎵',name:'Song Library',desc:'Pick a song, see the notes on the staff, and play along at your own pace — the app waits for each note'},
+        {go:"render('chord_mixer')",icon:'🎛',name:'Chord Mixer',desc:'Build chord progressions by tapping I, IV, V, vi — hear how pop, blues, and classical songs use chords'},
+      ];
     } else if (S.homeTab === 'me') {
-      h += `<div class="btn-row">
-              <button class="btn btn-mint" onclick="startFromHome('stats')">📊 My Progress</button>
-              <button class="btn btn-lilac" onclick="startFromHome('achievements')">🏆 Achievements</button>
-            </div>`;
-      h += `<div class="btn-row">`;
-      if (showPebbles()) h += `<button class="btn btn-coral" onclick="startFromHome('wardrobe')">👗 Pebbles Wardrobe</button>`;
-      h += `<button class="btn btn-blue" onclick="startFromHome('settings')">⚙️ Settings</button>`;
-      h += `</div>`;
+      items = [
+        {go:"startFromHome('stats')",icon:'📊',name:'My Progress',desc:'Line and bar charts showing your improvement over the last 7 days, plus best scores for every game'},
+        {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:'12 badges to unlock — play your first game, get a perfect score, try every mode, and more'},
+      ];
+      if (showPebbles()) items.push({go:"startFromHome('wardrobe')",icon:'👗',name:'Pebbles Wardrobe',desc:'Six outfits for your dino — Classic, Cool, Party, Pirate, Space, and Winter'});
+      items.push({go:"startFromHome('settings')",icon:'⚙️',name:'Settings',desc:'Switch between Cartoon, Smooth, and Neon modes — change themes, toggle Pebbles, and more'});
     } else {
-      h += `<div class="btn-row">
-              <button class="btn btn-blue${pulseClass('ear',homeData)}" onclick="startFromHome('ear')">🎵 Ear Training</button>
-              <button class="btn btn-mint${pulseClass('note',homeData)}" onclick="startFromHome('note')">🎼 Note Reading</button>
-            </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-coral${pulseClass('interval',homeData)}" onclick="startFromHome('interval')">🎶 Intervals</button>
-              <button class="btn btn-pink${pulseClass('chord',homeData)}" onclick="startFromHome('chord')">🎸 Chords</button>
-            </div>`;
-      h += `<div class="btn-row">
-              <button class="btn btn-lilac" onclick="startFromHome('melody')">🎶 Melody Echo</button>
-              <button class="btn btn-blue" onclick="startFromHome('daily')">⭐ Daily Challenge</button>
-            </div>`;
+      items = [
+        {go:"startFromHome('ear')",icon:'🎵',name:'Ear Training',desc:'The app plays a note, you pick which one it is — from 3 easy notes up to two-note melodies with sharps'},
+        {go:"startFromHome('note')",icon:'🎼',name:'Note Reading',desc:'A note appears on the staff and you name it — treble, bass, sharps, flats, and double accidentals'},
+        {go:"startFromHome('interval')",icon:'🎶',name:'Intervals',desc:'Two notes on the staff — name the distance between them, from 3rds and 5ths up to compound intervals'},
+        {go:"startFromHome('chord')",icon:'🎸',name:'Chords',desc:'Hear a chord and identify it — Major, Minor, Diminished, Augmented, and 7ths at higher levels'},
+        {go:"startFromHome('melody')",icon:'🎶',name:'Melody Echo',desc:'The app plays a short melody, then you tap it back in order on the piano — tests your musical memory'},
+        {go:"startFromHome('daily')",icon:'⭐',name:'Daily Challenge',desc:'One random game every day — play it, grow a flower in your garden, and keep your streak going'},
+      ];
     }
+    h += `<div class="card" style="padding:0.4rem 0">`;
+    items.forEach(function(t, i) {
+      h += `<div onclick="${t.go}" style="cursor:pointer;padding:0.7rem 1rem;display:flex;align-items:flex-start;gap:0.7rem;${i < items.length - 1 ? 'border-bottom:1px solid rgba(0,0,0,0.06)':''}">`;
+      h += `<span style="font-size:1.5rem;line-height:1">${t.icon}</span>`;
+      h += `<div><div style="font-weight:700;font-size:0.95rem">${t.name}</div><div style="font-size:0.78rem;color:#6b7fa3;line-height:1.4;margin-top:0.1rem">${t.desc}</div></div>`;
+      h += `</div>`;
+    });
     h += `</div>`;
   }
 
