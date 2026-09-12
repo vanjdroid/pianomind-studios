@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Piano Mind Studios</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -748,6 +751,100 @@ body.mode-neon .theme-name { color: #ccc; }
 
 <script>
 // ═══════════════════════════════════
+//  FIREBASE INIT & AUTH
+// ═══════════════════════════════════
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAzO31oSHgqJ_29L0Belh5jClYfk2ZjgwA",
+  authDomain: "pianomind-studios.firebaseapp.com",
+  projectId: "pianomind-studios",
+  storageBucket: "pianomind-studios.firebasestorage.app",
+  messagingSenderId: "317731727582",
+  appId: "1:317731727582:web:bc6391c6565bb391923a4f"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+var currentUser = null;
+var authReady = false;
+
+// Save all user data to Firestore
+function cloudSave() {
+  if (!currentUser) return;
+  var data = {};
+  ['pms_scores','pms_daily','pms_hanon','pms_pouch','pms_xp','pms_level',
+   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done'
+  ].forEach(function(key) {
+    var val = localStorage.getItem(key);
+    if (val) data[key] = val;
+  });
+  data.name = S ? S.name : '';
+  data.lastSaved = new Date().toISOString();
+  db.collection('users').doc(currentUser.uid).set(data, { merge: true }).catch(function(e) { console.log('Cloud save error:', e); });
+}
+
+// Load user data from Firestore
+function cloudLoad(callback) {
+  if (!currentUser) { if (callback) callback(); return; }
+  db.collection('users').doc(currentUser.uid).get().then(function(doc) {
+    if (doc.exists) {
+      var data = doc.data();
+      Object.keys(data).forEach(function(key) {
+        if (key.startsWith('pms_')) {
+          try { localStorage.setItem(key, data[key]); } catch(e) {}
+        }
+      });
+      if (data.name && S) S.name = data.name;
+    }
+    if (callback) callback();
+  }).catch(function(e) { console.log('Cloud load error:', e); if (callback) callback(); });
+}
+
+// Auto-save every 30 seconds
+setInterval(function() { if (currentUser) cloudSave(); }, 30000);
+
+// Sign in with Google
+function signInGoogle() {
+  var provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(function(e) { alert('Sign in failed: ' + e.message); });
+}
+
+// Sign in with email/password
+function signInEmail(email, password) {
+  auth.signInWithEmailAndPassword(email, password).catch(function(e) {
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+      // Try creating account
+      auth.createUserWithEmailAndPassword(email, password).catch(function(e2) { alert('Error: ' + e2.message); });
+    } else {
+      alert('Sign in failed: ' + e.message);
+    }
+  });
+}
+
+// Sign out
+function signOut() {
+  cloudSave();
+  auth.signOut();
+}
+
+// Auth state listener
+auth.onAuthStateChanged(function(user) {
+  currentUser = user;
+  authReady = true;
+  if (user) {
+    cloudLoad(function() {
+      applyMode();
+      if (localStorage.getItem('pms_tutorial_done')) render('home');
+      else render('welcome');
+    });
+  } else {
+    render('login');
+  }
+});
+
+// ═══════════════════════════════════
 //  AMAYA'S GAME DATA
 // ═══════════════════════════════════
 
@@ -1142,6 +1239,7 @@ function saveScore(game, level, score, total) {
     localStorage.setItem('pms_scores', JSON.stringify(data));
   } catch(e) {}
   trackDaily(game, score, total);
+  cloudSave();
 }
 
 // ═══════════════════════════════════
@@ -2372,7 +2470,7 @@ function playMixerProgression() {
 
   // Show stop button
   var controlsEl = document.getElementById('mixerControls');
-  if (controlsEl) controlsEl.innerHTML = '<button class="btn btn-coral" onclick="stopMixerPlay();render(\'chord_mixer\')">⏹ Stop</button>';
+  if (controlsEl) controlsEl.innerHTML = '<button class="btn btn-coral" onclick="stopMixerPlay();render(\'chord_mixer\')">Stop</button>';
 
   function playNext() {
     if (idx >= S.mixerChords.length || !S.mixerPlaying) {
@@ -2672,8 +2770,29 @@ function render(page) {
   S.page = page;
   let h = '<div class="page">';
 
+  // ── LOGIN ──
+  if (page === 'login') {
+    h += `<div class="welcome-wrap">`;
+    h += `<div class="welcome-card">`;
+    h += `<div class="welcome-title">Piano Mind<br>Studios</div>`;
+    h += `<div class="welcome-sub" style="margin-bottom:1rem">Sign in to save your progress</div>`;
+
+    h += `<button class="btn btn-blue btn-wide" style="margin-bottom:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.5rem" onclick="signInGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" style="vertical-align:middle"> Sign in with Google</button>`;
+
+    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin:0.5rem 0">— or use email —</div>`;
+
+    h += `<div style="margin:0.4rem 0"><input id="loginEmail" type="email" placeholder="Email" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
+    h += `<div style="margin:0.4rem 0"><input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
+
+    h += `<button class="btn btn-mint btn-wide" style="margin-top:0.4rem" onclick="var e=$('loginEmail'),p=$('loginPass');if(e&&p&&e.value&&p.value)signInEmail(e.value,p.value);else alert('Enter email and password')">Sign in / Sign up</button>`;
+
+    h += `<p style="font-size:0.7rem;color:#6b7fa3;margin-top:0.8rem">New? Just type your email and password — we'll create your account automatically.</p>`;
+    h += `</div>`;
+    h += `</div>`;
+  }
+
   // ── WELCOME ──
-  if (page === 'welcome') {
+  else if (page === 'welcome') {
     h += `<div class="welcome-wrap">`;
     h += `<div class="welcome-card">`;
     h += `<div class="welcome-pebbles">${pebbles('happy', 160)}</div>`;
@@ -2704,7 +2823,7 @@ function render(page) {
     var isLast = tStep >= tSteps.length - 1;
     var isFirst = tStep === 0;
 
-    h += `<h1>📖 Tutorial</h1>`;
+    h += `<h1>Tutorial</h1>`;
     h += `<div class="card" style="text-align:center;padding:1.5rem 1.2rem">`;
     h += `<div style="font-size:3rem;margin-bottom:0.4rem">${step.icon}</div>`;
     h += `<div style="font-size:1.3rem;font-weight:700;color:#0f2744;margin-bottom:0.5rem">${step.title}</div>`;
@@ -2843,14 +2962,14 @@ function render(page) {
     const r = S.roundNum, total = S.total;
     const fb = S.earFeedback;
 
-    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎵 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎵 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(r, total);
 
     if (S.level === '5' && S.earTarget2N != null) {
-      h += `<div class="play-btn" onclick="playTones(${S.earTargetN},${S.earTarget2N},0.8)">🔊 Hear both notes</div>`;
+      h += `<div class="play-btn" onclick="playTones(${S.earTargetN},${S.earTarget2N},0.8)">Hear both notes</div>`;
       if (!fb) h += `<p class="caption" style="text-align:center">Identify note ${S.earStep} of 2</p>`;
     } else {
-      h += `<div class="play-btn" onclick="playNote(${S.earTargetN})">🔊 Hear the note</div>`;
+      h += `<div class="play-btn" onclick="playNote(${S.earTargetN})">Hear the note</div>`;
     }
 
     if (!fb) {
@@ -2864,13 +2983,13 @@ function render(page) {
       h += `</div></div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.YAY_EAR)}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next ➡️</button>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_EAR)}'</div>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
       const earAns = S.earTargetFlat ? S.earTargetName + '/' + S.earTargetFlat : S.earTargetName;
       h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'It was <strong>${earAns}</strong>! ${S.earTip}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next ➡️</button>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next →</button>`;
     }
   }
 
@@ -2880,7 +2999,7 @@ function render(page) {
     h += `<div class="score-big">${S.score} / ${S.total}</div>`;
     if (S.score === S.total) {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
       setTimeout(confetti, 300);
     } else if (S.score >= S.total * 0.6) {
       h += pebbles('happy');
@@ -2894,7 +3013,7 @@ function render(page) {
     if (!S.resultScored) { S.resultScored = true; finishRound('ear'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('ear_level')">🔄 Play Again</button>
-            <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
+            <button class="btn btn-lilac" onclick="render('home')">Home</button>
           </div>`;
   }
 
@@ -2941,7 +3060,7 @@ function render(page) {
     const r = S.roundNum, total = S.total;
     const fb = S.noteFeedback;
 
-    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎼 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎼 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(r, total);
     h += `<canvas id="staffCanvas" width="400" height="260"></canvas>`;
 
@@ -2957,12 +3076,12 @@ function render(page) {
       h += `</div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.YAY_NOTE)}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next ➡️</button>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_NOTE)}'</div>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
       h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'This note is <strong>${S.noteFullName.toUpperCase()}</strong>! ${S.noteTip}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next ➡️</button>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next →</button>`;
     }
   }
 
@@ -2972,7 +3091,7 @@ function render(page) {
     h += `<div class="score-big">${S.score} / ${S.total}</div>`;
     if (S.score === S.total) {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
       setTimeout(confetti, 300);
     } else if (S.score >= S.total * 0.6) {
       h += pebbles('happy');
@@ -2986,7 +3105,7 @@ function render(page) {
     if (!S.resultScored) { S.resultScored = true; finishRound('note'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('note_level')">🔄 Play Again</button>
-            <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
+            <button class="btn btn-lilac" onclick="render('home')">Home</button>
           </div>`;
   }
 
@@ -3021,10 +3140,10 @@ function render(page) {
   else if (page === 'interval_play') {
     const r = S.roundNum, total = S.total;
     const fb = S.intFeedback;
-    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎶 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎶 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(r, total);
     if (S.intEarMode) {
-      h += `<div class="play-btn" onclick="if(S.intKeys.length>=2)playTones(S.intKeys[0],S.intKeys[1],0.6);else if(S.intKeys[0])playNote(S.intKeys[0])">🔊 Hear the interval</div>`;
+      h += `<div class="play-btn" onclick="if(S.intKeys.length>=2)playTones(S.intKeys[0],S.intKeys[1],0.6);else if(S.intKeys[0])playNote(S.intKeys[0])">Hear the interval</div>`;
     } else {
       h += `<canvas id="intCanvas" width="400" height="260"></canvas>`;
       h += `<div style="text-align:center">${buildPiano(S.intKeys)}</div>`;
@@ -3040,12 +3159,12 @@ function render(page) {
       h += `</div></div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.YAY_INT)}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next ➡️</button>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_INT)}'</div>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
       h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'It was a <strong>${S.intCorrect}</strong>! ${S.intTip}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next ➡️</button>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
     }
   }
 
@@ -3055,7 +3174,7 @@ function render(page) {
     h += `<div class="score-big">${S.score} / ${S.total}</div>`;
     if (S.score === S.total) {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
       setTimeout(confetti, 300);
     } else if (S.score >= S.total * 0.6) {
       h += pebbles('happy');
@@ -3069,7 +3188,7 @@ function render(page) {
     if (!S.resultScored) { S.resultScored = true; finishRound('interval'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('interval_level')">🔄 Play Again</button>
-            <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
+            <button class="btn btn-lilac" onclick="render('home')">Home</button>
           </div>`;
   }
 
@@ -3104,12 +3223,12 @@ function render(page) {
   else if (page === 'chord_play') {
     const r = S.roundNum, total = S.total;
     const fb = S.chordFeedback;
-    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎸 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎸 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(r, total);
     if (!S.chordEarOnly) {
       h += `<canvas id="chordCanvas" width="360" height="260" style="display:block;margin:0.5rem auto;border-radius:14px"></canvas>`;
     }
-    h += `<div class="play-btn" onclick="playChord([${S.chordNotes}])">🔊 Hear the chord</div>`;
+    h += `<div class="play-btn" onclick="playChord([${S.chordNotes}])">Hear the chord</div>`;
     if (!fb) {
       h += pebbles('asking', 120);
       h += `<div class="card">`;
@@ -3121,12 +3240,12 @@ function render(page) {
       h += `</div></div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.YAY_CHORD)}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next ➡️</button>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_CHORD)}'</div>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
       h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'It was <strong>${S.chordAnswer}</strong>! ${S.chordTip}'</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next ➡️</button>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next →</button>`;
     }
   }
 
@@ -3136,7 +3255,7 @@ function render(page) {
     h += `<div class="score-big">${S.score} / ${S.total}</div>`;
     if (S.score === S.total) {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+      h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
       setTimeout(confetti, 300);
     } else if (S.score >= S.total * 0.6) {
       h += pebbles('happy');
@@ -3150,7 +3269,7 @@ function render(page) {
     if (!S.resultScored) { S.resultScored = true; finishRound('chord'); }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('chord_level')">🔄 Play Again</button>
-            <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
+            <button class="btn btn-lilac" onclick="render('home')">Home</button>
           </div>`;
   }
 
@@ -3195,7 +3314,7 @@ function render(page) {
     if (data._dailyStreak) {
       h += `<div class="card"><p style="font-weight:700">⭐ Daily Streak: ${data._dailyStreak} days</p></div>`;
     }
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">Home</button>`;
   }
 
   // ── WARDROBE ──
@@ -3218,7 +3337,7 @@ function render(page) {
     });
     h += `</div></div>`;
     h += `<p class="caption" style="text-align:center">Add outfits: save images as pebbles_happy_NAME.png, pebbles_asking_NAME.png, pebbles_thinking_NAME.png</p>`;
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">Home</button>`;
   }
 
   // ── ACHIEVEMENTS ──
@@ -3239,7 +3358,7 @@ function render(page) {
             </div>`;
     });
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">Home</button>`;
   }
 
   // ── SETTINGS ──
@@ -3295,8 +3414,8 @@ function render(page) {
     h += `<div class="card">`;
     h += `<p class="section-label">Sound Effects</p>`;
     h += `<div class="btn-row">
-            <button class="btn ${sfxOn ? 'btn-mint' : 'btn-lilac'}" onclick="setSfx(true)">🔊 On</button>
-            <button class="btn ${!sfxOn ? 'btn-coral' : 'btn-lilac'}" onclick="setSfx(false)">🔇 Off</button>
+            <button class="btn ${sfxOn ? 'btn-mint' : 'btn-lilac'}" onclick="setSfx(true)">On</button>
+            <button class="btn ${!sfxOn ? 'btn-coral' : 'btn-lilac'}" onclick="setSfx(false)">Off</button>
           </div>`;
     h += `</div>`;
 
@@ -3305,30 +3424,43 @@ function render(page) {
     h += `<div class="card">`;
     h += `<p class="section-label">Pebbles the Dino</p>`;
     h += `<div class="btn-row">
-            <button class="btn ${pebOn ? 'btn-mint' : 'btn-lilac'}" onclick="localStorage.setItem('pms_pebbles','on');render('settings')">🦕 On</button>
-            <button class="btn ${!pebOn ? 'btn-coral' : 'btn-lilac'}" onclick="localStorage.setItem('pms_pebbles','off');render('settings')">👻 Off</button>
+            <button class="btn ${pebOn ? 'btn-mint' : 'btn-lilac'}" onclick="localStorage.setItem('pms_pebbles','on');render('settings')">Show</button>
+            <button class="btn ${!pebOn ? 'btn-coral' : 'btn-lilac'}" onclick="localStorage.setItem('pms_pebbles','off');render('settings')">Hide</button>
           </div>`;
     h += `</div>`;
 
     // Tutorial
     h += `<div class="card">`;
     h += `<p class="section-label">Tutorial</p>`;
-    h += `<button class="btn btn-blue btn-wide" onclick="localStorage.removeItem('pms_tutorial_done');render('tutorial')">📖 Replay Tutorial</button>`;
+    h += `<button class="btn btn-blue btn-wide" onclick="localStorage.removeItem('pms_tutorial_done');render('tutorial')">Replay Tutorial</button>`;
     h += `</div>`;
 
-    h += `<button class="btn btn-blue btn-wide" style="margin-top:0.4rem" onclick="render('about')">💜 All About PianoMind Studios</button>`;
+    h += `<button class="btn btn-blue btn-wide" style="margin-top:0.4rem" onclick="render('about')">All About PianoMind Studios</button>`;
+
+    // Account
+    h += `<div class="card">`;
+    h += `<p class="section-label">Account</p>`;
+    if (currentUser) {
+      h += `<p style="font-size:0.85rem;color:#6b7fa3;margin:0.3rem 0">Signed in as: <strong style="color:#0f2744">${currentUser.email || currentUser.displayName || 'Unknown'}</strong></p>`;
+      h += `<button class="btn btn-mint btn-wide" style="margin:0.3rem 0" onclick="cloudSave();alert('Progress saved!')">Save to cloud</button>`;
+      h += `<button class="btn btn-coral btn-wide" onclick="if(confirm('Sign out?'))signOut()">Sign out</button>`;
+    } else {
+      h += `<p style="font-size:0.85rem;color:#6b7fa3">Not signed in — progress is only saved on this device.</p>`;
+      h += `<button class="btn btn-blue btn-wide" onclick="render('login')">Sign in</button>`;
+    }
+    h += `</div>`;
 
     h += `<div class="card">`;
     h += `<p class="section-label">Data</p>`;
-    h += `<button class="btn btn-coral btn-wide" onclick="if(confirm('This will erase ALL your scores, XP, achievements, and progress. Are you sure?')){localStorage.clear();location.reload();}">🗑 Reset All Data</button>`;
+    h += `<button class="btn btn-coral btn-wide" onclick="if(confirm('This will erase ALL your scores, XP, achievements, and progress. Are you sure?')){localStorage.clear();location.reload();}">Reset All Data</button>`;
     h += `</div>`;
 
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
   }
 
   // ── ABOUT PAGE ──
   else if (page === 'about') {
-    h += `<h1>💜 About Us</h1>`;
+    h += `<h1>About Us</h1>`;
     h += `<div style="display:flex;align-items:center;gap:0.8rem;margin:0.5rem 0">`;
     h += pebbles('happy', 100);
     h += `<div><p class="speech"><strong>Pebbles says:</strong> 'This is our story!'</p></div>`;
@@ -3392,8 +3524,8 @@ function render(page) {
       // Controls
       h += `<div id="mixerControls" style="display:flex;gap:0.3rem;margin-top:0.5rem;justify-content:center">`;
       h += `<button class="btn btn-mint" onclick="playMixerProgression()">▶ Play</button>`;
-      h += `<button class="btn btn-lilac" onclick="S.mixerChords.pop();stopMixerPlay();render('chord_mixer')">↩ Undo</button>`;
-      h += `<button class="btn btn-coral" onclick="S.mixerChords=[];stopMixerPlay();render('chord_mixer')">🗑 Clear</button>`;
+      h += `<button class="btn btn-lilac" onclick="S.mixerChords.pop();stopMixerPlay();render('chord_mixer')">Undo</button>`;
+      h += `<button class="btn btn-coral" onclick="S.mixerChords=[];stopMixerPlay();render('chord_mixer')">Clear</button>`;
       h += `</div>`;
     }
     h += `</div>`;
@@ -3409,7 +3541,7 @@ function render(page) {
     });
     h += `</div>`;
 
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="stopMixerPlay();render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="stopMixerPlay();render('home')">Home</button>`;
   }
 
   // ── DAILY CHALLENGE ──
@@ -3439,7 +3571,7 @@ function render(page) {
       h += `<button class="btn btn-lilac btn-wide" onclick="startDaily()">Let's Go! ⭐</button>`;
       h += `</div>`;
     }
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">Home</button>`;
   }
 
   // ── TRICKY NOTES POUCH ──
@@ -3476,9 +3608,9 @@ function render(page) {
         h += `</div>`;
       });
       h += `</div>`;
-      h += `<button class="btn btn-coral btn-wide" style="margin-top:0.4rem" onclick="if(confirm('Clear all tricky notes?')){localStorage.removeItem('pms_pouch');render('pouch')}">🗑 Clear All</button>`;
+      h += `<button class="btn btn-coral btn-wide" style="margin-top:0.4rem" onclick="if(confirm('Clear all tricky notes?')){localStorage.removeItem('pms_pouch');render('pouch')}">Clear All</button>`;
     }
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
   }
 
   // ── MELODY ECHO LEVEL ──
@@ -3497,12 +3629,12 @@ function render(page) {
           </div>`;
     h += `<p class="caption">Beginner = 2 notes, C-D-E · Easy = 3 notes · Medium = 4 notes · Hard = 5 notes with sharps</p>`;
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
   }
 
   // ── MELODY ECHO PLAY ──
   else if (page === 'melody_play') {
-    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎶 Round ${S.melodyRound+1} of ${S.melodyTotal}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">✕ Quit</button></div>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎶 Round ${S.melodyRound+1} of ${S.melodyTotal}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(S.melodyRound, S.melodyTotal);
 
     if (S.melodyPhase === 'listen') {
@@ -3510,7 +3642,7 @@ function render(page) {
       h += `<div class="card" style="text-align:center">`;
       h += `<p class="speech"><strong>Pebbles says:</strong> 'Listen carefully!'</p>`;
       h += `<div style="font-size:1.5rem;font-weight:700;margin:0.5rem 0">${S.melodyNotes.map(function(n){return '🎵'}).join(' ')}</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="playMelodySequence()">🔊 Play Melody</button>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="playMelodySequence()">Play Melody</button>`;
       h += `</div>`;
     } else if (S.melodyPhase === 'play') {
       h += `<div class="card" style="text-align:center">`;
@@ -3523,16 +3655,16 @@ function render(page) {
       });
       h += `</div>`;
       h += `<div style="margin:0.5rem auto">${buildPiano()}</div>`;
-      h += `<button class="btn btn-blue" style="margin-top:0.4rem" onclick="playMelodySequence();S.melodyPhase='listen';S.melodyPlayerNotes=[];render('melody_play')">🔊 Hear Again</button>`;
+      h += `<button class="btn btn-blue" style="margin-top:0.4rem" onclick="playMelodySequence();S.melodyPhase='listen';S.melodyPlayerNotes=[];render('melody_play')">Hear Again</button>`;
       h += `</div>`;
     } else if (S.melodyFeedback === 'correct') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 You played it perfectly!</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="S.melodyRound++;if(S.melodyRound>=S.melodyTotal){render('melody_result')}else{newMelodyRound();render('melody_play')}">Next ➡️</button>`;
+      h += `<div class="alert alert-success">You played it perfectly!</div>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="S.melodyRound++;if(S.melodyRound>=S.melodyTotal){render('melody_result')}else{newMelodyRound();render('melody_play')}">Next →</button>`;
     } else if (S.melodyFeedback === 'wrong') {
       h += pebbles('thinking');
       h += `<div class="alert alert-error">Not quite! The melody was: ${S.melodyNotes.map(function(n){return n.name}).join(' → ')}</div>`;
-      h += `<button class="btn btn-lilac btn-wide" onclick="S.melodyRound++;if(S.melodyRound>=S.melodyTotal){render('melody_result')}else{newMelodyRound();render('melody_play')}">Next ➡️</button>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="S.melodyRound++;if(S.melodyRound>=S.melodyTotal){render('melody_result')}else{newMelodyRound();render('melody_play')}">Next →</button>`;
     }
   }
 
@@ -3542,7 +3674,7 @@ function render(page) {
     h += `<div class="score-big">${S.melodyScore} / ${S.melodyTotal}</div>`;
     if (S.melodyScore === S.melodyTotal) {
       h += pebbles('happy');
-      h += `<div class="alert alert-success">🌸 Perfect echo!</div>`;
+      h += `<div class="alert alert-success">Perfect echo!</div>`;
     } else if (S.melodyScore >= S.melodyTotal * 0.6) {
       h += pebbles('happy');
       h += `<div class="alert alert-success">Nice work!</div>`;
@@ -3558,7 +3690,7 @@ function render(page) {
     }
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('melody_level')">🔄 Play Again</button>
-            <button class="btn btn-lilac" onclick="render('home')">🏠 Home</button>
+            <button class="btn btn-lilac" onclick="render('home')">Home</button>
           </div>`;
   }
 
@@ -3575,7 +3707,7 @@ function render(page) {
     h += buildPiano();
     h += `<p class="caption" style="margin-top:0.8rem">C4 to C6</p>`;
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">Home</button>`;
   }
 
   // ── SCALE EXPLORER ──
@@ -3603,7 +3735,7 @@ function render(page) {
     h += `<div style="font-size:1.05rem;font-weight:600;color:#2c5f8a;margin:0.3rem 0">${noteNames.join(' — ')}</div>`;
     h += `<div style="font-size:0.8rem;color:#6b7fa3">${STEP_LABELS[S.scaleType] || ''}</div>`;
     h += `</div>`;
-    h += `<div class="play-btn" onclick="playScale()">🔊 Hear the scale</div>`;
+    h += `<div class="play-btn" onclick="playScale()">Hear the scale</div>`;
     h += `</div>`;
     // Staff card
     h += `<div class="card" style="padding:0.8rem">`;
@@ -3616,17 +3748,17 @@ function render(page) {
       if (done) {
         h += `<div style="text-align:center;margin:0.6rem 0">`;
         h += `<div style="font-size:1.1rem;font-weight:700;color:#4CAF50;margin:0.3rem 0">Scale complete!</div>`;
-        h += `<button class="btn btn-mint" onclick="startScalePractice()">🎤 Play again</button>`;
+        h += `<button class="btn btn-mint" onclick="startScalePractice()">Play again</button>`;
         h += `</div>`;
       } else {
         h += `<div style="text-align:center;margin:0.6rem 0">`;
-        h += `<button class="btn btn-lilac" onclick="startScalePractice()">🎤 Play along (microphone)</button>`;
+        h += `<button class="btn btn-lilac" onclick="startScalePractice()">Play along (microphone)</button>`;
         h += `</div>`;
       }
     } else {
       h += `<div style="text-align:center;margin:0.6rem 0">`;
       h += `<div style="font-size:0.8rem;color:#6b7fa3;margin-bottom:0.3rem">Listening for notes...</div>`;
-      h += `<button class="btn btn-coral" onclick="stopScalePractice();render('scale_explorer')">⏹ Stop</button>`;
+      h += `<button class="btn btn-coral" onclick="stopScalePractice();render('scale_explorer')">Stop</button>`;
       h += `</div>`;
     }
     // Pebbles text (no popups — just updates quietly)
@@ -3646,7 +3778,7 @@ function render(page) {
     h += `<span id="pebblesTxt" style="font-weight:600;font-size:0.9rem;color:#2c5f8a">${pTxt}</span>`;
     h += `</div>`;
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="stopScalePractice();render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="stopScalePractice();render('home')">Home</button>`;
   }
 
   // ── HANON EXPLORER ──
@@ -3833,10 +3965,10 @@ function render(page) {
     h += `</div>`;
 
     // Controls
-    h += `<button class="btn ${S.metroRunning?'btn-coral':'btn-mint'} btn-wide" onclick="toggleMetro()">${S.metroRunning?'⏹ Stop':'▶ Start'}</button>`;
+    h += `<button class="btn ${S.metroRunning?'btn-coral':'btn-mint'} btn-wide" onclick="toggleMetro()">${S.metroRunning?'Stop':'▶ Start'}</button>`;
     h += `<button class="btn btn-blue btn-wide" style="margin-top:0.4rem" onclick="tapTempo()">👆 Tap Tempo</button>`;
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="stopMetro();render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="stopMetro();render('home')">Home</button>`;
   }
 
   // ── TIME SIGNATURE PICKER ──
@@ -3880,13 +4012,13 @@ function render(page) {
           </div>`;
     h += `<p class="caption">Easy-Hard = basics · Dotted = dotted quarters · Syncopation = rests · Master = 8 beats @ 120 BPM</p>`;
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">Home</button>`;
   }
 
   // ── RHYTHM PLAY ──
   else if (page === 'rhythm_play') {
     const phase = S.rhythmPhase;
-    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🥁 Rhythm Training</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="clearRhythmTimers();render('home')">✕ Quit</button></div>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🥁 Rhythm Training</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="clearRhythmTimers();render('home')">Quit</button></div>`;
     h += `<div class="card" style="text-align:center">`;
     h += `<div class="rhythm-staff">`;
     S.rhythmPattern.forEach(type => {
@@ -3913,7 +4045,7 @@ function render(page) {
       h += `</div>`;
       if (S.rhythmScore === S.rhythmTotal) {
         h += pebbles('happy');
-        h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+        h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
         setTimeout(confetti, 300);
       } else if (S.rhythmScore >= S.rhythmTotal * 0.6) {
         h += pebbles('happy');
@@ -3928,7 +4060,7 @@ function render(page) {
             </div>`;
     }
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" onclick="clearRhythmTimers();render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="clearRhythmTimers();render('home')">Home</button>`;
   }
 
   // ── MUSIC THEORY HOME ──
@@ -3945,10 +4077,10 @@ function render(page) {
               <span style="font-size:1.6rem">${l.icon}</span>
               <span style="font-weight:700;color:#0f2744">${l.title}</span>
             </div>`;
-      h += passed ? `<span style="font-size:1.3rem">✅</span>` : `<span style="font-size:0.8rem;color:#6b7fa3;font-weight:700">Start ➡️</span>`;
+      h += passed ? `<span style="font-size:1.3rem">✅</span>` : `<span style="font-size:0.8rem;color:#6b7fa3;font-weight:700">Start →</span>`;
       h += `</div>`;
     });
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
   }
 
   // ── MUSIC THEORY LESSON ──
@@ -3971,7 +4103,7 @@ function render(page) {
       if (S.theoryStep < total - 1) {
         h += `<div class="btn-row">`;
         if (S.theoryStep > 0) h += `<button class="btn btn-blue" onclick="S.theoryStep--;render('theory_lesson')">⬅ Back</button>`;
-        h += `<button class="btn btn-mint" style="flex:2" onclick="S.theoryStep++;render('theory_lesson')">Next ➡️</button>`;
+        h += `<button class="btn btn-mint" style="flex:2" onclick="S.theoryStep++;render('theory_lesson')">Next →</button>`;
         h += `</div>`;
       } else {
         h += `<div class="btn-row">`;
@@ -3993,19 +4125,19 @@ function render(page) {
         h += `</div></div>`;
       } else if (S.theoryFeedback === 'correct') {
         h += pebbles('happy');
-        h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.YAY_NOTE)}'</div>`;
-        h += `<button class="btn btn-lilac btn-wide" onclick="nextTheoryQuestion()">Next ➡️</button>`;
+        h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_NOTE)}'</div>`;
+        h += `<button class="btn btn-lilac btn-wide" onclick="nextTheoryQuestion()">Next →</button>`;
       } else {
         h += pebbles('thinking');
         h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'The answer was <strong>${q.answer}</strong>!'</div>`;
-        h += `<button class="btn btn-lilac btn-wide" onclick="nextTheoryQuestion()">Next ➡️</button>`;
+        h += `<button class="btn btn-lilac btn-wide" onclick="nextTheoryQuestion()">Next →</button>`;
       }
     } else if (S.theoryPhase === 'result') {
       h += `<div class="score-big">${S.theoryScore} / ${lesson.quiz.length}</div>`;
       const passed = S.theoryScore >= 2;
       if (passed) {
         h += pebbles('happy');
-        h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> 'You passed! ${pick(P.GOOD)}'</div>`;
+        h += `<div class="alert alert-success"><strong>Pebbles says:</strong> 'You passed! ${pick(P.GOOD)}'</div>`;
         if (S.theoryScore === lesson.quiz.length) setTimeout(confetti, 300);
       } else {
         h += pebbles('thinking');
@@ -4037,7 +4169,7 @@ function render(page) {
       });
     });
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">Home</button>`;
   }
 
   // ── SONG PLAY (reuses sight-reading canvas) ──
@@ -4048,7 +4180,7 @@ function render(page) {
       h += `<div class="score-big">${S.sightReadScore} / ${S.sightReadTotal}</div>`;
       if (S.sightReadScore >= S.sightReadTotal * 0.8) {
         h += pebbles('happy');
-        h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+        h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
       } else if (S.sightReadScore >= S.sightReadTotal * 0.5) {
         h += pebbles('happy');
         h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.GOOD)}'</div>`;
@@ -4063,7 +4195,7 @@ function render(page) {
     } else {
       h += `<canvas id="sightReadCanvas" width="400" height="220" style="display:block;margin:0.5rem auto;border-radius:14px"></canvas>`;
       h += `<p class="caption" style="text-align:center">${song?song.c:''} · ${song?song.bpm:80} BPM · Play along!</p>`;
-      h += `<button class="btn btn-coral btn-wide" onclick="stopSightReading();S.sightReadDone=true;S.sightReadTotal=S.sightReadNotes.length;render('song_play')">⏹ Stop</button>`;
+      h += `<button class="btn btn-coral btn-wide" onclick="stopSightReading();S.sightReadDone=true;S.sightReadTotal=S.sightReadNotes.length;render('song_play')">Stop</button>`;
     }
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.5rem" onclick="stopSightReading();render('song_library')">⬅ Back to Songs</button>`;
   }
@@ -4082,7 +4214,7 @@ function render(page) {
         📝 Grade ${g} <span style="opacity:0.6;font-size:0.8rem">(${doneCount}/${exs.length} done)</span></button>`;
     }
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">Home</button>`;
   }
 
   // ── EXERCISE GRADE (list exercises for a grade) ──
@@ -4112,7 +4244,7 @@ function render(page) {
       h += `<div class="score-big">${score} / ${total}</div>`;
       if (score === total) {
         h += pebbles('happy');
-        h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+        h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
       } else if (score >= total * 0.5) {
         h += pebbles('happy');
         h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.GOOD)}'</div>`;
@@ -4164,7 +4296,7 @@ function render(page) {
           </div>`;
     h += `<p class="caption">Uses your microphone to hear what you play. Notes scroll left — play them in time!</p>`;
     h += `</div>`;
-    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">Home</button>`;
   }
 
   // ── SIGHT-READING PLAY ──
@@ -4174,7 +4306,7 @@ function render(page) {
       h += `<div class="score-big">${S.sightReadScore} / ${S.sightReadTotal}</div>`;
       if (S.sightReadScore === S.sightReadTotal) {
         h += pebbles('happy');
-        h += `<div class="alert alert-success">🌸 <strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
+        h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.PERFECT)}'</div>`;
       } else if (S.sightReadScore >= S.sightReadTotal * 0.6) {
         h += pebbles('happy');
         h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.GOOD)}'</div>`;
@@ -4189,9 +4321,9 @@ function render(page) {
     } else {
       h += `<canvas id="sightReadCanvas" width="400" height="220" style="display:block;margin:0.5rem auto;border-radius:14px"></canvas>`;
       h += `<p class="caption" style="text-align:center">${SIGHTREAD_LEVELS[S.sightReadLevel].label} · ${SIGHTREAD_LEVELS[S.sightReadLevel].bpm} BPM · Play the notes!</p>`;
-      h += `<button class="btn btn-coral btn-wide" onclick="stopSightReading();S.sightReadDone=true;S.sightReadTotal=S.sightReadNotes.length;render('sightread_play')">⏹ Stop</button>`;
+      h += `<button class="btn btn-coral btn-wide" onclick="stopSightReading();S.sightReadDone=true;S.sightReadTotal=S.sightReadNotes.length;render('sightread_play')">Stop</button>`;
     }
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.5rem" onclick="stopSightReading();render('home')">🏠 Home</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.5rem" onclick="stopSightReading();render('home')">Home</button>`;
   }
 
   h += '</div>';
@@ -5913,7 +6045,8 @@ function finishSightReading() {
 
 // ── Start ──
 applyMode();
-render('welcome');
+// Auth listener handles the first render — show loading until then
+document.getElementById('app').innerHTML = '<div class="page"><div class="welcome-wrap" style="margin-top:2rem"><div class="welcome-title">Piano Mind<br>Studios</div><div class="welcome-sub">Loading...</div></div></div>';
 </script>
 </body>
 </html>
