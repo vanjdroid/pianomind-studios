@@ -44,6 +44,23 @@ body {
 }
 
 /* ── Welcome screen ── */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  text-align: center;
+}
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 4px solid rgba(124,111,239,0.2);
+  border-top: 4px solid #7c6fef;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .welcome-wrap {
   display: flex;
   flex-direction: column;
@@ -834,6 +851,8 @@ auth.onAuthStateChanged(function(user) {
   currentUser = user;
   authReady = true;
   if (user) {
+    // Show loading while fetching cloud data
+    document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Welcome back!</div><div style="font-size:0.85rem;color:#6b7fa3;margin-top:0.3rem">Loading your progress...</div></div></div>';
     cloudLoad(function() {
       applyMode();
       if (localStorage.getItem('pms_tutorial_done')) render('home');
@@ -1612,8 +1631,13 @@ function saveDailyScore(score, total) {
   } catch(e) {}
 }
 function getDailyGame() {
-  const games = ['ear','note','interval','chord'];
-  return games[new Date().getDay() % 4];
+  var day = new Date().getDay();
+  var games = ['ear','note','interval','chord','melody','ear','note'];
+  return games[day];
+}
+function getDailyTheme() {
+  var themes = ['Melody Monday','Tune-up Tuesday','Workout Wednesday','Theory Thursday','Fun Friday','Scale Saturday','Chill Sunday'];
+  return themes[new Date().getDay()];
 }
 function dailyPlayed() {
   const d = loadScores();
@@ -2904,6 +2928,27 @@ function render(page) {
         {go:"render('chord_mixer')",icon:'🎛',name:'Chord Mixer',desc:'Build chord progressions by tapping I, IV, V, vi — hear how pop, blues, and classical songs use chords'},
       ];
     } else if (S.homeTab === 'me') {
+      // Profile card at top
+      var lvlMe = parseInt(localStorage.getItem('pms_level') || '1', 10);
+      var xpMe = parseInt(localStorage.getItem('pms_xp') || '0', 10);
+      var meData = loadScores();
+      var joinDate = '';
+      if (currentUser && currentUser.metadata) {
+        var d = new Date(currentUser.metadata.creationTime);
+        joinDate = d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+      }
+      h += `<div class="card" style="text-align:center;padding:1rem">`;
+      if (showPebbles()) h += `<div style="margin-bottom:0.4rem">${pebbles('happy', 80)}</div>`;
+      h += `<div style="font-size:1.3rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
+      if (currentUser) h += `<div style="font-size:0.75rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
+      if (joinDate) h += `<div style="font-size:0.75rem;color:#6b7fa3">Joined ${joinDate}</div>`;
+      h += `<div style="display:flex;justify-content:center;gap:1rem;margin-top:0.6rem">`;
+      h += `<div><div style="font-size:1.2rem;font-weight:700">${lvlMe}</div><div style="font-size:0.7rem;color:#6b7fa3">Level</div></div>`;
+      h += `<div><div style="font-size:1.2rem;font-weight:700">${xpMe}</div><div style="font-size:0.7rem;color:#6b7fa3">Total XP</div></div>`;
+      h += `<div><div style="font-size:1.2rem;font-weight:700">${meData._played || 0}</div><div style="font-size:0.7rem;color:#6b7fa3">Games</div></div>`;
+      h += `<div><div style="font-size:1.2rem;font-weight:700">${meData._streak || 0}</div><div style="font-size:0.7rem;color:#6b7fa3">Streak</div></div>`;
+      h += `</div>`;
+      h += `</div>`;
       items = [
         {go:"startFromHome('stats')",icon:'📊',name:'My Progress',desc:'Line and bar charts showing your improvement over the last 7 days, plus best scores for every game'},
         {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:'12 badges to unlock — play your first game, get a perfect score, try every mode, and more'},
@@ -3014,6 +3059,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('ear_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
+            <button class="btn btn-blue" onclick="shareScore('Ear Training',${S.score},${S.total})">Share</button>
           </div>`;
   }
 
@@ -3106,6 +3152,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('note_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
+            <button class="btn btn-blue" onclick="shareScore('Note Reading',${S.score},${S.total})">Share</button>
           </div>`;
   }
 
@@ -3189,6 +3236,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('interval_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
+            <button class="btn btn-blue" onclick="shareScore('Intervals',${S.score},${S.total})">Share</button>
           </div>`;
   }
 
@@ -3270,6 +3318,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('chord_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
+            <button class="btn btn-blue" onclick="shareScore('Chords',${S.score},${S.total})">Share</button>
           </div>`;
   }
 
@@ -3547,8 +3596,10 @@ function render(page) {
   // ── DAILY CHALLENGE ──
   else if (page === 'daily') {
     const dg = getDailyGame();
-    const names = {ear:'🎵 Ear Training',note:'🎼 Note Reading',interval:'🎶 Intervals',chord:'🎸 Chords'};
+    const dTheme = getDailyTheme();
+    const names = {ear:'Ear Training',note:'Note Reading',interval:'Intervals',chord:'Chords',melody:'Melody Echo'};
     h += `<h1>⭐ Daily Challenge</h1>`;
+    h += `<div style="text-align:center;font-size:1.1rem;font-weight:700;color:#7c6fef;margin:0.3rem 0">${dTheme}</div>`;
 
     // Garden
     h += `<div class="card" style="padding:0.6rem">`;
@@ -3691,6 +3742,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('melody_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
+            <button class="btn btn-blue" onclick="shareScore('Melody Echo',${S.melodyScore},${S.melodyTotal})">Share</button>
           </div>`;
   }
 
@@ -4444,6 +4496,18 @@ function setHomeTab(tab) {
   if (nameIn) S.name = nameIn.value.trim();
   S.homeTab = tab;
   render('home');
+}
+
+function shareScore(game, score, total) {
+  var pct = Math.round(score / total * 100);
+  var text = 'I scored ' + score + '/' + total + ' (' + pct + '%) on ' + game + ' in PianoMind Studios! Try it: https://vanjdroid.github.io/pianomind-studios/';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      alert('Score copied — paste it anywhere to share!');
+    });
+  } else {
+    prompt('Copy this:', text);
+  }
 }
 
 function startFromHome(game) {
@@ -6045,8 +6109,7 @@ function finishSightReading() {
 
 // ── Start ──
 applyMode();
-// Auth listener handles the first render — show loading until then
-document.getElementById('app').innerHTML = '<div class="page"><div class="welcome-wrap" style="margin-top:2rem"><div class="welcome-title">Piano Mind<br>Studios</div><div class="welcome-sub">Loading...</div></div></div>';
+document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div class="welcome-title" style="font-size:1.6rem">Piano Mind Studios</div><div style="font-size:0.9rem;color:#6b7fa3;margin-top:0.3rem">Loading your music...</div></div></div>';
 </script>
 </body>
 </html>
