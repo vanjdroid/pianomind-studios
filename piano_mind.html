@@ -2877,38 +2877,41 @@ function render(page) {
     var played = homeData._played || 0;
     var lvl = parseInt(localStorage.getItem('pms_level') || '1', 10);
 
-    // Tabs at the top
-    h += `<div class="home-tabs" style="margin-top:0.3rem">
+    // One big card for the whole home screen
+    h += `<div class="card" style="padding:0;overflow:hidden;margin-top:0.3rem">`;
+
+    // Welcome banner inside card
+    h += `<div style="padding:1rem 1.2rem;border-bottom:1px solid rgba(0,0,0,0.06)">`;
+    h += `<div style="display:flex;align-items:center;gap:0.8rem">`;
+    if (showPebbles()) h += pebbles('happy', 60);
+    h += `<div style="flex:1">`;
+    h += `<div style="font-size:1.2rem;font-weight:700;color:#0f2744">Welcome back, <span style="color:#7c6fef">${S.name || 'Student'}</span>!</div>`;
+    h += `<div style="font-size:0.78rem;color:#6b7fa3">Level ${lvl} · PianoMind Studios</div>`;
+    h += `</div></div>`;
+    h += `<div style="margin-top:0.4rem"><input id="nameIn" type="text" value="${S.name}" placeholder="Your name..." style="font-size:0.85rem;padding:0.3rem 0.6rem;border:1px solid rgba(0,0,0,0.08);border-radius:8px;width:100%;background:rgba(255,255,255,0.4)"></div>`;
+    h += `</div>`;
+
+    // Stats row inside card
+    h += `<div style="display:flex;border-bottom:1px solid rgba(0,0,0,0.06)">`;
+    h += `<div style="flex:1;padding:0.5rem;text-align:center;border-right:1px solid rgba(0,0,0,0.06)"><div style="font-size:1.1rem;font-weight:700">${streak} 🔥</div><div style="font-size:0.65rem;color:#6b7fa3">Streak</div></div>`;
+    h += `<div style="flex:1;padding:0.5rem;text-align:center;border-right:1px solid rgba(0,0,0,0.06)"><div style="font-size:1.1rem;font-weight:700">${played}</div><div style="font-size:0.65rem;color:#6b7fa3">Games</div></div>`;
+    h += `<div style="flex:1;padding:0.5rem;text-align:center"><div style="font-size:1.1rem;font-weight:700">${lvl} ⭐</div><div style="font-size:0.65rem;color:#6b7fa3">Level</div></div>`;
+    h += `</div>`;
+
+    // XP bar inside card
+    h += `<div style="padding:0.4rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06)">`;
+    h += xpBarHtml();
+    h += `</div>`;
+
+    // Tabs inside card
+    h += `<div class="home-tabs" style="margin:0;border-bottom:2px solid rgba(0,0,0,0.06)">
             <div class="home-tab${S.homeTab==='practice'?' active':''}" onclick="setHomeTab('practice')">🎮 Practice</div>
             <div class="home-tab${S.homeTab==='tools'?' active':''}" onclick="setHomeTab('tools')">🎵 Tools</div>
             <div class="home-tab${S.homeTab==='learn'?' active':''}" onclick="setHomeTab('learn')">📚 Learn</div>
             <div class="home-tab${S.homeTab==='me'?' active':''}" onclick="setHomeTab('me')">🏆 Me</div>
           </div>`;
 
-    // Welcome banner
-    h += `<div class="card" style="padding:1rem 1.2rem;margin-top:0.5rem">`;
-    h += `<div style="display:flex;align-items:center;gap:0.8rem">`;
-    if (showPebbles()) h += pebbles('happy', 70);
-    h += `<div style="flex:1">`;
-    h += `<div style="font-size:1.3rem;font-weight:700;color:#0f2744">Welcome back, <span style="color:#7c6fef">${S.name || 'Student'}</span>!</div>`;
-    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin-top:0.15rem">Level ${lvl} · PianoMind Studios</div>`;
-    h += `</div></div>`;
-    h += `<div style="margin-top:0.5rem"><input id="nameIn" type="text" value="${S.name}" placeholder="Your name..." style="font-size:0.85rem;padding:0.35rem 0.6rem;border:1px solid rgba(0,0,0,0.1);border-radius:10px;width:100%;background:rgba(255,255,255,0.5)"></div>`;
-    h += `</div>`;
-
-    // Stats row
-    h += `<div style="display:flex;gap:0.4rem;margin:0.4rem 0">`;
-    h += `<div class="card" style="flex:1;padding:0.6rem;margin:0"><div style="font-size:0.7rem;color:#6b7fa3">Day Streak</div><div style="font-size:1.3rem;font-weight:700">${streak} 🔥</div></div>`;
-    h += `<div class="card" style="flex:1;padding:0.6rem;margin:0"><div style="font-size:0.7rem;color:#6b7fa3">Games Played</div><div style="font-size:1.3rem;font-weight:700">${played}</div></div>`;
-    h += `<div class="card" style="flex:1;padding:0.6rem;margin:0"><div style="font-size:0.7rem;color:#6b7fa3">Level</div><div style="font-size:1.3rem;font-weight:700">${lvl} ⭐</div></div>`;
-    h += `</div>`;
-
-    // XP bar
-    h += `<div class="card" style="padding:0.5rem 0.8rem;margin-bottom:0.3rem">`;
-    h += xpBarHtml();
-    h += `</div>`;
-
-    // Feature cards — all in one card
+    // Tab content inside card
     var items = [];
     if (S.homeTab === 'tools') {
       items = [
@@ -2928,8 +2931,7 @@ function render(page) {
         {go:"render('chord_mixer')",icon:'🎛',name:'Chord Mixer',desc:'Build chord progressions by tapping I, IV, V, vi — hear how pop, blues, and classical songs use chords'},
       ];
     } else if (S.homeTab === 'me') {
-      // Profile card at top
-      var lvlMe = parseInt(localStorage.getItem('pms_level') || '1', 10);
+      // Profile section
       var xpMe = parseInt(localStorage.getItem('pms_xp') || '0', 10);
       var meData = loadScores();
       var joinDate = '';
@@ -2937,18 +2939,17 @@ function render(page) {
         var d = new Date(currentUser.metadata.creationTime);
         joinDate = d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
       }
-      h += `<div class="card" style="text-align:center;padding:1rem">`;
-      if (showPebbles()) h += `<div style="margin-bottom:0.4rem">${pebbles('happy', 80)}</div>`;
-      h += `<div style="font-size:1.3rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
-      if (currentUser) h += `<div style="font-size:0.75rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
-      if (joinDate) h += `<div style="font-size:0.75rem;color:#6b7fa3">Joined ${joinDate}</div>`;
-      h += `<div style="display:flex;justify-content:center;gap:1rem;margin-top:0.6rem">`;
-      h += `<div><div style="font-size:1.2rem;font-weight:700">${lvlMe}</div><div style="font-size:0.7rem;color:#6b7fa3">Level</div></div>`;
-      h += `<div><div style="font-size:1.2rem;font-weight:700">${xpMe}</div><div style="font-size:0.7rem;color:#6b7fa3">Total XP</div></div>`;
-      h += `<div><div style="font-size:1.2rem;font-weight:700">${meData._played || 0}</div><div style="font-size:0.7rem;color:#6b7fa3">Games</div></div>`;
-      h += `<div><div style="font-size:1.2rem;font-weight:700">${meData._streak || 0}</div><div style="font-size:0.7rem;color:#6b7fa3">Streak</div></div>`;
-      h += `</div>`;
-      h += `</div>`;
+      h += `<div style="text-align:center;padding:0.8rem;border-bottom:1px solid rgba(0,0,0,0.06)">`;
+      if (showPebbles()) h += `<div style="margin-bottom:0.3rem">${pebbles('happy', 70)}</div>`;
+      h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
+      if (currentUser) h += `<div style="font-size:0.72rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
+      if (joinDate) h += `<div style="font-size:0.72rem;color:#6b7fa3">Joined ${joinDate}</div>`;
+      h += `<div style="display:flex;justify-content:center;gap:1rem;margin-top:0.5rem">`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${lvl}</div><div style="font-size:0.65rem;color:#6b7fa3">Level</div></div>`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${xpMe}</div><div style="font-size:0.65rem;color:#6b7fa3">XP</div></div>`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${played}</div><div style="font-size:0.65rem;color:#6b7fa3">Games</div></div>`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${streak}</div><div style="font-size:0.65rem;color:#6b7fa3">Streak</div></div>`;
+      h += `</div></div>`;
       items = [
         {go:"startFromHome('stats')",icon:'📊',name:'My Progress',desc:'Line and bar charts showing your improvement over the last 7 days, plus best scores for every game'},
         {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:'12 badges to unlock — play your first game, get a perfect score, try every mode, and more'},
@@ -2965,14 +2966,13 @@ function render(page) {
         {go:"startFromHome('daily')",icon:'⭐',name:'Daily Challenge',desc:'One random game every day — play it, grow a flower in your garden, and keep your streak going'},
       ];
     }
-    h += `<div class="card" style="padding:0.4rem 0">`;
     items.forEach(function(t, i) {
       h += `<div onclick="${t.go}" style="cursor:pointer;padding:0.7rem 1rem;display:flex;align-items:flex-start;gap:0.7rem;${i < items.length - 1 ? 'border-bottom:1px solid rgba(0,0,0,0.06)':''}">`;
       h += `<span style="font-size:1.5rem;line-height:1">${t.icon}</span>`;
       h += `<div><div style="font-weight:700;font-size:0.95rem">${t.name}</div><div style="font-size:0.78rem;color:#6b7fa3;line-height:1.4;margin-top:0.1rem">${t.desc}</div></div>`;
       h += `</div>`;
     });
-    h += `</div>`;
+    h += `</div>`; // close the big card
   }
 
   // ── EAR LEVEL ──
