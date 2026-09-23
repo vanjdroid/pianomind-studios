@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Piano Mind Studios</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#7c6fef">
-<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#dcebfd">
+<link rel="icon" type="image/png" href="icon-192-round.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -911,10 +911,27 @@ body.mode-smooth .progress-wrap { background:#e6e6ee; }
 body.theme-dark .xp-level, body.theme-dark .side-user { color:#e8e0f0; }
 body.theme-dark .side-foot { background:rgba(255,255,255,0.08); }
 body.theme-dark .home-name { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15); }
+
+/* ═══════════════════════════════
+   INSTALLED APP ON COMPUTER: NO TITLE BAR
+   (Window Controls Overlay: only min/max/close float at the top)
+   ═══════════════════════════════ */
+#titlebar { display:none; }
+@media (display-mode: window-controls-overlay) {
+  #titlebar {
+    display:block; position:fixed; z-index:30;
+    left:env(titlebar-area-x, 0); top:env(titlebar-area-y, 0);
+    width:env(titlebar-area-width, 100%); height:env(titlebar-area-height, 33px);
+    -webkit-app-region:drag; app-region:drag;   /* grab here to move the window */
+  }
+  body.with-shell #sidebar { padding-top:calc(env(titlebar-area-height, 33px) + 0.5rem); }
+  body.with-shell #app, body.on-home.with-shell #app { padding-top:calc(env(titlebar-area-height, 33px) + 1.2rem); }
+}
 </style>
 </head>
 <body>
 <div id="homeLink" onclick="if(typeof S!=='undefined'&&S.page!=='welcome'&&S.page!=='home'){render('home')}" style="position:fixed;top:0;left:0;right:0;height:10rem;cursor:pointer;z-index:10"></div>
+<div id="titlebar"></div>
 <nav id="sidebar"></nav>
 <div id="app"></div>
 
@@ -5656,6 +5673,9 @@ function setMode(mode) {
 function applyMode() {
   var mode = getMode();
   document.body.classList.toggle('theme-dark', mode === 'cartoon' && localStorage.getItem('pms_theme') === 'galaxy');
+  // Match the phone/tablet status bar colour to the current look
+  var tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.content = mode === 'neon' ? '#050505' : mode === 'smooth' ? '#f4f4f4' : (localStorage.getItem('pms_theme') === 'galaxy' ? '#1c1042' : '#dcebfd');
   document.body.classList.remove('mode-smooth', 'mode-neon');
   if (mode === 'smooth') {
     document.body.classList.add('mode-smooth');

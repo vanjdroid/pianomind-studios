@@ -6,12 +6,30 @@
   "start_url": "./piano_mind.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay"
+  ],
   "orientation": "any",
   "background_color": "#a2cafb",
-  "theme_color": "#7c6fef",
+  "theme_color": "#dcebfd",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192-round.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-round.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

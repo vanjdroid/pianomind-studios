@@ -1,9 +1,9 @@
 // PianoMind Studios service worker: lets the app open without internet.
 // Change VERSION to force every device to refresh its saved copy.
-const VERSION = 'pms-v2';
+const VERSION = 'pms-v3';
 const CORE = [
   './', './index.html', './piano_mind.html', './manifest.webmanifest',
-  './icon-192.png', './icon-512.png', './apple-touch-icon.png',
+  './icon-192-round.png', './icon-512-round.png', './apple-touch-icon.png',
   './background.png', './pebbles_happy.png', './pebbles_asking.png', './pebbles_thinking.png'
 ];
 // Outside sites we may save (Firebase code + fonts). Never Firestore/login traffic.
