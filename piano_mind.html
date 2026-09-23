@@ -936,6 +936,21 @@ body.theme-dark .home-name { background:rgba(255,255,255,0.08); border-color:rgb
 
 /* Title emojis keep their own colours */
 h1 .h1-icon { -webkit-text-fill-color: initial; background: none; -webkit-background-clip: border-box; background-clip: border-box; }
+
+/* ── Teaching: hints + "Why?" screen ── */
+.hint-box { background:rgba(255,214,102,0.22); border:1px solid rgba(230,170,40,0.45); border-radius:14px; padding:0.8rem 1rem; font-size:0.95rem; line-height:1.5; }
+.hint-title { font-weight:700; margin-bottom:0.3rem; }
+.btn-crossed { opacity:0.35; text-decoration:line-through; cursor:not-allowed; box-shadow:none; }
+.btn-crossed:hover { transform:none; }
+.why-card { border:2px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.why-title { font-size:1.15rem; font-weight:700; margin-bottom:0.6rem; }
+.why-steps { display:flex; flex-direction:column; gap:0.55rem; }
+.why-step { display:flex; gap:0.7rem; align-items:flex-start; font-size:0.98rem; line-height:1.5; }
+.why-n { flex-shrink:0; width:1.7rem; height:1.7rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; background:color-mix(in srgb, var(--accent) 18%, transparent); color:var(--accent); }
+.why-listen { font-weight:700; margin:0.9rem 0 0.4rem; }
+body.mode-neon .hint-box { background:rgba(255,200,60,0.08); border-color:rgba(255,200,60,0.4); color:#eee; }
+body.mode-neon .why-card { border-color:rgba(0,200,255,0.45); }
+body.mode-neon .why-n { background:rgba(0,200,255,0.15); color:#00c8ff; }
 </style>
 </head>
 <body>
@@ -1187,6 +1202,65 @@ function getIntervalName(h1, h2) {
   const N = {1:'Unison',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'Octave'};
   const q = Q[num]?.[semi];
   return q ? q + ' ' + N[num] : null;
+}
+
+// ── Teaching helpers for the Intervals game ("Why?" screen + hints) ──
+const INT_NUM_WORD = {1:'Unison',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'Octave'};
+// Half steps for each interval name
+const INT_SEMIS = {'Perfect Unison':0,'Minor 2nd':1,'Major 2nd':2,'Minor 3rd':3,'Major 3rd':4,
+  'Perfect 4th':5,'Augmented 4th':6,'Diminished 5th':6,'Perfect 5th':7,'Minor 6th':8,'Major 6th':9,
+  'Minor 7th':10,'Major 7th':11,'Perfect Octave':12};
+// The half-step rule for each interval number
+const INT_RULE = {
+  1:'A Unison is the same note twice: 0 half steps.',
+  2:'A Minor 2nd has 1 half step. A Major 2nd has 2.',
+  3:'A Minor 3rd has 3 half steps. A Major 3rd has 4.',
+  4:'A Perfect 4th has 5 half steps. An Augmented 4th has 6.',
+  5:'A Diminished 5th has 6 half steps. A Perfect 5th has 7.',
+  6:'A Minor 6th has 8 half steps. A Major 6th has 9.',
+  7:'A Minor 7th has 10 half steps. A Major 7th has 11.',
+  8:'An Octave is the same letter, 8 notes up: 12 half steps.'
+};
+function intNumberOf(name) {
+  for (const k in INT_NUM_WORD) if (name.endsWith(INT_NUM_WORD[k])) return +k;
+  return null;
+}
+// Letter names from the lower note up to the higher note, e.g. ['C','D','E']
+function intLetters(h1, h2) {
+  const lo = Math.min(h1, h2), hi = Math.max(h1, h2), out = [];
+  for (let h = lo; h <= hi + 0.001; h += 0.5) out.push(PIANO_WHITE[Math.round((h + 1) * 2)].name);
+  return out;
+}
+// Hint after a first wrong answer — matched to the mistake
+function intHint(picked) {
+  const correctNum = intNumberOf(S.intCorrect), pickedNum = intNumberOf(picked);
+  if (S.intEarMode) {
+    return `Listen to your answer, then the question again. Is the real one <strong>bigger or smaller</strong> than a ${picked}?`;
+  }
+  if (pickedNum !== correctNum) {
+    return `The number is off. Count the letter names from the <strong>lower</strong> note up to the <strong>higher</strong> note. Count both notes.`;
+  }
+  return `The number (${INT_NUM_WORD[correctNum]}) is right! Now count the half steps between the two keys: every key counts, black and white. ${INT_RULE[correctNum]}`;
+}
+// Full explanation for the "Why?" screen
+function intWhyHtml() {
+  const num = intNumberOf(S.intCorrect);
+  const letters = intLetters(S.intH1, S.intH2);
+  const lo = Math.min(S.intH1, S.intH2), hi = Math.max(S.intH1, S.intH2);
+  const semis = HEIGHT_TO_SEMI[hi] - HEIGHT_TO_SEMI[lo];
+  let x = `<div class="why-steps">`;
+  x += `<div class="why-step"><span class="why-n">1</span><div><strong>Count the letters:</strong> ${letters.join(' → ')} = ${letters.length} letters, so it's a <strong>${INT_NUM_WORD[num]}</strong>.</div></div>`;
+  x += `<div class="why-step"><span class="why-n">2</span><div><strong>Count the half steps:</strong> ${letters[0]} up to ${letters[letters.length-1]} = ${semis} half steps. ${INT_RULE[num]}</div></div>`;
+  x += `<div class="why-step"><span class="why-n">✓</span><div>So it's a <strong>${S.intCorrect}</strong>.</div></div>`;
+  x += `</div>`;
+  return x;
+}
+// Play an interval of a given name, starting from the question's first note, same direction
+function playIntervalByName(name) {
+  const k = S.intKeys; if (!k || !k.length) return;
+  const up = S.intH2 >= S.intH1;
+  const semis = INT_SEMIS[name]; if (semis === undefined) return;
+  playTones(k[0], up ? k[0] + semis : k[0] - semis, 0.6);
 }
 
 const INTERVAL_PAIRS = {};
@@ -2812,6 +2886,9 @@ function newIntervalRound() {
   else { S.intH1 = pair[1]; S.intH2 = pair[0]; }
   S.intCorrect = intName;
   S.intFeedback = null;
+  S.intTries = 0;
+  S.intPicked = null;
+  S.intCrossed = [];
   S.intEarMode = (S.level === '4' || S.level === '5');
   const numChoices = S.level === '0' ? 3 : S.intEarMode ? 6 : 4;
   const choices = new Set([intName]);
@@ -3418,22 +3495,42 @@ function render(page) {
       h += `<canvas id="intCanvas" width="400" height="260"></canvas>`;
       h += `<div style="text-align:center">${buildPiano(S.intKeys)}</div>`;
     }
-    if (!fb) {
-      h += pebbles('asking', 120);
+    if (!fb || fb === 'retry') {
+      h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
       h += `<div class="card">`;
-      h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_INT)}'</p>`;
+      if (fb === 'retry') {
+        h += `<div class="hint-box"><div class="hint-title">💡 Not quite. That's not a ${S.intPicked}. Here's a hint:</div><div>${intHint(S.intPicked)}</div>`;
+        if (S.intEarMode) {
+          h += `<div class="btn-row" style="margin-top:0.6rem"><button class="btn btn-blue" onclick="playIntervalByName(S.intPicked)">▶ Hear your answer</button><button class="btn btn-mint" onclick="playTones(S.intKeys[0],S.intKeys[1],0.6)">▶ Hear the question</button></div>`;
+        }
+        h += `</div>`;
+        h += `<p class="speech" style="margin-top:0.6rem"><strong>One more try!</strong></p>`;
+      } else {
+        h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_INT)}'</p>`;
+      }
       h += `<div class="choice-grid">`;
       S.intChoices.forEach(name => {
-        h += `<button class="btn btn-lilac" onclick="intervalAnswer('${name}')">${name}</button>`;
+        const crossed = (S.intCrossed || []).includes(name);
+        h += `<button class="btn btn-lilac${crossed ? ' btn-crossed' : ''}" ${crossed ? 'disabled' : `onclick="intervalAnswer('${name}')"`}>${name}</button>`;
       });
       h += `</div></div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
       h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_INT)}'</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
+    } else if (fb === 'correct2') {
+      h += pebbles('happy');
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's a <strong>${S.intCorrect}</strong>. No point this time, but now you know how to work it out.</div>`;
+      h += `<div class="card why-card">${intWhyHtml()}</div>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
-      h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'It was a <strong>${S.intCorrect}</strong>! ${S.intTip}'</div>`;
+      h += `<div class="card why-card">`;
+      h += `<div class="why-title">🔍 Why is it a ${S.intCorrect}?</div>`;
+      h += intWhyHtml();
+      h += `<div class="why-listen">Listen to the difference:</div>`;
+      h += `<div class="btn-row"><button class="btn btn-coral" onclick="playIntervalByName(S.intPicked)">▶ Yours: ${S.intPicked}</button><button class="btn btn-mint" onclick="playIntervalByName(S.intCorrect)">▶ Right: ${S.intCorrect}</button></div>`;
+      h += `</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
     }
   }
@@ -4873,8 +4970,20 @@ function checkNote() {
 }
 
 function intervalAnswer(answer) {
-  if (answer === S.intCorrect) { S.score++; S.intFeedback = 'correct'; recordCorrectAnswer(); sfxCorrect(); }
-  else { S.intFeedback = 'wrong'; S.intTip = pick(INTERVAL_TIPS); sfxWrong(); }
+  S.intTries = (S.intTries || 0) + 1;
+  S.intPicked = answer;
+  if (answer === S.intCorrect) {
+    if (S.intTries === 1) { S.score++; S.intFeedback = 'correct'; recordCorrectAnswer(); }
+    else S.intFeedback = 'correct2';   // right with a hint: no point, so the score stays fair
+    sfxCorrect();
+  } else if (S.intTries === 1) {
+    S.intFeedback = 'retry';           // first miss: hint + one more try
+    S.intCrossed = [answer];
+    sfxWrong();
+  } else {
+    S.intFeedback = 'wrong';           // second miss: show the "Why?" screen
+    sfxWrong();
+  }
   render('interval_play');
 }
 
