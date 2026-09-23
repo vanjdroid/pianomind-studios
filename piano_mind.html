@@ -927,6 +927,12 @@ body.theme-dark .home-name { background:rgba(255,255,255,0.08); border-color:rgb
   body.with-shell #sidebar { padding-top:calc(env(titlebar-area-height, 33px) + 0.5rem); }
   body.with-shell #app, body.on-home.with-shell #app { padding-top:calc(env(titlebar-area-height, 33px) + 1.2rem); }
 }
+
+/* App logo */
+.app-logo { display:block; border-radius:22%; flex-shrink:0; box-shadow:0 4px 14px rgba(20,18,60,0.25); }
+.welcome-logo { display:flex; justify-content:center; }
+.welcome-logo .app-logo { animation: welcomeFloat 3s ease-in-out infinite; }
+.home-profile .app-logo { margin:0 auto; }
 </style>
 </head>
 <body>
@@ -2946,6 +2952,12 @@ function pebbles(mood, width) {
   return `<img class="pebbles" src="pebbles_${mood}.png" width="${width}" alt="Pebbles" onerror="this.style.display='none'">`;
 }
 
+// App logo (treble clef) — used in the main spots instead of Pebbles
+function appLogo(size) {
+  var src = size > 150 ? 'icon-clef-512.png' : 'icon-clef-192.png';
+  return `<img class="app-logo" src="${src}" width="${size}" height="${size}" alt="PianoMind Studios logo">`;
+}
+
 function progressBar(current, total) {
   const pct = ((current + 1) / total * 100).toFixed(0);
   return `<div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>`;
@@ -2966,7 +2978,7 @@ function renderSidebar(page) {
   };
   var x = '';
   x += `<div class="side-logo" onclick="setHomeTab('practice')">`;
-  x += showPebbles() ? pebbles('happy', 46) : `<span style="font-size:1.8rem">🎹</span>`;
+  x += appLogo(46);
   x += `<div>PianoMind<br><span>Studios</span></div></div>`;
   x += link(page === 'home' && tab === 'practice', "setHomeTab('practice')", '🎮', 'Practice');
   x += link(page === 'home' && tab === 'tools', "setHomeTab('tools')", '🎵', 'Tools');
@@ -3002,6 +3014,7 @@ function render(page) {
   if (page === 'login') {
     h += `<div class="welcome-wrap">`;
     h += `<div class="welcome-card">`;
+    h += `<div class="welcome-logo" style="margin-bottom:0.4rem">${appLogo(84)}</div>`;
     h += `<div class="welcome-title">Piano Mind<br>Studios</div>`;
     h += `<div class="welcome-sub" style="margin-bottom:1rem">Sign in to save your progress</div>`;
 
@@ -3023,7 +3036,7 @@ function render(page) {
   else if (page === 'welcome') {
     h += `<div class="welcome-wrap">`;
     h += `<div class="welcome-card">`;
-    h += `<div class="welcome-pebbles">${pebbles('happy', 160)}</div>`;
+    h += `<div class="welcome-logo">${appLogo(150)}</div>`;
     h += `<div class="welcome-notes">🎵 🎹 🎶</div>`;
     h += `<div class="welcome-title">Piano Mind<br>Studios</div>`;
     h += `<div class="welcome-sub">Your music practice buddy!</div>`;
@@ -3089,7 +3102,7 @@ function render(page) {
     // Welcome
     h += `<div class="home-hero">`;
     h += `<div class="home-hero-top">`;
-    if (showPebbles()) h += pebbles('happy', 60);
+    h += appLogo(60);
     h += `<div style="flex:1;min-width:0">`;
     h += `<div class="home-hello">Welcome back, <span style="color:var(--accent)">${S.name || 'Student'}</span>!</div>`;
     h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
@@ -3144,7 +3157,7 @@ function render(page) {
         joinDate = d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
       }
       h += `<div class="home-profile">`;
-      if (showPebbles()) h += `<div style="margin-bottom:0.3rem">${pebbles('happy', 70)}</div>`;
+      h += `<div style="margin-bottom:0.3rem">${appLogo(70)}</div>`;
       h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
       if (currentUser) h += `<div style="font-size:0.72rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
       if (joinDate) h += `<div style="font-size:0.72rem;color:#6b7fa3">Joined ${joinDate}</div>`;
