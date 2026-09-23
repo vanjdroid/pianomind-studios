@@ -1,6 +1,6 @@
 // PianoMind Studios service worker: lets the app open without internet.
 // Change VERSION to force every device to refresh its saved copy.
-const VERSION = 'pms-v1';
+const VERSION = 'pms-v2';
 const CORE = [
   './', './index.html', './piano_mind.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './apple-touch-icon.png',
@@ -31,7 +31,8 @@ self.addEventListener('fetch', e => {
   // Pages: try the internet first so updates show up; use saved copy when offline.
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(res => {
+      // no-cache = always ask GitHub for the newest version (skips its 10-minute cache)
+      fetch(req.url, { cache: 'no-cache' }).then(res => {
         const copy = res.clone();
         caches.open(VERSION).then(c => c.put(req, copy));
         return res;

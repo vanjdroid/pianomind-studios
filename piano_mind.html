@@ -769,29 +769,153 @@ body.mode-neon .theme-name { color: #ccc; }
 }
 
 /* ═══════════════════════════════
-   HOME: EDGE-TO-EDGE SHEET
+   HOME SCREEN (phones: edge-to-edge sheet)
    ═══════════════════════════════ */
 body { overflow-x: hidden; }
+#sidebar { display: none; }
 body.on-home #app { display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; padding-bottom:0; }
 body.on-home #app > .page { flex:1; display:flex; flex-direction:column; animation: fadeOnly 0.35s ease; }
 @keyframes fadeOnly { from { opacity:0; } to { opacity:1; } }
 body.on-home .card.home-sheet {
-  flex:1;
-  width:100vw;
-  margin:0.3rem calc(50% - 50vw) 0;
-  padding:0.3rem 0 2.5rem;
-  border-radius:26px 26px 0 0;
-  border-left:none; border-right:none; border-bottom:none;
-  overflow:hidden;
+  flex:1; width:100vw; margin:0.3rem calc(50% - 50vw) 0; padding:0.3rem 0 2.5rem;
+  border-radius:26px 26px 0 0; border-left:none; border-right:none; border-bottom:none; overflow:hidden;
 }
 body.on-home .home-sheet > * { max-width:860px; margin-left:auto !important; margin-right:auto !important; }
+.home-hero { padding:1rem 1.2rem; border-bottom:1px solid rgba(0,0,0,0.06); }
+.home-hero-top { display:flex; align-items:center; gap:0.8rem; }
+.home-hero .pebbles { margin:0; }
+.home-hello { font-size:1.2rem; font-weight:700; }
+.home-sub { font-size:0.78rem; color:#6b7fa3; }
+.home-name { margin-top:0.5rem; font-family:inherit; font-size:0.85rem; padding:0.35rem 0.6rem; border:1px solid rgba(0,0,0,0.08); border-radius:8px; width:100%; background:rgba(255,255,255,0.4); color:inherit; }
+.home-stats { display:flex; border-bottom:1px solid rgba(0,0,0,0.06); }
+.home-stat { flex:1; padding:0.5rem; text-align:center; border-right:1px solid rgba(0,0,0,0.06); }
+.home-stat:last-child { border-right:none; }
+.home-stat-v { font-size:1.1rem; font-weight:700; }
+.home-stat-l { font-size:0.65rem; color:#6b7fa3; }
+.home-xp { padding:0.4rem 0.8rem; border-bottom:1px solid rgba(0,0,0,0.06); }
+.home-sheet .home-tabs { margin:0; border-bottom:2px solid rgba(0,0,0,0.06); }
+.home-section-title { display:none; }
+.home-profile { text-align:center; padding:0.8rem; border-bottom:1px solid rgba(0,0,0,0.06); }
+.home-item { cursor:pointer; padding:0.7rem 1rem; display:flex; align-items:flex-start; gap:0.7rem; border-bottom:1px solid rgba(0,0,0,0.06); transition:background 0.15s; }
+.home-item:last-child { border-bottom:none; }
+.home-item:hover { background:rgba(255,255,255,0.25); }
+.home-item-icon { font-size:1.5rem; line-height:1; }
+.home-item-name { font-weight:700; font-size:0.95rem; }
+.home-item-desc { font-size:0.78rem; color:#6b7fa3; line-height:1.4; margin-top:0.1rem; }
 @media (max-width: 600px) {
   body.on-home .card.home-sheet { border-radius:20px 20px 0 0; }
 }
+
+/* ═══════════════════════════════
+   COMPUTERS & TABLETS: SIDEBAR APP LAYOUT
+   ═══════════════════════════════ */
+@media (min-width: 900px) {
+  body.with-shell { display:block; }
+  body.with-shell #homeLink { display:none; }
+
+  /* Sidebar */
+  body.with-shell #sidebar {
+    display:flex; flex-direction:column; gap:0.2rem;
+    position:fixed; top:0; left:0; bottom:0; width:240px; z-index:20;
+    padding:1.3rem 0.9rem 1.1rem; overflow-y:auto;
+    background:var(--side-bg, rgba(255,255,255,0.75));
+    backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+    border-right:1px solid rgba(255,255,255,0.55);
+    box-shadow:4px 0 24px rgba(0,0,0,0.05);
+  }
+  .side-logo { display:flex; align-items:center; gap:0.6rem; padding:0 0.4rem 1.2rem; cursor:pointer; font-weight:700; font-size:1.15rem; line-height:1.1; color:var(--accent); }
+  .side-logo span { font-size:0.85rem; color:#6b7fa3; letter-spacing:2px; text-transform:uppercase; }
+  .side-logo .pebbles { margin:0; }
+  .side-link { display:flex; align-items:center; gap:0.7rem; padding:0.7rem 0.9rem; border-radius:14px; cursor:pointer; font-weight:700; font-size:0.95rem; color:#6b7fa3; transition:background 0.15s, color 0.15s; }
+  .side-link:hover { background:rgba(255,255,255,0.45); color:inherit; }
+  .side-link.active { background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); }
+  .side-icon { width:1.4rem; text-align:center; font-size:1.1rem; }
+  .side-sep { height:1px; background:rgba(0,0,0,0.07); margin:0.6rem 0.4rem; }
+  .side-foot { margin-top:auto; padding:0.9rem; border-radius:16px; background:rgba(255,255,255,0.35); }
+  .side-user { font-weight:700; font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .side-level { font-size:0.75rem; color:#6b7fa3; font-weight:600; }
+
+  /* Main area fills the rest of the screen */
+  body.with-shell #app, body.on-home.with-shell #app {
+    display:block; margin-left:240px; width:auto; max-width:none; min-height:100vh;
+    padding:2.2rem 2.6rem 3rem;
+    background:var(--shell-bg, rgba(255,255,255,0.74));
+    backdrop-filter:blur(44px) saturate(1.15); -webkit-backdrop-filter:blur(44px) saturate(1.15);
+  }
+  body.with-shell #app > .page { max-width:1040px; margin:0 auto; display:block; }
+
+  /* Home becomes a dashboard grid */
+  body.with-shell .card.home-sheet {
+    display:grid; grid-template-columns:1fr auto; gap:1rem; align-items:stretch;
+    width:auto; margin:0; padding:0; border:none; border-radius:0; overflow:visible;
+    background:none; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+  }
+  body.with-shell .home-sheet > * { max-width:none; margin-left:0 !important; margin-right:0 !important; }
+  body.with-shell .home-hero, body.with-shell .home-stat, body.with-shell .home-xp,
+  body.with-shell .home-profile, body.with-shell .home-item {
+    background:var(--card-bg, rgba(255,255,255,0.35)); border:1px solid rgba(255,255,255,0.55);
+    border-radius:20px; box-shadow:0 4px 18px rgba(0,0,0,0.05);
+  }
+  body.with-shell .home-hero { padding:1.3rem 1.5rem; display:flex; flex-direction:column; justify-content:center; }
+  body.with-shell .home-hello { font-size:1.6rem; }
+  body.with-shell .home-sub { font-size:0.9rem; }
+  body.with-shell .home-name { max-width:320px; }
+  body.with-shell .home-stats { gap:0.8rem; border:none; }
+  body.with-shell .home-stat { width:118px; display:flex; flex-direction:column; justify-content:center; padding:1rem 0.5rem; }
+  body.with-shell .home-stat-v { font-size:1.6rem; }
+  body.with-shell .home-stat-l { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+  body.with-shell .home-xp { grid-column:1 / -1; padding:0.6rem 1.2rem; }
+  body.with-shell .home-sheet .home-tabs { display:none; }
+  body.with-shell .home-section-title { display:block; grid-column:1 / -1; font-size:1.3rem; font-weight:700; margin-top:0.6rem !important; }
+  body.with-shell .home-profile { grid-column:1 / -1; padding:1.2rem; }
+  body.with-shell .home-list { grid-column:1 / -1; display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:1rem; }
+  body.with-shell .home-item { flex-direction:column; gap:0.6rem; padding:1.2rem; border-bottom:1px solid rgba(255,255,255,0.55); transition:transform 0.18s ease, box-shadow 0.18s ease; }
+  body.with-shell .home-item:hover { transform:translateY(-3px); box-shadow:0 10px 26px rgba(0,0,0,0.09); background:var(--card-bg, rgba(255,255,255,0.35)); }
+  body.with-shell .home-item-icon { width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:1.7rem; background:color-mix(in srgb, var(--accent) 14%, transparent); }
+  body.with-shell .home-item-name { font-size:1.05rem; }
+  body.with-shell .home-item-desc { font-size:0.85rem; }
+
+  /* Smooth mode */
+  body.mode-smooth { --shell-bg: rgba(255,255,255,0.82); --side-bg: rgba(250,250,250,0.92); }
+  body.mode-smooth.with-shell .home-hero, body.mode-smooth.with-shell .home-stat, body.mode-smooth.with-shell .home-xp,
+  body.mode-smooth.with-shell .home-profile, body.mode-smooth.with-shell .home-item { background:#fff; border:1px solid #e3e3e3; }
+  body.mode-smooth .side-link.active { background:#ececf4; color:#444; }
+
+  /* Neon mode */
+  body.mode-neon { --shell-bg: rgba(5,5,5,0.9); --side-bg: rgba(8,8,8,0.95); }
+  body.mode-neon.with-shell #sidebar { border-right:1px solid rgba(0,200,255,0.3); box-shadow:0 0 24px rgba(0,200,255,0.08); }
+  body.mode-neon .side-logo { color:#00c8ff; }
+  body.mode-neon .side-link { color:#9aa; }
+  body.mode-neon .side-link:hover { background:#141414; color:#e0e0e0; }
+  body.mode-neon .side-link.active { background:rgba(0,200,255,0.12); color:#00c8ff; }
+  body.mode-neon .side-sep { background:rgba(0,200,255,0.2); }
+  body.mode-neon .side-foot { background:#111; }
+  body.mode-neon.with-shell .home-hero, body.mode-neon.with-shell .home-stat, body.mode-neon.with-shell .home-xp,
+  body.mode-neon.with-shell .home-profile, body.mode-neon.with-shell .home-item { background:#0e0e0e; border:1px solid rgba(0,200,255,0.3); box-shadow:0 0 16px rgba(0,200,255,0.06); }
+  body.mode-neon.with-shell .home-item-icon { background:rgba(0,200,255,0.1); }
+
+  /* Narrower screens (small laptops, tablets): stack the welcome card above the stats */
+  body.with-shell .home-xp .xp-card { padding:0.5rem 0; }
+  body.with-shell .home-xp .xp-total { display:none; }
+}
+@media (min-width: 900px) and (max-width: 1150px) {
+  body.with-shell .card.home-sheet { grid-template-columns:1fr; }
+  body.with-shell .home-stat { width:auto; flex:1; }
+  body.with-shell #app { padding:1.8rem 1.8rem 3rem; }
+}
+/* Readability fixes for Smooth and Neon */
+body.mode-neon .xp-level { color:#e0e0e0; }
+body.mode-neon .home-profile [style*="0f2744"] { color:#e0e0e0 !important; }
+body.mode-neon .home-name { background:#141414; border:1px solid rgba(0,200,255,0.3); }
+body.mode-smooth .progress-wrap { background:#e6e6ee; }
+body.theme-dark .xp-level, body.theme-dark .side-user { color:#e8e0f0; }
+body.theme-dark .side-foot { background:rgba(255,255,255,0.08); }
+body.theme-dark .home-name { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
 <div id="homeLink" onclick="if(typeof S!=='undefined'&&S.page!=='welcome'&&S.page!=='home'){render('home')}" style="position:fixed;top:0;left:0;right:0;height:10rem;cursor:pointer;z-index:10"></div>
+<nav id="sidebar"></nav>
 <div id="app"></div>
 
 <script>
@@ -2812,6 +2936,39 @@ function progressBar(current, total) {
 
 let selectedRounds = 10;
 
+// Sidebar menu for computers and tablets (hidden on phones by CSS)
+function renderSidebar(page) {
+  var sb = document.getElementById('sidebar');
+  var shell = ['login', 'welcome', 'tutorial'].indexOf(page) === -1;
+  document.body.classList.toggle('with-shell', shell);
+  if (!sb) return;
+  if (!shell) { sb.innerHTML = ''; return; }
+  var tab = S.homeTab || 'practice';
+  var link = function(on, action, icon, label) {
+    return `<div class="side-link${on ? ' active' : ''}" onclick="${action}"><span class="side-icon">${icon}</span>${label}</div>`;
+  };
+  var x = '';
+  x += `<div class="side-logo" onclick="setHomeTab('practice')">`;
+  x += showPebbles() ? pebbles('happy', 46) : `<span style="font-size:1.8rem">🎹</span>`;
+  x += `<div>PianoMind<br><span>Studios</span></div></div>`;
+  x += link(page === 'home' && tab === 'practice', "setHomeTab('practice')", '🎮', 'Practice');
+  x += link(page === 'home' && tab === 'tools', "setHomeTab('tools')", '🎵', 'Tools');
+  x += link(page === 'home' && tab === 'learn', "setHomeTab('learn')", '📚', 'Learn');
+  x += link(page === 'home' && tab === 'me', "setHomeTab('me')", '🏆', 'Me');
+  x += `<div class="side-sep"></div>`;
+  x += link(page === 'settings', "startFromHome('settings')", '⚙️', 'Settings');
+  x += link(page === 'install', "render('install')", '📲', 'Get the App');
+  var g = getXP();
+  var lo = xpForLevel(g.level), hi = xpForLevel(g.level + 1);
+  var pct = Math.max(0, Math.min(100, (g.xp - lo) / Math.max(1, hi - lo) * 100)).toFixed(0);
+  x += `<div class="side-foot">`;
+  x += `<div class="side-user">${S.name || 'Student'}</div>`;
+  x += `<div class="side-level">Level ${g.level} · ${g.xp} XP</div>`;
+  x += `<div class="progress-wrap" style="height:6px;margin-top:0.4rem"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+  x += `</div>`;
+  sb.innerHTML = x;
+}
+
 function render(page) {
   if (page !== 'scale_explorer' && S.scalePracticing) stopScalePractice();
   if (page !== 'hanon' && S.hanonPracticing) stopHanonPractice();
@@ -2821,6 +2978,7 @@ function render(page) {
   if (page !== 'sightread_play' && page !== 'song_play' && S.sightReadPlaying) stopSightReading();
   S.page = page;
   document.body.classList.toggle('on-home', page === 'home');
+  renderSidebar(page);
   let h = '<div class="page">';
 
   // ── LOGIN ──
@@ -2906,39 +3064,39 @@ function render(page) {
     var played = homeData._played || 0;
     var lvl = parseInt(localStorage.getItem('pms_level') || '1', 10);
 
-    // One big card for the whole home screen
+    var tabNames = {practice:'🎮 Practice', tools:'🎵 Tools', learn:'📚 Learn', me:'🏆 Me'};
+    var curTab = tabNames[S.homeTab] ? S.homeTab : 'practice';
+
     h += `<div class="card home-sheet">`;
 
-    // Welcome banner inside card
-    h += `<div style="padding:1rem 1.2rem;border-bottom:1px solid rgba(0,0,0,0.06)">`;
-    h += `<div style="display:flex;align-items:center;gap:0.8rem">`;
+    // Welcome
+    h += `<div class="home-hero">`;
+    h += `<div class="home-hero-top">`;
     if (showPebbles()) h += pebbles('happy', 60);
-    h += `<div style="flex:1">`;
-    h += `<div style="font-size:1.2rem;font-weight:700;color:#0f2744">Welcome back, <span style="color:#7c6fef">${S.name || 'Student'}</span>!</div>`;
-    h += `<div style="font-size:0.78rem;color:#6b7fa3">Level ${lvl} · PianoMind Studios</div>`;
+    h += `<div style="flex:1;min-width:0">`;
+    h += `<div class="home-hello">Welcome back, <span style="color:var(--accent)">${S.name || 'Student'}</span>!</div>`;
+    h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
     h += `</div></div>`;
-    h += `<div style="margin-top:0.4rem"><input id="nameIn" type="text" value="${S.name}" placeholder="Your name..." style="font-size:0.85rem;padding:0.3rem 0.6rem;border:1px solid rgba(0,0,0,0.08);border-radius:8px;width:100%;background:rgba(255,255,255,0.4)"></div>`;
+    h += `<input id="nameIn" class="home-name" type="text" value="${S.name}" placeholder="Your name...">`;
     h += `</div>`;
 
-    // Stats row inside card
-    h += `<div style="display:flex;border-bottom:1px solid rgba(0,0,0,0.06)">`;
-    h += `<div style="flex:1;padding:0.5rem;text-align:center;border-right:1px solid rgba(0,0,0,0.06)"><div style="font-size:1.1rem;font-weight:700">${streak} 🔥</div><div style="font-size:0.65rem;color:#6b7fa3">Streak</div></div>`;
-    h += `<div style="flex:1;padding:0.5rem;text-align:center;border-right:1px solid rgba(0,0,0,0.06)"><div style="font-size:1.1rem;font-weight:700">${played}</div><div style="font-size:0.65rem;color:#6b7fa3">Games</div></div>`;
-    h += `<div style="flex:1;padding:0.5rem;text-align:center"><div style="font-size:1.1rem;font-weight:700">${lvl} ⭐</div><div style="font-size:0.65rem;color:#6b7fa3">Level</div></div>`;
+    // Stats
+    h += `<div class="home-stats">`;
+    h += `<div class="home-stat"><div class="home-stat-v">${streak} 🔥</div><div class="home-stat-l">Streak</div></div>`;
+    h += `<div class="home-stat"><div class="home-stat-v">${played}</div><div class="home-stat-l">Games</div></div>`;
+    h += `<div class="home-stat"><div class="home-stat-v">${lvl} ⭐</div><div class="home-stat-l">Level</div></div>`;
     h += `</div>`;
 
-    // XP bar inside card
-    h += `<div style="padding:0.4rem 0.8rem;border-bottom:1px solid rgba(0,0,0,0.06)">`;
-    h += xpBarHtml();
-    h += `</div>`;
+    // XP bar
+    h += `<div class="home-xp">${xpBarHtml()}</div>`;
 
-    // Tabs inside card
-    h += `<div class="home-tabs" style="margin:0;border-bottom:2px solid rgba(0,0,0,0.06)">
-            <div class="home-tab${S.homeTab==='practice'?' active':''}" onclick="setHomeTab('practice')">🎮 Practice</div>
-            <div class="home-tab${S.homeTab==='tools'?' active':''}" onclick="setHomeTab('tools')">🎵 Tools</div>
-            <div class="home-tab${S.homeTab==='learn'?' active':''}" onclick="setHomeTab('learn')">📚 Learn</div>
-            <div class="home-tab${S.homeTab==='me'?' active':''}" onclick="setHomeTab('me')">🏆 Me</div>
-          </div>`;
+    // Tabs (phones) / section title (computers)
+    h += `<div class="home-tabs">`;
+    ['practice','tools','learn','me'].forEach(function(t) {
+      h += `<div class="home-tab${curTab===t?' active':''}" onclick="setHomeTab('${t}')">${tabNames[t]}</div>`;
+    });
+    h += `</div>`;
+    h += `<div class="home-section-title">${tabNames[curTab]}</div>`;
 
     // Tab content inside card
     var items = [];
@@ -2968,7 +3126,7 @@ function render(page) {
         var d = new Date(currentUser.metadata.creationTime);
         joinDate = d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
       }
-      h += `<div style="text-align:center;padding:0.8rem;border-bottom:1px solid rgba(0,0,0,0.06)">`;
+      h += `<div class="home-profile">`;
       if (showPebbles()) h += `<div style="margin-bottom:0.3rem">${pebbles('happy', 70)}</div>`;
       h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
       if (currentUser) h += `<div style="font-size:0.72rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
@@ -2996,13 +3154,15 @@ function render(page) {
         {go:"startFromHome('daily')",icon:'⭐',name:'Daily Challenge',desc:'One random game every day — play it, grow a flower in your garden, and keep your streak going'},
       ];
     }
-    items.forEach(function(t, i) {
-      h += `<div onclick="${t.go}" style="cursor:pointer;padding:0.7rem 1rem;display:flex;align-items:flex-start;gap:0.7rem;${i < items.length - 1 ? 'border-bottom:1px solid rgba(0,0,0,0.06)':''}">`;
-      h += `<span style="font-size:1.5rem;line-height:1">${t.icon}</span>`;
-      h += `<div><div style="font-weight:700;font-size:0.95rem">${t.name}</div><div style="font-size:0.78rem;color:#6b7fa3;line-height:1.4;margin-top:0.1rem">${t.desc}</div></div>`;
+    h += `<div class="home-list">`;
+    items.forEach(function(t) {
+      h += `<div class="home-item" onclick="${t.go}">`;
+      h += `<span class="home-item-icon">${t.icon}</span>`;
+      h += `<div><div class="home-item-name">${t.name}</div><div class="home-item-desc">${t.desc}</div></div>`;
       h += `</div>`;
     });
-    h += `</div>`; // close the big card
+    h += `</div>`;
+    h += `</div>`; // close home-sheet
   }
 
   // ── EAR LEVEL ──
@@ -5495,6 +5655,7 @@ function setMode(mode) {
 
 function applyMode() {
   var mode = getMode();
+  document.body.classList.toggle('theme-dark', mode === 'cartoon' && localStorage.getItem('pms_theme') === 'galaxy');
   document.body.classList.remove('mode-smooth', 'mode-neon');
   if (mode === 'smooth') {
     document.body.classList.add('mode-smooth');
@@ -5519,6 +5680,8 @@ function applyTheme() {
   document.body.style.backgroundImage = `url('${t.img}')`;
   document.documentElement.style.setProperty('--accent', t.accent);
   document.documentElement.style.setProperty('--card-bg', t.card);
+  document.documentElement.style.setProperty('--shell-bg', id === 'galaxy' ? 'rgba(28,16,66,0.82)' : 'rgba(255,255,255,0.74)');
+  document.documentElement.style.setProperty('--side-bg', id === 'galaxy' ? 'rgba(20,12,50,0.85)' : 'rgba(255,255,255,0.75)');
   const btnStyle = document.getElementById('themeBtnStyle');
   if (btnStyle) btnStyle.remove();
   if (id !== 'default') {
