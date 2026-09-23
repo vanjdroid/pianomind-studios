@@ -933,6 +933,9 @@ body.theme-dark .home-name { background:rgba(255,255,255,0.08); border-color:rgb
 .welcome-logo { display:flex; justify-content:center; }
 .welcome-logo .app-logo { animation: welcomeFloat 3s ease-in-out infinite; }
 .home-profile .app-logo { margin:0 auto; }
+
+/* Title emojis keep their own colours */
+h1 .h1-icon { -webkit-text-fill-color: initial; background: none; -webkit-background-clip: border-box; background-clip: border-box; }
 </style>
 </head>
 <body>
@@ -4665,6 +4668,9 @@ function render(page) {
     h = h.replaceAll('Even Pebbles gets confused', 'Everyone gets confused');
     h = h.replaceAll('Pebbles', 'PianoMind');
   }
+
+  // Keep emojis in titles full-colour (the title gradient would paint over them)
+  h = h.replace(/<h1>((?:\p{Extended_Pictographic}|\uFE0F|\u200D)+)/gu, '<h1><span class="h1-icon">$1</span>');
 
   app.innerHTML = h;
 
