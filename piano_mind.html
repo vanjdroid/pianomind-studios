@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Piano Mind Studios</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7c6fef">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PianoMind">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -760,6 +767,27 @@ body.mode-neon .theme-name { color: #ccc; }
     padding: 0.9rem 2.5rem !important;
   }
 }
+
+/* ═══════════════════════════════
+   HOME: EDGE-TO-EDGE SHEET
+   ═══════════════════════════════ */
+body { overflow-x: hidden; }
+body.on-home #app { display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; padding-bottom:0; }
+body.on-home #app > .page { flex:1; display:flex; flex-direction:column; animation: fadeOnly 0.35s ease; }
+@keyframes fadeOnly { from { opacity:0; } to { opacity:1; } }
+body.on-home .card.home-sheet {
+  flex:1;
+  width:100vw;
+  margin:0.3rem calc(50% - 50vw) 0;
+  padding:0.3rem 0 2.5rem;
+  border-radius:26px 26px 0 0;
+  border-left:none; border-right:none; border-bottom:none;
+  overflow:hidden;
+}
+body.on-home .home-sheet > * { max-width:860px; margin-left:auto !important; margin-right:auto !important; }
+@media (max-width: 600px) {
+  body.on-home .card.home-sheet { border-radius:20px 20px 0 0; }
+}
 </style>
 </head>
 <body>
@@ -804,7 +832,7 @@ function cloudSave() {
 
 // Load user data from Firestore
 function cloudLoad(callback) {
-  if (!currentUser) { if (callback) callback(); return; }
+  if (!currentUser || !navigator.onLine) { if (callback) callback(); return; }
   db.collection('users').doc(currentUser.uid).get().then(function(doc) {
     if (doc.exists) {
       var data = doc.data();
@@ -2792,6 +2820,7 @@ function render(page) {
   if (page !== 'rhythm_play') clearRhythmTimers();
   if (page !== 'sightread_play' && page !== 'song_play' && S.sightReadPlaying) stopSightReading();
   S.page = page;
+  document.body.classList.toggle('on-home', page === 'home');
   let h = '<div class="page">';
 
   // ── LOGIN ──
@@ -2878,7 +2907,7 @@ function render(page) {
     var lvl = parseInt(localStorage.getItem('pms_level') || '1', 10);
 
     // One big card for the whole home screen
-    h += `<div class="card" style="padding:0;overflow:hidden;margin-top:0.3rem">`;
+    h += `<div class="card home-sheet">`;
 
     // Welcome banner inside card
     h += `<div style="padding:1rem 1.2rem;border-bottom:1px solid rgba(0,0,0,0.06)">`;
@@ -2955,6 +2984,7 @@ function render(page) {
         {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:'12 badges to unlock — play your first game, get a perfect score, try every mode, and more'},
       ];
       if (showPebbles()) items.push({go:"startFromHome('wardrobe')",icon:'👗',name:'Pebbles Wardrobe',desc:'Six outfits for your dino — Classic, Cool, Party, Pirate, Space, and Winter'});
+      items.push({go:"render('install')",icon:'📲',name:'Get the App',desc:'Put PianoMind on your phone, tablet or computer — then it opens even without internet'});
       items.push({go:"startFromHome('settings')",icon:'⚙️',name:'Settings',desc:'Switch between Cartoon, Smooth, and Neon modes — change themes, toggle Pebbles, and more'});
     } else {
       items = [
@@ -3507,17 +3537,50 @@ function render(page) {
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
   }
 
+  // ── GET THE APP ──
+  else if (page === 'install') {
+    h += `<h1>📲 Get the App</h1>`;
+    h += `<div class="card">`;
+    if (isInstalledApp()) {
+      h += `<p class="speech"><strong>You already have it!</strong> You are using the app version right now.</p>`;
+    } else {
+      h += `<p class="speech">Put PianoMind on your home screen. It opens like a real app.</p>`;
+      h += `<p class="speech">After you open it once with internet, it works offline too.</p>`;
+      if (installPromptEvent) {
+        h += `<button class="btn btn-mint btn-wide" style="margin-top:0.6rem" onclick="installApp()">Install PianoMind</button>`;
+      }
+    }
+    h += `</div>`;
+    if (!isInstalledApp()) {
+      h += `<div class="card">`;
+      h += `<p class="section-label">iPhone or iPad</p>`;
+      h += `<p class="speech">1. Tap the Share button (a box with an arrow).<br>2. Tap <strong>Add to Home Screen</strong>.<br>3. Tap <strong>Add</strong>.</p>`;
+      h += `<p class="section-label">Android phone or tablet</p>`;
+      h += `<p class="speech">1. Tap the ⋮ menu in Chrome.<br>2. Tap <strong>Add to Home screen</strong> or <strong>Install app</strong>.</p>`;
+      h += `<p class="section-label">Computer</p>`;
+      h += `<p class="speech">In Chrome or Edge, click the install icon at the right end of the address bar.</p>`;
+      h += `</div>`;
+    }
+    h += `<p class="caption" style="text-align:center;margin:0.4rem 0">You need internet to log in and to save to the cloud.</p>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.6rem" onclick="render('home')">⬅ Back</button>`;
+  }
+
   // ── ABOUT PAGE ──
   else if (page === 'about') {
     h += `<h1>About Us</h1>`;
-    h += `<div style="display:flex;align-items:center;gap:0.8rem;margin:0.5rem 0">`;
-    h += pebbles('happy', 100);
-    h += `<div><p class="speech"><strong>Pebbles says:</strong> 'This is our story!'</p></div>`;
-    h += `</div>`;
+    if (showPebbles()) {
+      h += `<div style="display:flex;align-items:center;gap:0.8rem;margin:0.5rem 0">`;
+      h += pebbles('happy', 100);
+      h += `<div><p class="speech"><strong>Pebbles says:</strong> 'This is our story!'</p></div>`;
+      h += `</div>`;
+    }
     h += `<div class="card">`;
     h += `<p style="font-size:1.15rem;line-height:1.6;color:#0f2744;font-weight:700;margin:0.4rem 0">Welcome to PianoMind Studios\u2014where musical discovery meets play!</p>`;
     h += `<p style="font-size:1.05rem;line-height:1.7;color:#2c3e50;margin:0.8rem 0">Designed specifically for children, PianoMind Studios turns learning music into an exciting, interactive adventure. Through fun, game-based activities, young learners build real musical skills while exploring a vibrant world where they can customise their own unique characters, unlock achievements, and grow at their own pace.</p>`;
     h += `<p style="font-size:1.05rem;line-height:1.7;color:#2c3e50;margin:0.8rem 0">As every child\u2019s musical journey unfolds, PianoMind Studios evolves right alongside them. We are continuously improving our platform, adding new features, and listening closely to feedback from families and educators to make the experience even more magical.</p>`;
+    h += `</div>`;
+    h += `<div class="card">`;
+    h += `<p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.2rem 0"><strong>Please note:</strong> This app helps you practise skills like those in graded aural tests. It is not affiliated with, endorsed by, or using material from any exam board.</p>`;
     h += `</div>`;
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('settings')">\u2B05 Back to Settings</button>`;
   }
@@ -6105,6 +6168,31 @@ function finishSightReading() {
   if (S.sightReadScore === S.sightReadTotal) confetti();
   if (S.songPlayPage) render('song_play');
   else render('sightread_play');
+}
+
+// ── App install + offline ──
+var installPromptEvent = null;
+function isInstalledApp() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  installPromptEvent = e;
+  if (S.page === 'install') render('install');
+});
+window.addEventListener('appinstalled', function() {
+  installPromptEvent = null;
+  if (S.page === 'install') render('install');
+});
+function installApp() {
+  if (!installPromptEvent) return;
+  installPromptEvent.prompt();
+  installPromptEvent.userChoice.finally(function() { installPromptEvent = null; render('install'); });
+}
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function(e) { console.log('Offline mode not available:', e); });
+  });
 }
 
 // ── Start ──

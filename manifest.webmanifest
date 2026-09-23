@@ -1,0 +1,17 @@
+{
+  "name": "PianoMind Studios",
+  "short_name": "PianoMind",
+  "description": "Piano practice games: ear training, note reading, rhythm, scales and more.",
+  "id": "./piano_mind.html",
+  "start_url": "./piano_mind.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#a2cafb",
+  "theme_color": "#7c6fef",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
