@@ -1330,6 +1330,162 @@ function chordNameSteps(semi) {
   return 0;
 }
 
+// ── Teaching helpers: shared ──
+const ACC_SYMBOL = {natural:'', sharp:'♯', flat:'♭', double_sharp:'𝄪', double_flat:'𝄫'};
+function prettyNote(name) {  // 'f#' -> 'F♯', 'bbb' -> 'B𝄫'
+  const L = name.charAt(0).toUpperCase(), rest = name.slice(1);
+  return L + ({'':'','#':'♯','b':'♭','##':'𝄪','bb':'𝄫'}[rest] ?? rest);
+}
+function crossedBtn(label, crossed, onclick) {
+  return `<button class="btn btn-lilac${crossed ? ' btn-crossed' : ''}" ${crossed ? 'disabled' : `onclick="${onclick}"`}>${label}</button>`;
+}
+function hintBox(title, body, extra) {
+  return `<div class="hint-box"><div class="hint-title">💡 ${title}</div><div>${body}</div>${extra || ''}</div>`;
+}
+function whyBox(title, steps, extra) {
+  let x = `<div class="card why-card"><div class="why-title">🔍 ${title}</div><div class="why-steps">`;
+  steps.forEach(st => { x += `<div class="why-step"><span class="why-n">${st[0]}</span><div>${st[1]}</div></div>`; });
+  return x + `</div>${extra || ''}</div>`;
+}
+
+// ── Teaching helpers: Ear Training ──
+function earKeyName(n) {
+  const w = PIANO_WHITE.find(k => k.n === n); if (w) return w.name;
+  const b = PIANO_BLACK.find(k => k.n === n); return b ? b.name + '/' + b.flat : '?';
+}
+// A choice like 'D' or 'C#/Db' → the key with that name closest to the question note
+function earChoiceToN(choice, nearN) {
+  const cands = [...PIANO_WHITE, ...PIANO_BLACK].filter(k => (k.flat ? k.name + '/' + k.flat : k.name) === choice);
+  if (!cands.length) return null;
+  return cands.reduce((a, b) => Math.abs(b.n - nearN) < Math.abs(a.n - nearN) ? b : a).n;
+}
+function earWhyTargetN() { return (S.level === '5' && S.earStep === 2) ? S.earTarget2N : S.earTargetN; }
+function earHint(picked) {
+  const t = earWhyTargetN(), p = earChoiceToN(picked, t);
+  const dir = t > p ? 'higher' : 'lower';
+  return `The real note is <strong>${dir}</strong> than ${picked}. Play both and listen for which way it goes.`;
+}
+function earWhyHtml(picked) {
+  const t = earWhyTargetN(), p = earChoiceToN(picked, t);
+  const right = earKeyName(t), diff = Math.abs(t - p);
+  const fromC = t - (-9);
+  const cLine = fromC === 0 ? `It <strong>is</strong> middle C.` :
+    `It's <strong>${Math.abs(fromC)} half step${Math.abs(fromC) === 1 ? '' : 's'} ${fromC > 0 ? 'above' : 'below'}</strong> middle C.`;
+  const steps = [
+    ['1', `<strong>Start from home:</strong> middle C is your anchor note. ${cLine}`],
+    ['2', `<strong>Compare:</strong> ${right} is ${diff} half step${diff === 1 ? '' : 's'} <strong>${t > p ? 'higher' : 'lower'}</strong> than your answer, ${picked}.`],
+    ['✓', `So the note was <strong>${right}</strong>.`]
+  ];
+  const btns = `<div class="why-listen">Listen:</div><div class="btn-row">
+    <button class="btn btn-blue" onclick="playNote(-9)">▶ Middle C</button>
+    <button class="btn btn-coral" onclick="playNote(${p})">▶ Yours: ${picked}</button>
+    <button class="btn btn-mint" onclick="playNote(${t})">▶ Right: ${right}</button></div>`;
+  return whyBox(`Why is it ${right}?`, steps, btns);
+}
+
+// ── Teaching helpers: Note Reading ──
+function noteNamesFor(clef) { return clef === 'treble' ? TREBLE_HARD : BASS_HARD; }
+function noteLetterAt(h, clef) { return noteNamesFor(clef)[HEIGHTS_HARD.indexOf(h)].toUpperCase(); }
+function notePlace(h) {   // where the note sits, in plain words
+  if (h >= 0 && h <= 4) return Number.isInteger(h) ? `on <strong>line ${h + 1}</strong> (counting from the bottom)` : `in <strong>space ${h + 0.5}</strong> (counting from the bottom)`;
+  if (h === -0.5) return `just <strong>below</strong> the staff, under the bottom line`;
+  if (h === 4.5) return `just <strong>above</strong> the staff, over the top line`;
+  const d = Math.abs(h < 0 ? h : h - 4);   // distance from the staff edge
+  const where = h < 0 ? 'below' : 'above';
+  return Number.isInteger(h) ? `on <strong>ledger line ${d} ${where}</strong> the staff` : `in the space <strong>${where} ledger line ${Math.floor(d)}</strong>`;
+}
+function noteLetterRule(h, clef) {
+  const lines = clef === 'treble' ? 'E G B D F' : 'G B D F A';
+  const spaces = clef === 'treble' ? 'F A C E' : 'A C E G';
+  if (h >= 0 && h <= 4) return Number.isInteger(h) ? `${clef === 'treble' ? 'Treble' : 'Bass'} clef lines, bottom to top: <strong>${lines}</strong>.` : `${clef === 'treble' ? 'Treble' : 'Bass'} clef spaces, bottom to top: <strong>${spaces}</strong>.`;
+  // outside the staff: count letter by letter from the nearest staff line
+  const edge = h < 0 ? 0 : 4, path = [];
+  for (let x = edge; h < 0 ? x >= h : x <= h; x += h < 0 ? -0.5 : 0.5) path.push(noteLetterAt(x, clef));
+  return `Start at the ${h < 0 ? 'bottom' : 'top'} line (${path[0]}) and count one letter per line or space: <strong>${path.join(' → ')}</strong>.`;
+}
+function normNoteInput(raw) {
+  let clean = raw.toLowerCase().replace(/\s/g, '')
+    .replace('doublesharp', '##').replace('doubleflat', 'bb')
+    .replace('sharp', '#').replace('flat', 'b');
+  clean = clean.replace(/([a-g])x/g, '$1##');
+  const base = clean.replace(/[#b]+$/, '');
+  const suffix = clean.slice(base.length);
+  if (SOLFEGE[base]) clean = SOLFEGE[base] + suffix;
+  return clean;
+}
+function noteHint(picked) {
+  const h = S.noteHeight, clef = S.noteClef;
+  if (picked.charAt(0) !== S.noteFullName.charAt(0)) {
+    return `The letter is off. This note is ${notePlace(h)}. ${noteLetterRule(h, clef)}`;
+  }
+  return `The letter (${S.noteFullName.charAt(0).toUpperCase()}) is right! Now look at the sign in front of the note. ♯ = sharp (#), ♭ = flat (b), 𝄪 = double sharp (##), 𝄫 = double flat (bb). No sign = just the letter.`;
+}
+function noteWhyHtml() {
+  const h = S.noteHeight, clef = S.noteClef, L = noteLetterAt(h, clef);
+  const acc = S.noteAccidental;
+  const accLine = acc === 'natural' ? `There's <strong>no sign</strong> in front, so it's just ${L}.` :
+    `The sign in front is <strong>${ACC_SYMBOL[acc]}</strong> (${acc.replace('_', ' ')}), so it's ${prettyNote(S.noteFullName)}.`;
+  return whyBox(`Why is it ${prettyNote(S.noteFullName)}?`, [
+    ['1', `<strong>Find the spot:</strong> the note is ${notePlace(h)}.`],
+    ['2', `<strong>Name the letter:</strong> ${noteLetterRule(h, clef)} So it's <strong>${L}</strong>.`],
+    ['3', `<strong>Check the sign:</strong> ${accLine}`],
+    ['✓', `The answer is <strong>${prettyNote(S.noteFullName)}</strong>. You typed ${S.notePickedRaw}.`]
+  ]);
+}
+
+// ── Teaching helpers: Chords ──
+const CHORD_RECIPE = {
+  'Major':'4 + 7 half steps (Major 3rd + Perfect 5th)',
+  'Minor':'3 + 7 half steps (Minor 3rd + Perfect 5th)',
+  'Diminished':'3 + 6 half steps (Minor 3rd + Diminished 5th)',
+  'Augmented':'4 + 8 half steps (Major 3rd + Augmented 5th)',
+  'Major 7th':'4 + 7 + 11 half steps (Major chord + Major 7th)',
+  'Minor 7th':'3 + 7 + 10 half steps (Minor chord + Minor 7th)',
+  'Dom 7th':'4 + 7 + 10 half steps (Major chord + Minor 7th)'
+};
+const CHORD_UPPER_NAME = {3:'Minor 3rd',4:'Major 3rd',6:'Diminished 5th',7:'Perfect 5th',8:'Augmented 5th',10:'Minor 7th',11:'Major 7th'};
+function chordSpell(rootName, type) {   // e.g. ('B','Augmented') -> ['B','D♯','F𝄪']
+  const info = getChordStaffInfo(rootName, type, 'treble');
+  const rootIdx = NOTE_ORDER_C.indexOf(rootName);
+  return CHORD_INTERVALS[type].map((semi, i) => NOTE_ORDER_C[(rootIdx + chordNameSteps(semi)) % 7] + ACC_SYMBOL[info.accidentals[i]]);
+}
+function splitChord(name) { const i = name.indexOf(' '); return [name.slice(0, i), name.slice(i + 1)]; }
+function playChordByName(name) {
+  const [root, type] = splitChord(name);
+  const rootN = (S.chordClef === 'treble' ? TREBLE_ROOT_N : BASS_ROOT_N)[root];
+  if (rootN === undefined) return;
+  playChord(CHORD_INTERVALS[type].map(i => rootN + i));
+}
+function chordHint(picked) {
+  const [pr, pt] = splitChord(picked);
+  if (pr !== S.chordRootName) {
+    return S.chordEarOnly
+      ? `The <strong>root</strong> (the letter name) is off. Play your chord, then the question. Is the real one higher or lower?`
+      : `The <strong>root</strong> is off. In these chords the root is always the <strong>lowest</strong> note. It gives the chord its letter name.`;
+  }
+  const t = S.chordType;
+  let x = `The root (${pr}) is right! Now check the chord type. Count half steps up from the root: `;
+  if (/7th/.test(t) || /7th/.test(pt)) x += `3 or 4 to the next note (Minor or Major 3rd), then look at the top note: 10 = Minor 7th, 11 = Major 7th.`;
+  else if (t === 'Diminished' || t === 'Augmented' || pt === 'Diminished' || pt === 'Augmented') x += `3 or 4 to the middle note, then 6, 7 or 8 to the top note (Diminished, Perfect or Augmented 5th).`;
+  else x += `<strong>4</strong> half steps to the middle note = Major (bright). <strong>3</strong> = Minor (darker).`;
+  return x;
+}
+function chordWhyHtml() {
+  const notes = chordSpell(S.chordRootName, S.chordType);
+  const ints = CHORD_INTERVALS[S.chordType].slice(1);
+  const parts = ints.map((semi, i) => `${notes[0]} → ${notes[i + 1]} = ${semi} half steps (${CHORD_UPPER_NAME[semi]})`);
+  const steps = [
+    ['1', `<strong>Find the root:</strong> the lowest note is <strong>${notes[0]}</strong>, so it's a ${notes[0]} chord.`],
+    ['2', `<strong>The notes are:</strong> ${notes.join(' – ')}. ${parts.join('. ')}.`],
+    ['3', `<strong>Match the recipe:</strong> ${S.chordType} = ${CHORD_RECIPE[S.chordType]}.`],
+    ['✓', `So it's <strong>${S.chordAnswer}</strong>.`]
+  ];
+  const btns = `<div class="why-listen">Listen to the difference:</div><div class="btn-row">
+    <button class="btn btn-coral" onclick="playChordByName(S.chordPicked)">▶ Yours: ${S.chordPicked}</button>
+    <button class="btn btn-mint" onclick="playChordByName(S.chordAnswer)">▶ Right: ${S.chordAnswer}</button></div>`;
+  return whyBox(`Why is it ${S.chordAnswer}?`, steps, btns);
+}
+
 function getChordStaffInfo(rootName, chordType, clef) {
   const intervals = CHORD_INTERVALS[chordType];
   const rootIdx = NOTE_ORDER_C.indexOf(rootName);
@@ -1346,6 +1502,8 @@ function getChordStaffInfo(rootName, chordType, clef) {
     let acc = 'natural';
     if (diff === 1) acc = 'sharp';
     else if (diff === 11) acc = 'flat';
+    else if (diff === 2) acc = 'double_sharp';
+    else if (diff === 10) acc = 'double_flat';
     accidentals.push(acc);
   });
   return { heights, accidentals };
@@ -2496,6 +2654,8 @@ function drawChordStaff(canvasId, heights, accidentals, clef) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       if (acc === 'sharp') { ctx.font = '700 28px Quicksand'; ctx.fillText('#', accX, ny - 2); }
       else if (acc === 'flat') { ctx.font = '28px serif'; ctx.fillText('♭', accX, ny - 2); }
+      else if (acc === 'double_sharp') { ctx.font = '24px serif'; ctx.fillText('𝄪', accX, ny); }
+      else if (acc === 'double_flat') { ctx.font = '24px serif'; ctx.fillText('𝄫', accX, ny); }
       prevAccX = ny;
     }
   });
@@ -2800,6 +2960,7 @@ function newEarRound() {
   S.earTargetName = note.name;
   S.earTargetFlat = note.flat || '';
   S.earFeedback = null;
+  S.earTries = 0; S.earPicked = null; S.earCrossed = [];
 
   if (S.level === '5') {
     let note2 = pick(pool);
@@ -2874,6 +3035,7 @@ function newNoteRound() {
   S.noteAccidental = acc;
   S.noteFullName = fullName;
   S.noteFeedback = null;
+  S.noteTries = 0; S.notePicked = null; S.notePickedRaw = '';
 }
 
 function newIntervalRound() {
@@ -2924,6 +3086,7 @@ function newChordRound() {
   S.chordAccidentals = info.accidentals;
   S.chordAnswer = S.chordRootName + ' ' + S.chordType;
   S.chordFeedback = null;
+  S.chordTries = 0; S.chordPicked = null; S.chordCrossed = [];
   // Build choices — mix of roots and types
   const numChordChoices = (S.level === '4' || S.level === '5') ? 6 : 4;
   const choices = new Set([S.chordAnswer]);
@@ -3317,23 +3480,32 @@ function render(page) {
       h += `<div class="play-btn" onclick="playNote(${S.earTargetN})">Hear the note</div>`;
     }
 
-    if (!fb) {
-      h += pebbles('asking', 120);
+    if (!fb || fb === 'retry') {
+      h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
       h += `<div class="card">`;
-      h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_EAR)}'</p>`;
+      if (fb === 'retry') {
+        const pN = earChoiceToN(S.earPicked, S.earTargetN);
+        h += hintBox(`Not quite. It's not ${S.earPicked}. Here's a hint:`, earHint(S.earPicked),
+          `<div class="btn-row" style="margin-top:0.6rem"><button class="btn btn-blue" onclick="playNote(${pN})">▶ Hear your answer</button><button class="btn btn-mint" onclick="playNote(${S.earTargetN})">▶ Hear the question</button></div>`);
+        h += `<p class="speech" style="margin-top:0.6rem"><strong>One more try!</strong></p>`;
+      } else {
+        h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_EAR)}'</p>`;
+      }
       h += `<div class="choice-grid">`;
-      S.earChoices.forEach(name => {
-        h += `<button class="btn btn-lilac" onclick="earAnswer('${name}')">${name}</button>`;
-      });
+      S.earChoices.forEach(name => { h += crossedBtn(name, (S.earCrossed || []).includes(name), `earAnswer('${name}')`); });
       h += `</div></div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
       h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_EAR)}'</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next →</button>`;
+    } else if (fb === 'correct2') {
+      h += pebbles('happy');
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${earKeyName(S.earTargetN)}</strong>. No point this time, but now you know how to find it.</div>`;
+      h += earWhyHtml(S.earCrossed[0]);
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
-      const earAns = S.earTargetFlat ? S.earTargetName + '/' + S.earTargetFlat : S.earTargetName;
-      h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'It was <strong>${earAns}</strong>! ${S.earTip}'</div>`;
+      h += earWhyHtml(S.earPicked);
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next →</button>`;
     }
   }
@@ -3410,10 +3582,15 @@ function render(page) {
     h += progressBar(r, total);
     h += `<canvas id="staffCanvas" width="400" height="260"></canvas>`;
 
-    if (!fb) {
-      h += pebbles('asking', 120);
+    if (!fb || fb === 'retry') {
+      h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
       h += `<div class="card">`;
-      h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_NOTE)}'</p>`;
+      if (fb === 'retry') {
+        h += hintBox(`Not quite. It's not ${S.notePickedRaw}. Here's a hint:`, noteHint(S.notePicked));
+        h += `<p class="speech" style="margin-top:0.6rem"><strong>One more try!</strong></p>`;
+      } else {
+        h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_NOTE)}'</p>`;
+      }
       h += `<div class="input-wrap"><label>Your answer:</label>
             <input id="noteAns" type="text" placeholder="e.g. C, F#, Bb..."
                    onkeydown="if(event.key==='Enter')checkNote()"></div>`;
@@ -3424,9 +3601,14 @@ function render(page) {
       h += pebbles('happy');
       h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_NOTE)}'</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next →</button>`;
+    } else if (fb === 'correct2') {
+      h += pebbles('happy');
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${prettyNote(S.noteFullName)}</strong>. No point this time, but now you know how to read it.</div>`;
+      h += noteWhyHtml();
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
-      h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'This note is <strong>${S.noteFullName.toUpperCase()}</strong>! ${S.noteTip}'</div>`;
+      h += noteWhyHtml();
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next →</button>`;
     }
   }
@@ -3597,22 +3779,32 @@ function render(page) {
       h += `<canvas id="chordCanvas" width="360" height="260" style="display:block;margin:0.5rem auto;border-radius:14px"></canvas>`;
     }
     h += `<div class="play-btn" onclick="playChord([${S.chordNotes}])">Hear the chord</div>`;
-    if (!fb) {
-      h += pebbles('asking', 120);
+    if (!fb || fb === 'retry') {
+      h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
       h += `<div class="card">`;
-      h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_CHORD)}'</p>`;
+      if (fb === 'retry') {
+        h += hintBox(`Not quite. It's not ${S.chordPicked}. Here's a hint:`, chordHint(S.chordPicked),
+          `<div class="btn-row" style="margin-top:0.6rem"><button class="btn btn-blue" onclick="playChordByName(S.chordPicked)">▶ Hear your answer</button><button class="btn btn-mint" onclick="playChord([${S.chordNotes}])">▶ Hear the question</button></div>`);
+        h += `<p class="speech" style="margin-top:0.6rem"><strong>One more try!</strong></p>`;
+      } else {
+        h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_CHORD)}'</p>`;
+      }
       h += `<div class="choice-grid">`;
-      S.chordChoices.forEach(name => {
-        h += `<button class="btn btn-lilac" onclick="chordAnswer('${name}')">${name}</button>`;
-      });
+      S.chordChoices.forEach(name => { h += crossedBtn(name, (S.chordCrossed || []).includes(name), `chordAnswer('${name}')`); });
       h += `</div></div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
       h += `<div class="alert alert-success"><strong>Pebbles says:</strong> '${pick(P.YAY_CHORD)}'</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next →</button>`;
+    } else if (fb === 'correct2') {
+      h += pebbles('happy');
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${S.chordAnswer}</strong>. No point this time, but now you know how to work it out.</div>`;
+      S.chordPicked = S.chordCrossed[0];
+      h += chordWhyHtml();
+      h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next →</button>`;
     } else if (fb === 'wrong') {
       h += pebbles('thinking');
-      h += `<div class="alert alert-error"><strong>Pebbles says:</strong> 'It was <strong>${S.chordAnswer}</strong>! ${S.chordTip}'</div>`;
+      h += chordWhyHtml();
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next →</button>`;
     }
   }
@@ -4780,7 +4972,7 @@ function render(page) {
   }
   if (page === 'note_play') {
     drawStaff('staffCanvas', S.noteHeight, S.noteAccidental, S.noteClef);
-    if (!S.noteFeedback) setTimeout(() => $('noteAns')?.focus(), 100);
+    if (!S.noteFeedback || S.noteFeedback === 'retry') setTimeout(() => $('noteAns')?.focus(), 100);
   }
   if (page === 'interval_play' && !S.intEarMode) {
     drawIntervalStaff('intCanvas', S.intH1, S.intH2);
@@ -4952,20 +5144,17 @@ function nextExQuestion() {
 function checkNote() {
   const input = $('noteAns');
   if (!input || !input.value.trim()) return;
-  let clean = input.value.toLowerCase().replace(/\s/g, '')
-    .replace('doublesharp', '##').replace('doubleflat', 'bb')
-    .replace('sharp', '#').replace('flat', 'b');
-
-  // Only replace standalone 'x' with '##' if it follows a letter (e.g., cx → c##)
-  clean = clean.replace(/([a-g])x/g, '$1##');
-
-  // Solfège
-  const base = clean.replace(/[#b]+$/, '');
-  const suffix = clean.slice(base.length);
-  if (SOLFEGE[base]) clean = SOLFEGE[base] + suffix;
-
-  if (clean === S.noteFullName) { S.score++; S.noteFeedback = 'correct'; recordCorrectAnswer(); sfxCorrect(); }
-  else { S.noteFeedback = 'wrong'; S.noteTip = pick(NOTE_TIPS); sfxWrong(); addToPouch(S.noteFullName, 'note'); }
+  const clean = normNoteInput(input.value);
+  S.noteTries = (S.noteTries || 0) + 1;
+  S.notePicked = clean;
+  S.notePickedRaw = input.value.trim();
+  if (clean === S.noteFullName) {
+    if (S.noteTries === 1) { S.score++; S.noteFeedback = 'correct'; recordCorrectAnswer(); }
+    else S.noteFeedback = 'correct2';
+    sfxCorrect();
+  } else if (S.noteTries === 1) {
+    S.noteFeedback = 'retry'; sfxWrong(); addToPouch(S.noteFullName, 'note');
+  } else { S.noteFeedback = 'wrong'; sfxWrong(); }
   render('note_play');
 }
 
@@ -4988,8 +5177,15 @@ function intervalAnswer(answer) {
 }
 
 function chordAnswer(answer) {
-  if (answer === S.chordAnswer) { S.score++; S.chordFeedback = 'correct'; recordCorrectAnswer('_chordCorrect'); sfxCorrect(); }
-  else { S.chordFeedback = 'wrong'; S.chordTip = pick(CHORD_TIPS); sfxWrong(); }
+  S.chordTries = (S.chordTries || 0) + 1;
+  S.chordPicked = answer;
+  if (answer === S.chordAnswer) {
+    if (S.chordTries === 1) { S.score++; S.chordFeedback = 'correct'; recordCorrectAnswer('_chordCorrect'); }
+    else S.chordFeedback = 'correct2';
+    sfxCorrect();
+  } else if (S.chordTries === 1) {
+    S.chordFeedback = 'retry'; S.chordCrossed = [answer]; sfxWrong();
+  } else { S.chordFeedback = 'wrong'; sfxWrong(); }
   render('chord_play');
 }
 
@@ -5010,7 +5206,7 @@ function earAnswer(answer) {
       S.earChoices = [...choices].sort(() => Math.random() - 0.5);
       render('ear_play');
     } else {
-      S.earFeedback = 'wrong'; S.earTip = pick(EAR_TIPS); sfxWrong();
+      S.earPicked = answer; S.earFeedback = 'wrong'; sfxWrong();
       render('ear_play');
     }
     return;
@@ -5018,13 +5214,20 @@ function earAnswer(answer) {
   if (S.level === '5' && S.earStep === 2) {
     const correct2 = S.earTarget2Flat ? S.earTarget2Name+'/'+S.earTarget2Flat : S.earTarget2Name;
     if (answer === correct2) { S.score++; S.earFeedback = 'correct'; recordCorrectAnswer('_earCorrect'); sfxCorrect(); }
-    else { S.earFeedback = 'wrong'; S.earTip = pick(EAR_TIPS); sfxWrong(); }
+    else { S.earPicked = answer; S.earFeedback = 'wrong'; sfxWrong(); }
     render('ear_play');
     return;
   }
   const correct = S.earTargetFlat ? S.earTargetName+'/'+S.earTargetFlat : S.earTargetName;
-  if (answer === correct) { S.score++; S.earFeedback = 'correct'; recordCorrectAnswer('_earCorrect'); sfxCorrect(); }
-  else { S.earFeedback = 'wrong'; S.earTip = pick(EAR_TIPS); sfxWrong(); addToPouch(S.earTargetName, 'ear'); }
+  S.earTries = (S.earTries || 0) + 1;
+  S.earPicked = answer;
+  if (answer === correct) {
+    if (S.earTries === 1) { S.score++; S.earFeedback = 'correct'; recordCorrectAnswer('_earCorrect'); }
+    else S.earFeedback = 'correct2';
+    sfxCorrect();
+  } else if (S.earTries === 1) {
+    S.earFeedback = 'retry'; S.earCrossed = [answer]; sfxWrong(); addToPouch(S.earTargetName, 'ear');
+  } else { S.earFeedback = 'wrong'; sfxWrong(); }
   render('ear_play');
 }
 
