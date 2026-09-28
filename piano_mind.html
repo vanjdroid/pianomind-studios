@@ -951,6 +951,55 @@ h1 .h1-icon { -webkit-text-fill-color: initial; background: none; -webkit-backgr
 body.mode-neon .hint-box { background:rgba(255,200,60,0.08); border-color:rgba(255,200,60,0.4); color:#eee; }
 body.mode-neon .why-card { border-color:rgba(0,200,255,0.45); }
 body.mode-neon .why-n { background:rgba(0,200,255,0.15); color:#00c8ff; }
+
+/* ── Time Attack ── */
+body.no-anim .page, body.no-anim .card { animation:none !important; }
+.ta-mode { cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:1rem; }
+.ta-mode:hover { transform:translateY(-2px); }
+.ta-mode-name { font-weight:700; font-size:1.05rem; }
+.ta-mode-desc { font-size:0.85rem; color:#6b7fa3; }
+.ta-mode-best { font-weight:700; white-space:nowrap; }
+.ta-top { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:0.4rem; }
+.ta-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#6b7fa3; }
+.ta-clock, .ta-score { font-size:2.6rem; font-weight:700; line-height:1; }
+.ta-clock.ta-low { color:#e5484d; animation: taPulse 0.5s ease-in-out infinite alternate; }
+@keyframes taPulse { to { transform:scale(1.08); } }
+.ta-stage { border-radius:16px; margin:0.7rem auto; text-align:center; transition:box-shadow 0.25s; }
+.ta-stage canvas { max-width:100%; border-radius:14px; }
+.ta-flash-ok { box-shadow:0 0 0 4px rgba(46,190,120,0.7); }
+.ta-flash-bad { box-shadow:0 0 0 4px rgba(229,72,77,0.7); }
+.ta-choices.ta-seven { grid-template-columns:repeat(7, 1fr); }
+.ta-choices .btn { font-size:1.15rem; }
+.ta-miss { display:grid; grid-template-columns:1fr 1fr; padding:0.4rem 0.2rem; border-bottom:1px solid rgba(0,0,0,0.06); }
+.ta-miss-head { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#6b7fa3; }
+@media (max-width: 600px) { .ta-choices.ta-seven { grid-template-columns:repeat(4, 1fr); } }
+
+/* ── Instrument picker ── */
+.inst-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:0.6rem; }
+.inst-card { cursor:pointer; text-align:center; padding:0.8rem 0.5rem; border-radius:16px; background:rgba(255,255,255,0.35); border:2px solid transparent; transition:all 0.15s; }
+.inst-card:hover { transform:translateY(-2px); }
+.inst-card.active { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); }
+.inst-icon { font-size:1.8rem; }
+.inst-name { font-weight:700; font-size:0.9rem; margin-top:0.2rem; }
+.inst-desc { font-size:0.72rem; color:#6b7fa3; line-height:1.3; }
+body.mode-neon .inst-card { background:#111; }
+body.mode-neon .inst-card.active { border-color:#00c8ff; background:rgba(0,200,255,0.1); }
+body.mode-smooth .inst-card { background:#fff; border-color:#e3e3e3; }
+body.mode-smooth .inst-card.active { border-color:#7c6fef; }
+
+/* ── Profile picture ── */
+.user-avatar { display:block; border-radius:50%; object-fit:cover; flex-shrink:0; box-shadow:0 3px 12px rgba(20,18,60,0.2); }
+.user-avatar-emoji { display:flex; align-items:center; justify-content:center; line-height:1; }
+.side-user-row { display:flex; align-items:center; gap:0.55rem; }
+.side-user-row .app-logo, .side-user-row .user-avatar { border-radius:50%; }
+.av-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(54px, 1fr)); gap:0.5rem; }
+.av-pick { aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.6rem; cursor:pointer; border:3px solid transparent; transition:transform 0.15s; }
+.av-pick:hover { transform:scale(1.08); }
+.av-pick.active { border-color:#0f2744; }
+.av-colors { display:flex; gap:0.5rem; flex-wrap:wrap; }
+.av-color { width:34px; height:34px; border-radius:50%; cursor:pointer; border:3px solid transparent; }
+.av-color.active { border-color:#0f2744; }
+body.mode-neon .av-pick.active, body.mode-neon .av-color.active { border-color:#00c8ff; }
 </style>
 </head>
 <body>
@@ -985,7 +1034,7 @@ function cloudSave() {
   if (!currentUser) return;
   var data = {};
   ['pms_scores','pms_daily','pms_hanon','pms_pouch','pms_xp','pms_level',
-   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done'
+   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar'
   ].forEach(function(key) {
     var val = localStorage.getItem(key);
     if (val) data[key] = val;
@@ -1036,7 +1085,16 @@ function signInEmail(email, password) {
 // Sign out
 function signOut() {
   cloudSave();
+  try { localStorage.removeItem('pms_guest'); } catch(e) {}
   auth.signOut();
+}
+
+// Guest mode: play without an account (progress stays on this device)
+function isGuest() { return !currentUser && localStorage.getItem('pms_guest') === 'yes'; }
+function startGuest() {
+  try { localStorage.setItem('pms_guest', 'yes'); } catch(e) {}
+  applyMode();
+  render(localStorage.getItem('pms_tutorial_done') ? 'home' : 'welcome');
 }
 
 // Auth state listener
@@ -1044,6 +1102,7 @@ auth.onAuthStateChanged(function(user) {
   currentUser = user;
   authReady = true;
   if (user) {
+    try { localStorage.removeItem('pms_guest'); } catch(e) {}
     // Show loading while fetching cloud data
     document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Welcome back!</div><div style="font-size:0.85rem;color:#6b7fa3;margin-top:0.3rem">Loading your progress...</div></div></div>';
     cloudLoad(function() {
@@ -1051,6 +1110,8 @@ auth.onAuthStateChanged(function(user) {
       if (localStorage.getItem('pms_tutorial_done')) render('home');
       else render('welcome');
     });
+  } else if (localStorage.getItem('pms_guest') === 'yes') {
+    startGuest();
   } else {
     render('login');
   }
@@ -2397,22 +2458,134 @@ function getAudioCtx() {
   return audioCtx;
 }
 
+// ═══════════════════════════════════
+//  INSTRUMENT ENGINE — every sound is built with Web Audio (no audio files)
+// ═══════════════════════════════════
+const INSTRUMENTS = {
+  piano:       { name: 'Grand Piano',     icon: '🎹', desc: 'Warm, rich piano tone' },
+  harpsichord: { name: 'Harpsichord',     icon: '🎼', desc: 'Bright and plucked, like Bach' },
+  epiano:      { name: 'Electric Piano',  icon: '✨', desc: 'Soft, bell-like, a bit jazzy' },
+  musicbox:    { name: 'Music Box',       icon: '🎁', desc: 'Tiny, twinkly and sweet' },
+  organ:       { name: 'Organ',           icon: '⛪', desc: 'Holds the note, like a church organ' },
+  retro:       { name: 'Retro 8-bit',     icon: '👾', desc: 'Video-game chiptune' },
+  classic:     { name: 'Classic Beep',    icon: '🔔', desc: 'The original PianoMind sound' }
+};
+function getInstrument() { const i = localStorage.getItem('pms_instrument'); return INSTRUMENTS[i] ? i : 'piano'; }
+function setInstrument(id) {
+  try { localStorage.setItem('pms_instrument', id); } catch(e) {}
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  [-9, -5, -2, 3].forEach((n, i) => makeNote(ctx, noteToFreq(n), now + i * 0.16, i === 3 ? 1.1 : 0.4, 0.35));   // C E G C preview
+  if (S.page === 'settings') render('settings');
+}
+let masterBus = null;
+function getMaster(ctx) {
+  if (!masterBus) {           // gentle limiter so chords never crackle
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -8; comp.knee.value = 6; comp.ratio.value = 12;
+    comp.attack.value = 0.002; comp.release.value = 0.2;
+    const trim = ctx.createGain(); trim.gain.value = 0.62;   // cancels the compressor's built-in boost
+    comp.connect(trim); trim.connect(ctx.destination);
+    masterBus = comp;
+  }
+  return masterBus;
+}
+function osc(ctx, type, freq, t, dest) {
+  const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
+  o.connect(dest); o.start(t); return o;
+}
+// Starts one note. Returns { release(time) } — decaying instruments also fade by themselves.
+function startVoice(ctx, freq, t, vol, inst) {
+  inst = inst || getInstrument();
+  const out = ctx.createGain(); out.gain.setValueAtTime(0, t); out.connect(getMaster(ctx));
+  const oscs = []; let sustains = false;
+  const lowDecay = Math.pow(440 / freq, 0.35);     // low notes ring longer
+  if (inst === 'piano') {
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.5;
+    lp.frequency.setValueAtTime(Math.min(freq * 9, 16000), t);
+    lp.frequency.setTargetAtTime(Math.min(freq * 3, 9000), t + 0.01, 0.35);
+    lp.connect(out);
+    const amps = [1, 0.55, 0.32, 0.2, 0.12, 0.07, 0.04];
+    amps.forEach((amp, k) => {
+      const n = k + 1, ratio = n * Math.sqrt(1 + 0.00035 * n * n);   // real strings are slightly "stretched"
+      const g = ctx.createGain(); g.connect(lp);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 0.004);
+      g.gain.setTargetAtTime(0, t + 0.006, 1.4 * lowDecay / Math.pow(n, 0.6));
+      oscs.push(osc(ctx, 'sine', freq * ratio, t, g));
+      if (k === 0) { const o2 = osc(ctx, 'sine', freq * 1.0012, t, g); oscs.push(o2); }   // tiny detune = warmth
+    });
+    out.gain.linearRampToValueAtTime(vol * 0.34, t + 0.004);
+  } else if (inst === 'harpsichord') {
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.9;
+    lp.frequency.setValueAtTime(Math.min(freq * 14, 18000), t);
+    lp.frequency.setTargetAtTime(Math.min(freq * 4, 9000), t + 0.005, 0.25);
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = freq * 0.7;
+    hp.connect(lp); lp.connect(out);
+    oscs.push(osc(ctx, 'sawtooth', freq, t, hp));
+    const g4 = ctx.createGain(); g4.gain.value = 0.35; g4.connect(hp);
+    oscs.push(osc(ctx, 'sawtooth', freq * 2, t, g4));               // the bright "4-foot" string
+    out.gain.linearRampToValueAtTime(vol * 0.46, t + 0.002);
+    out.gain.setTargetAtTime(0, t + 0.01, 0.75 * lowDecay);
+  } else if (inst === 'epiano') {
+    const mod = ctx.createGain();                                    // FM: a sine wobbling another sine
+    mod.gain.setValueAtTime(freq * 2.2, t); mod.gain.setTargetAtTime(freq * 0.25, t, 0.25);
+    const carrier = osc(ctx, 'sine', freq, t, out);
+    oscs.push(carrier, osc(ctx, 'sine', freq, t, mod));
+    mod.connect(carrier.frequency);
+    const tine = ctx.createGain(); tine.gain.setValueAtTime(freq * 0.8, t); tine.gain.setTargetAtTime(0, t, 0.04);
+    oscs.push(osc(ctx, 'sine', freq * 14, t, tine)); tine.connect(carrier.frequency);
+    out.gain.linearRampToValueAtTime(vol * 0.5, t + 0.006);
+    out.gain.setTargetAtTime(0, t + 0.01, 1.3 * lowDecay);
+  } else if (inst === 'musicbox') {
+    [[1, 1, 1.1], [3.93, 0.28, 0.25], [6.8, 0.12, 0.12]].forEach(([r, amp, dec]) => {
+      const g = ctx.createGain(); g.connect(out);
+      g.gain.setValueAtTime(amp, t); g.gain.setTargetAtTime(0, t + 0.002, dec * lowDecay);
+      oscs.push(osc(ctx, 'sine', freq * r, t, g));
+    });
+    out.gain.linearRampToValueAtTime(vol * 0.55, t + 0.002);
+  } else if (inst === 'organ') {
+    sustains = true;
+    [[1, 1], [2, 0.55], [3, 0.3], [4, 0.22], [6, 0.1]].forEach(([r, amp]) => {
+      const g = ctx.createGain(); g.gain.value = amp; g.connect(out);
+      oscs.push(osc(ctx, 'sine', freq * r, t, g));
+    });
+    const lfo = ctx.createOscillator(), lg = ctx.createGain();       // gentle "Leslie" wobble
+    lfo.frequency.value = 5.5; lg.gain.value = freq * 0.002; lfo.connect(lg);
+    oscs.forEach(o => lg.connect(o.frequency)); lfo.start(t); oscs.push(lfo);
+    out.gain.linearRampToValueAtTime(vol * 0.32, t + 0.03);
+  } else if (inst === 'retro') {
+    sustains = true;
+    const sq = osc(ctx, 'square', freq, t, out); oscs.push(sq);
+    const lfo = ctx.createOscillator(), lg = ctx.createGain();       // late vibrato, like old game consoles
+    lfo.frequency.value = 6; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(freq * 0.006, t + 0.35);
+    lfo.connect(lg); lg.connect(sq.frequency); lfo.start(t); oscs.push(lfo);
+    out.gain.setValueAtTime(vol * 0.3, t);
+    out.gain.setTargetAtTime(vol * 0.2, t + 0.05, 0.15);
+  } else {   // classic beep (the original sound)
+    [1, 2, 3, 4].forEach((ratio, i) => {
+      const amp = [1, 0.35, 0.12, 0.04][i];
+      const g = ctx.createGain(); g.connect(out);
+      g.gain.setValueAtTime(amp, t); g.gain.exponentialRampToValueAtTime(amp * 0.15, t + 0.4);
+      oscs.push(osc(ctx, 'sine', freq * ratio, t, g));
+    });
+    out.gain.setValueAtTime(vol, t);
+  }
+  let released = false;
+  return {
+    sustains: sustains,
+    release(at) {
+      if (released) return; released = true;
+      const tail = sustains ? 0.08 : 0.15;
+      out.gain.cancelScheduledValues(at);
+      out.gain.setValueAtTime(out.gain.value, at);
+      out.gain.setTargetAtTime(0, at, tail / 3);
+      oscs.forEach(o => { try { o.stop(at + tail + 0.05); } catch(e) {} });
+    }
+  };
+}
 function makeNote(ctx, freq, startTime, duration, vol) {
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(vol, startTime);
-  master.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-  master.connect(ctx.destination);
-  [1, 2, 3, 4].forEach((ratio, i) => {
-    const amp = [1, 0.35, 0.12, 0.04][i];
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq * ratio;
-    g.gain.setValueAtTime(amp, startTime);
-    g.gain.exponentialRampToValueAtTime(amp * 0.15, startTime + duration * 0.4);
-    osc.connect(g); g.connect(master);
-    osc.start(startTime); osc.stop(startTime + duration);
-  });
+  const v = startVoice(ctx, freq, startTime, vol);
+  // Decaying instruments ring a little past the written length; held ones stop on time
+  v.release(startTime + (v.sustains ? duration : Math.max(duration, 0.9) + 0.6));
 }
 
 function playTones(n1, n2, speed) {
@@ -2438,34 +2611,16 @@ function sfxEnabled() { return localStorage.getItem('pms_sfx') !== 'off'; }
 
 function sfxCorrect() {
   if (!sfxEnabled()) return;
-  // Quick bright two-note chime (C5 → E5)
-  const ctx = getAudioCtx();
-  const now = ctx.currentTime;
-  [523, 659].forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    g.gain.setValueAtTime(0.2, now + i * 0.1);
-    g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.2);
-    osc.connect(g); g.connect(ctx.destination);
-    osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.25);
-  });
+  // Quick rising two-note chime (C6 → E6) in the chosen instrument
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  [1047, 1319].forEach((f, i) => { const v = startVoice(ctx, f, now + i * 0.09, 0.22); v.release(now + i * 0.09 + (v.sustains ? 0.12 : 0.35)); });
 }
 
 function sfxWrong() {
   if (!sfxEnabled()) return;
-  // Gentle low buzz
-  const ctx = getAudioCtx();
-  const now = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = 'triangle';
-  osc.frequency.value = 220;
-  g.gain.setValueAtTime(0.15, now);
-  g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-  osc.connect(g); g.connect(ctx.destination);
-  osc.start(now); osc.stop(now + 0.3);
+  // Soft falling two-note "hmm" (E4 → C#4) in the chosen instrument
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  [330, 277].forEach((f, i) => { const v = startVoice(ctx, f, now + i * 0.11, 0.2); v.release(now + i * 0.11 + (v.sustains ? 0.12 : 0.3)); });
 }
 
 function sfxLevelUp() {
@@ -3121,23 +3276,7 @@ function pianoDown(n, name) {
   if (S.page === 'melody_play' && S.melodyPhase === 'play') { melodyTap(n, name); return; }
   markGamePlayed('piano');
   const ctx = getAudioCtx();
-  const freq = noteToFreq(n);
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(0.4, ctx.currentTime);
-  master.connect(ctx.destination);
-  const oscs = [1, 2, 3, 4].map((ratio, i) => {
-    const amp = [1, 0.35, 0.12, 0.04][i];
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq * ratio;
-    g.gain.setValueAtTime(amp, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(amp * 0.25, ctx.currentTime + 0.4);
-    osc.connect(g); g.connect(master);
-    osc.start();
-    return osc;
-  });
-  pianoOscs[n] = { oscs, master };
+  pianoOscs[n] = startVoice(ctx, noteToFreq(n), ctx.currentTime, 0.45);
   S.pianoLastNote = name;
   const disp = $('pianoDisplay');
   const bk = PIANO_BLACK.find(k => k.n === n);
@@ -3146,14 +3285,15 @@ function pianoDown(n, name) {
 }
 function pianoUp(n) {
   if (!pianoOscs[n]) return;
-  const e = pianoOscs[n], ctx = getAudioCtx();
-  e.master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-  e.oscs.forEach(o => o.stop(ctx.currentTime + 0.12));
+  const ctx = getAudioCtx();
+  // Held instruments stop when you let go; pianos keep ringing a little, like a real key release
+  pianoOscs[n].release(ctx.currentTime + (pianoOscs[n].sustains ? 0 : 0.25));
   delete pianoOscs[n];
 }
 
 function startGame(game, level, rounds, clef) {
   S.score = 0; S.roundNum = 0;
+  S.roundMisses = []; S.roundGame = {ear:'Ear Training', note:'Note Reading', interval:'Intervals', chord:'Chords'}[game] || game;
   S.total = rounds || 10;
   S.level = level;
   if (clef) S.chosenClef = clef;
@@ -3201,6 +3341,53 @@ function appLogo(size) {
   return `<img class="app-logo" src="${src}" width="${size}" height="${size}" alt="PianoMind Studios logo">`;
 }
 
+// ── Profile picture ──
+const AVATAR_PRESETS = ['🎹','🎻','🎸','🥁','🎺','🎷','🎤','🎧','🎼','🦊','🐱','🐼','🦉','🐬','🌙','⭐','🔥','🌸'];
+const AVATAR_COLORS = ['#7c6fef','#4f9df7','#2ec4a0','#f7a94f','#ef6f8f','#8b5cf6'];
+function getAvatar() { try { return localStorage.getItem('pms_avatar') || ''; } catch(e) { return ''; } }
+function avatarHtml(size, clickable) {
+  const a = getAvatar();
+  const onclick = clickable ? ` onclick="render('avatar')"` : '';
+  const cursor = clickable ? 'cursor:pointer;' : '';
+  if (a.startsWith('data:image/')) return `<img class="user-avatar" src="${a}" width="${size}" height="${size}" alt="Profile picture" style="${cursor}"${onclick}>`;
+  if (a.startsWith('emoji:|')) {
+    const parts = a.split('|'), emo = parts[1] || '🎹', col = parts[2] || AVATAR_COLORS[0];
+    return `<div class="user-avatar user-avatar-emoji" style="${cursor}background:${col};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px"${onclick}>${emo}</div>`;
+  }
+  return clickable ? `<div style="cursor:pointer"${onclick}>${appLogo(size)}</div>` : appLogo(size);
+}
+function setAvatar(val) {
+  try { localStorage.setItem('pms_avatar', val); } catch(e) { alert('Could not save the picture on this device.'); return; }
+  if (typeof cloudSave === 'function') cloudSave();
+  render('avatar');
+}
+function pickAvatarEmoji(emo) { setAvatar('emoji:|' + emo + '|' + (S.avatarColor || AVATAR_COLORS[0])); }
+function pickAvatarColor(col) {
+  S.avatarColor = col;
+  const a = getAvatar();
+  if (a.startsWith('emoji:')) setAvatar('emoji:|' + a.split('|')[1] + '|' + col); else render('avatar');
+}
+function clearAvatar() { try { localStorage.removeItem('pms_avatar'); } catch(e) {} if (typeof cloudSave === 'function') cloudSave(); render('avatar'); }
+// Shrink an uploaded photo to a small square (keeps saving fast and light)
+function uploadAvatar(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { alert('Please choose a picture file.'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const SIZE = 192, c = document.createElement('canvas'); c.width = c.height = SIZE;
+      const side = Math.min(img.width, img.height);
+      c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, SIZE, SIZE);
+      setAvatar(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = function() { alert('That picture could not be opened. Try a JPG or PNG.'); };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function progressBar(current, total) {
   const pct = ((current + 1) / total * 100).toFixed(0);
   return `<div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>`;
@@ -3234,7 +3421,7 @@ function renderSidebar(page) {
   var lo = xpForLevel(g.level), hi = xpForLevel(g.level + 1);
   var pct = Math.max(0, Math.min(100, (g.xp - lo) / Math.max(1, hi - lo) * 100)).toFixed(0);
   x += `<div class="side-foot">`;
-  x += `<div class="side-user">${S.name || 'Student'}</div>`;
+  x += `<div class="side-user-row">${avatarHtml(34, true)}<div class="side-user">${S.name || 'Student'}</div></div>`;
   x += `<div class="side-level">Level ${g.level} · ${g.xp} XP</div>`;
   x += `<div class="progress-wrap" style="height:6px;margin-top:0.4rem"><div class="progress-fill" style="width:${pct}%"></div></div>`;
   x += `</div>`;
@@ -3246,10 +3433,12 @@ function render(page) {
   if (page !== 'hanon' && S.hanonPracticing) stopHanonPractice();
   if (page !== 'hanon' && S.hanonPlaying) stopHanonPlay();
   if (page !== 'chord_mixer' && S.mixerPlaying) stopMixerPlay();
+  if (page !== 'ta_play' && S.taTimer) stopTimeAttack();
   if (page !== 'rhythm_play') clearRhythmTimers();
   if (page !== 'sightread_play' && page !== 'song_play' && S.sightReadPlaying) stopSightReading();
   S.page = page;
   document.body.classList.toggle('on-home', page === 'home');
+  document.body.classList.toggle('no-anim', page === 'ta_play' && S.taTries > 0);
   renderSidebar(page);
   let h = '<div class="page">';
 
@@ -3271,6 +3460,9 @@ function render(page) {
     h += `<button class="btn btn-mint btn-wide" style="margin-top:0.4rem" onclick="var e=$('loginEmail'),p=$('loginPass');if(e&&p&&e.value&&p.value)signInEmail(e.value,p.value);else alert('Enter email and password')">Sign in / Sign up</button>`;
 
     h += `<p style="font-size:0.7rem;color:#6b7fa3;margin-top:0.8rem">New? Just type your email and password — we'll create your account automatically.</p>`;
+    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin:0.9rem 0 0.4rem">— or —</div>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="startGuest()">Try without an account →</button>`;
+    h += `<p style="font-size:0.7rem;color:#6b7fa3;margin-top:0.4rem">Your progress stays on this device. You can sign in later to save it to the cloud.</p>`;
     h += `</div>`;
     h += `</div>`;
   }
@@ -3345,7 +3537,7 @@ function render(page) {
     // Welcome
     h += `<div class="home-hero">`;
     h += `<div class="home-hero-top">`;
-    h += appLogo(60);
+    h += avatarHtml(60, true);
     h += `<div style="flex:1;min-width:0">`;
     h += `<div class="home-hello">Welcome back, <span style="color:var(--accent)">${S.name || 'Student'}</span>!</div>`;
     h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
@@ -3400,9 +3592,10 @@ function render(page) {
         joinDate = d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
       }
       h += `<div class="home-profile">`;
-      h += `<div style="margin-bottom:0.3rem">${appLogo(70)}</div>`;
+      h += `<div style="margin-bottom:0.3rem;display:flex;justify-content:center">${avatarHtml(84, true)}</div><div style="font-size:0.72rem"><a href="#" onclick="render('avatar');return false">Change picture</a></div>`;
       h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
       if (currentUser) h += `<div style="font-size:0.72rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
+      else h += `<div style="font-size:0.72rem;color:#6b7fa3">Guest · saved on this device only · <a href="#" onclick="render('login');return false">Sign in</a></div>`;
       if (joinDate) h += `<div style="font-size:0.72rem;color:#6b7fa3">Joined ${joinDate}</div>`;
       h += `<div style="display:flex;justify-content:center;gap:1rem;margin-top:0.5rem">`;
       h += `<div><div style="font-size:1.1rem;font-weight:700">${lvl}</div><div style="font-size:0.65rem;color:#6b7fa3">Level</div></div>`;
@@ -3424,6 +3617,7 @@ function render(page) {
         {go:"startFromHome('interval')",icon:'🎶',name:'Intervals',desc:'Two notes on the staff — name the distance between them, from 3rds and 5ths up to compound intervals'},
         {go:"startFromHome('chord')",icon:'🎸',name:'Chords',desc:'Hear a chord and identify it — Major, Minor, Diminished, Augmented, and 7ths at higher levels'},
         {go:"startFromHome('melody')",icon:'🎶',name:'Melody Echo',desc:'The app plays a short melody, then you tap it back in order on the piano — tests your musical memory'},
+        {go:"render('ta_setup')",icon:'⏱️',name:'Time Attack',desc:'60 seconds on the clock — how many notes or intervals can you name? Beat your best score'},
         {go:"startFromHome('daily')",icon:'⭐',name:'Daily Challenge',desc:'One random game every day — play it, grow a flower in your garden, and keep your streak going'},
       ];
     }
@@ -3531,7 +3725,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('ear_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
-            <button class="btn btn-blue" onclick="shareScore('Ear Training',${S.score},${S.total})">Share</button>
+            <button class="btn btn-blue" onclick="shareScore('Ear Training',${S.score},${S.total})">📋 Copy report</button>
           </div>`;
   }
 
@@ -3634,7 +3828,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('note_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
-            <button class="btn btn-blue" onclick="shareScore('Note Reading',${S.score},${S.total})">Share</button>
+            <button class="btn btn-blue" onclick="shareScore('Note Reading',${S.score},${S.total})">📋 Copy report</button>
           </div>`;
   }
 
@@ -3738,7 +3932,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('interval_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
-            <button class="btn btn-blue" onclick="shareScore('Intervals',${S.score},${S.total})">Share</button>
+            <button class="btn btn-blue" onclick="shareScore('Intervals',${S.score},${S.total})">📋 Copy report</button>
           </div>`;
   }
 
@@ -3830,7 +4024,7 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn btn-mint" onclick="render('chord_level')">🔄 Play Again</button>
             <button class="btn btn-lilac" onclick="render('home')">Home</button>
-            <button class="btn btn-blue" onclick="shareScore('Chords',${S.score},${S.total})">Share</button>
+            <button class="btn btn-blue" onclick="shareScore('Chords',${S.score},${S.total})">📋 Copy report</button>
           </div>`;
   }
 
@@ -3973,6 +4167,17 @@ function render(page) {
     h += `</div>`;
 
     h += `<div class="card">`;
+    h += `<p class="section-label">Instrument Sound</p>`;
+    h += `<p class="caption" style="margin:0 0 0.5rem">Used for every note in the app. Tap one to hear it.</p>`;
+    h += `<div class="inst-grid">`;
+    const curInst = getInstrument();
+    Object.keys(INSTRUMENTS).forEach(id => {
+      const it = INSTRUMENTS[id];
+      h += `<div class="inst-card${curInst === id ? ' active' : ''}" onclick="setInstrument('${id}')"><div class="inst-icon">${it.icon}</div><div class="inst-name">${it.name}</div><div class="inst-desc">${it.desc}</div></div>`;
+    });
+    h += `</div></div>`;
+
+    h += `<div class="card">`;
     h += `<p class="section-label">Sound Effects</p>`;
     h += `<div class="btn-row">
             <button class="btn ${sfxOn ? 'btn-mint' : 'btn-lilac'}" onclick="setSfx(true)">On</button>
@@ -4017,6 +4222,79 @@ function render(page) {
     h += `</div>`;
 
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
+  }
+
+  // ── PROFILE PICTURE ──
+  else if (page === 'avatar') {
+    const cur = getAvatar(), col = S.avatarColor || (cur.startsWith('emoji:') ? cur.split('|')[2] : AVATAR_COLORS[0]);
+    h += `<h1>🖼️ Profile Picture</h1>`;
+    h += `<div class="card" style="text-align:center">`;
+    h += `<div style="display:flex;justify-content:center;margin:0.3rem 0 0.8rem">${avatarHtml(120)}</div>`;
+    h += `<label class="btn btn-blue" style="cursor:pointer">📷 Upload a picture<input type="file" accept="image/*" style="display:none" onchange="uploadAvatar(this)"></label>`;
+    if (cur) h += ` <button class="btn btn-lilac" onclick="clearAvatar()">Remove</button>`;
+    h += `<p class="caption" style="margin-top:0.6rem">Your picture is only shown to you, on your own profile. It's made small and square before saving.</p>`;
+    h += `</div>`;
+    h += `<div class="card"><p class="section-label">Or pick an icon</p><div class="av-grid">`;
+    AVATAR_PRESETS.forEach(e => {
+      const on = cur === 'emoji:|' + e + '|' + col;
+      h += `<div class="av-pick${on ? ' active' : ''}" style="background:${col}" onclick="pickAvatarEmoji('${e}')">${e}</div>`;
+    });
+    h += `</div><p class="section-label" style="margin-top:0.8rem">Background colour</p><div class="av-colors">`;
+    AVATAR_COLORS.forEach(c => { h += `<div class="av-color${c === col ? ' active' : ''}" style="background:${c}" onclick="pickAvatarColor('${c}')"></div>`; });
+    h += `</div></div>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='me';render('home')">⬅ Back</button>`;
+  }
+
+  // ── TIME ATTACK: SETUP ──
+  else if (page === 'ta_setup') {
+    const best = taBest();
+    h += `<h1>⏱️ Time Attack</h1>`;
+    h += `<div class="card"><p class="speech"><strong>${TA_SECONDS} seconds.</strong> Name as many as you can. No hints during the race: you'll see what you missed at the end.</p></div>`;
+    Object.keys(TA_MODES).forEach(m => {
+      h += `<div class="card ta-mode" onclick="startTimeAttack('${m}')">`;
+      h += `<div><div class="ta-mode-name">${TA_MODES[m].name}</div><div class="ta-mode-desc">${TA_MODES[m].desc}</div></div>`;
+      h += `<div class="ta-mode-best">${best[m] ? '🏆 ' + best[m] : 'New'}</div></div>`;
+    });
+    h += `<p class="caption" style="text-align:center">On a computer, you can press the C–B keys in Note Reading · Easy.</p>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">⬅ Back</button>`;
+  }
+
+  // ── TIME ATTACK: PLAY ──
+  else if (page === 'ta_play') {
+    const left = Math.max(0, Math.ceil((S.taEnd - Date.now()) / 1000));
+    h += `<div class="ta-top"><div><div class="ta-label">Time</div><div id="taClock" class="ta-clock${left < 10 ? ' ta-low' : ''}">${left}</div></div>`;
+    h += `<div style="text-align:right"><div class="ta-label">Score</div><div class="ta-score">${S.taScore}</div></div></div>`;
+    h += `<div class="progress-wrap"><div id="taBar" class="progress-fill" style="width:${(S.taEnd - Date.now()) / (TA_SECONDS * 1000) * 100}%;transition:width 0.1s linear"></div></div>`;
+    h += `<div class="ta-stage ${S.taFlash ? 'ta-flash-' + S.taFlash : ''}"><canvas id="taCanvas" width="400" height="260"></canvas></div>`;
+    h += `<div class="choice-grid ta-choices${S.taMode === 'notes_easy' ? ' ta-seven' : ''}">`;
+    S.taChoices.forEach(c => {
+      const label = S.taMode === 'intervals' ? c : prettyNote(c);
+      h += `<button class="btn btn-lilac" onclick="taAnswer('${c}')">${label}</button>`;
+    });
+    h += `</div>`;
+    h += `<button class="btn btn-coral" style="margin-top:0.6rem" onclick="stopTimeAttack();render('ta_setup')">Stop</button>`;
+  }
+
+  // ── TIME ATTACK: RESULT ──
+  else if (page === 'ta_result') {
+    const acc = S.taTries ? Math.round(S.taScore / S.taTries * 100) : 0;
+    h += `<h1>⏱️ Time's up!</h1>`;
+    h += `<div class="score-big">${S.taScore}</div>`;
+    h += `<p style="text-align:center;margin-top:-0.4rem">correct in ${TA_SECONDS} seconds · ${acc}% accuracy</p>`;
+    if (S.taNewBest) { h += `<div class="alert alert-success">🏆 <strong>New best!</strong> ${S.taPrevBest ? 'Your old best was ' + S.taPrevBest + '.' : 'Your first score in this mode.'}</div>`; setTimeout(confetti, 300); }
+    else h += `<div class="alert alert-warning">Your best is <strong>${S.taPrevBest}</strong>. ${S.taPrevBest - S.taScore} more to beat it!</div>`;
+    h += `<div class="card"><div class="why-title">${S.taMisses.length ? '🔍 What you missed' : '🎯 No mistakes!'}</div>`;
+    if (S.taMisses.length) {
+      h += `<div class="ta-miss ta-miss-head"><span>Right answer</span><span>You said</span></div>`;
+      S.taMisses.forEach(m => { h += `<div class="ta-miss"><span><strong>${m.right}</strong>${m.where ? ' <em>(' + m.where + ')</em>' : ''}</span><span>${m.yours}</span></div>`; });
+      h += `<p class="caption" style="margin-top:0.5rem">Want to learn these? Play the normal ${S.taMode === 'intervals' ? 'Intervals' : 'Note Reading'} game: wrong answers there get hints and a "Why?" screen.</p>`;
+    }
+    h += `</div>`;
+    h += `<div class="btn-row">
+            <button class="btn btn-mint" onclick="startTimeAttack('${S.taMode}')">🔄 Again</button>
+            <button id="taCopyBtn" class="btn btn-blue" onclick="copyTaReport()">📋 Copy report for teacher</button>
+            <button class="btn btn-lilac" onclick="render('home')">Home</button>
+          </div>`;
   }
 
   // ── GET THE APP ──
@@ -4988,6 +5266,11 @@ function render(page) {
     var hn = getHanonBarNotes(S.hanonEx, S.hanonBar);
     drawHanonStaff('hanonStaffCanvas', hn, S.hanonCurrentIdx);
   }
+  if (page === 'ta_play') {
+    if (S.taMode === 'intervals') drawIntervalStaff('taCanvas', S.intH1, S.intH2);
+    else drawStaff('taCanvas', S.noteHeight, S.noteAccidental, S.noteClef);
+    if (S.taFlash) setTimeout(() => { const st = document.querySelector('.ta-stage'); if (st) st.classList.remove('ta-flash-ok', 'ta-flash-bad'); }, 250);
+  }
   if (page === 'daily') {
     drawGarden('gardenCanvas');
   }
@@ -5048,7 +5331,14 @@ function setHomeTab(tab) {
 
 function shareScore(game, score, total) {
   var pct = Math.round(score / total * 100);
-  var text = 'I scored ' + score + '/' + total + ' (' + pct + '%) on ' + game + ' in PianoMind Studios! Try it: https://vanjdroid.github.io/pianomind-studios/';
+  var text = 'PianoMind Studios — ' + game + '\n' + (S.name || 'Student') + ': ' + score + '/' + total + ' (' + pct + '%) first-try correct.\n';
+  if (S.roundGame === game && S.roundMisses) {
+    if (S.roundMisses.length) {
+      text += 'Needed help with:\n';
+      S.roundMisses.forEach(function(m) { text += '- ' + m.right + ' (first answered ' + m.yours + ')\n'; });
+    } else text += 'No mistakes!\n';
+  }
+  text += 'Try it: https://vanjdroid.github.io/pianomind-studios/';
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(function() {
       alert('Score copied — paste it anywhere to share!');
@@ -5057,6 +5347,117 @@ function shareScore(game, score, total) {
     prompt('Copy this:', text);
   }
 }
+
+// ═══════════════════════════════════
+//  TIME ATTACK — 60 seconds, as many as you can
+// ═══════════════════════════════════
+const TA_MODES = {
+  notes_easy: { name: 'Note Reading · Easy', desc: 'Naturals only (no sharps or flats). Treble and bass clef.' },
+  notes_hard: { name: 'Note Reading · Hard', desc: 'Sharps and flats too. Treble and bass clef.' },
+  intervals:  { name: 'Intervals', desc: '2nds up to octaves, on the staff.' }
+};
+const TA_SECONDS = 60;
+function taBest() { try { return JSON.parse(localStorage.getItem('pms_ta_best') || '{}'); } catch(e) { return {}; } }
+
+function startTimeAttack(mode) {
+  stopTimeAttack();
+  S.taMode = mode; S.taScore = 0; S.taTries = 0; S.taMisses = []; S.taFlash = '';
+  S.taEnd = Date.now() + TA_SECONDS * 1000;
+  S.taLastQ = '';
+  newTaQuestion();
+  render('ta_play');
+  S.taTimer = setInterval(taTick, 100);
+}
+function stopTimeAttack() { if (S.taTimer) { clearInterval(S.taTimer); S.taTimer = null; } }
+function taTick() {
+  const left = Math.max(0, S.taEnd - Date.now());
+  const el = $('taClock'), bar = $('taBar');
+  if (el) { el.textContent = Math.ceil(left / 1000); el.classList.toggle('ta-low', left < 10000); }
+  if (bar) bar.style.width = (left / (TA_SECONDS * 1000) * 100) + '%';
+  if (left <= 0) finishTimeAttack();
+}
+function newTaQuestion() {
+  if (S.taMode === 'intervals') {
+    S.level = '2';
+    let key;
+    do { newIntervalRound(); key = S.intH1 + ',' + S.intH2; } while (key === S.taLastQ);
+    S.taLastQ = key;
+    S.taAnswer = S.intCorrect; S.taChoices = S.intChoices;
+    S.taLabel = S.intCorrect;
+    return;
+  }
+  const hard = S.taMode === 'notes_hard';
+  let clef, spot, acc, key;
+  do {
+    clef = pick(['treble', 'bass']);
+    spot = randInt(0, 12);
+    acc = hard ? weightedChoice(['natural', 'sharp', 'flat'], [4, 3, 3]) : 'natural';
+    key = clef + spot + acc;
+  } while (key === S.taLastQ);
+  S.taLastQ = key;
+  const letter = (clef === 'treble' ? TREBLE_NAMES : BASS_NAMES)[spot];
+  const suf = { natural: '', sharp: '#', flat: 'b' }[acc];
+  S.noteClef = clef; S.noteHeight = HEIGHTS[spot]; S.noteAccidental = acc;
+  S.taAnswer = letter + suf;
+  S.taLabel = prettyNote(S.taAnswer);
+  if (hard) {
+    const LET = ['c','d','e','f','g','a','b'], i = LET.indexOf(letter);
+    const pool = [letter, letter + '#', letter + 'b', LET[(i + 1) % 7] + suf, LET[(i + 6) % 7] + suf];
+    const set = new Set([S.taAnswer]);
+    while (set.size < 4) set.add(pick(pool));
+    S.taChoices = [...set].sort(() => Math.random() - 0.5);
+  } else {
+    S.taChoices = ['c','d','e','f','g','a','b'];
+  }
+}
+function taAnswer(ans) {
+  if (!S.taTimer) return;
+  S.taTries++;
+  if (ans === S.taAnswer) { S.taScore++; S.taFlash = 'ok'; sfxCorrect(); }
+  else {
+    S.taFlash = 'bad'; sfxWrong();
+    const yours = S.taMode === 'intervals' ? ans : prettyNote(ans);
+    S.taMisses.push({ right: S.taLabel, yours: yours, where: S.taMode === 'intervals' ? '' : (S.noteClef === 'treble' ? 'treble' : 'bass') });
+    if (S.taMode !== 'intervals') addToPouch(S.taAnswer, 'note');
+  }
+  newTaQuestion();
+  render('ta_play');
+}
+function finishTimeAttack() {
+  stopTimeAttack();
+  const best = taBest(), prev = best[S.taMode] || 0;
+  S.taNewBest = S.taScore > prev;
+  S.taPrevBest = prev;
+  if (S.taNewBest) { best[S.taMode] = S.taScore; try { localStorage.setItem('pms_ta_best', JSON.stringify(best)); } catch(e) {} }
+  addXP(S.taScore * 2);
+  markGamePlayed('timeattack');
+  render('ta_result');
+}
+function taReportText() {
+  const acc = S.taTries ? Math.round(S.taScore / S.taTries * 100) : 0;
+  let t = `PianoMind Studios — Time Attack (${TA_MODES[S.taMode].name})\n`;
+  t += `${S.name || 'Student'}: ${S.taScore} correct in ${TA_SECONDS} seconds (${S.taTries} tried, ${acc}% accuracy). Best: ${Math.max(S.taScore, S.taPrevBest || 0)}.\n`;
+  if (S.taMisses.length) {
+    t += `Missed:\n`;
+    S.taMisses.forEach(m => { t += `- ${m.right}${m.where ? ' (' + m.where + ' clef)' : ''}: answered ${m.yours}\n`; });
+  } else t += `No mistakes!\n`;
+  return t;
+}
+function copyTaReport() {
+  const text = taReportText();
+  const done = () => { const b = $('taCopyBtn'); if (b) { b.textContent = '✅ Copied! Paste it in a message'; } };
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => prompt('Copy this:', text));
+  else prompt('Copy this:', text);
+}
+// Keyboard: press C–B during Note Reading · Easy
+document.addEventListener('keydown', function(e) {
+  if (S.page !== 'ta_play' || S.taMode !== 'notes_easy' || !S.taTimer) return;
+  const k = e.key.toLowerCase();
+  if ('cdefgab'.includes(k) && k.length === 1) { e.preventDefault(); taAnswer(k); }
+});
+
+// Remember what the player struggled with this round (for the teacher report)
+function logMiss(right, yours) { (S.roundMisses = S.roundMisses || []).push({ right: right, yours: yours }); }
 
 function startFromHome(game) {
   S.resultScored = false;
@@ -5154,6 +5555,7 @@ function checkNote() {
     sfxCorrect();
   } else if (S.noteTries === 1) {
     S.noteFeedback = 'retry'; sfxWrong(); addToPouch(S.noteFullName, 'note');
+    logMiss(prettyNote(S.noteFullName) + ' (' + S.noteClef + ' clef)', S.notePickedRaw);
   } else { S.noteFeedback = 'wrong'; sfxWrong(); }
   render('note_play');
 }
@@ -5168,6 +5570,7 @@ function intervalAnswer(answer) {
   } else if (S.intTries === 1) {
     S.intFeedback = 'retry';           // first miss: hint + one more try
     S.intCrossed = [answer];
+    logMiss(S.intCorrect, answer);
     sfxWrong();
   } else {
     S.intFeedback = 'wrong';           // second miss: show the "Why?" screen
@@ -5185,6 +5588,7 @@ function chordAnswer(answer) {
     sfxCorrect();
   } else if (S.chordTries === 1) {
     S.chordFeedback = 'retry'; S.chordCrossed = [answer]; sfxWrong();
+    logMiss(S.chordAnswer, answer);
   } else { S.chordFeedback = 'wrong'; sfxWrong(); }
   render('chord_play');
 }
@@ -5206,7 +5610,7 @@ function earAnswer(answer) {
       S.earChoices = [...choices].sort(() => Math.random() - 0.5);
       render('ear_play');
     } else {
-      S.earPicked = answer; S.earFeedback = 'wrong'; sfxWrong();
+      S.earPicked = answer; S.earFeedback = 'wrong'; sfxWrong(); logMiss(earKeyName(earWhyTargetN()), answer);
       render('ear_play');
     }
     return;
@@ -5214,7 +5618,7 @@ function earAnswer(answer) {
   if (S.level === '5' && S.earStep === 2) {
     const correct2 = S.earTarget2Flat ? S.earTarget2Name+'/'+S.earTarget2Flat : S.earTarget2Name;
     if (answer === correct2) { S.score++; S.earFeedback = 'correct'; recordCorrectAnswer('_earCorrect'); sfxCorrect(); }
-    else { S.earPicked = answer; S.earFeedback = 'wrong'; sfxWrong(); }
+    else { S.earPicked = answer; S.earFeedback = 'wrong'; sfxWrong(); logMiss(earKeyName(earWhyTargetN()), answer); }
     render('ear_play');
     return;
   }
@@ -5227,6 +5631,7 @@ function earAnswer(answer) {
     sfxCorrect();
   } else if (S.earTries === 1) {
     S.earFeedback = 'retry'; S.earCrossed = [answer]; sfxWrong(); addToPouch(S.earTargetName, 'ear');
+    logMiss(earKeyName(S.earTargetN), answer);
   } else { S.earFeedback = 'wrong'; sfxWrong(); }
   render('ear_play');
 }
