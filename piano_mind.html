@@ -1000,6 +1000,31 @@ body.mode-smooth .inst-card.active { border-color:#7c6fef; }
 .av-color { width:34px; height:34px; border-radius:50%; cursor:pointer; border:3px solid transparent; }
 .av-color.active { border-color:#0f2744; }
 body.mode-neon .av-pick.active, body.mode-neon .av-color.active { border-color:#00c8ff; }
+
+/* ── Trophy Cabinet ── */
+.trophy-cabinet { padding:0.9rem 1rem; border-bottom:1px solid rgba(0,0,0,0.06); }
+.tc-title { font-weight:700; font-size:1.05rem; display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; }
+.tc-title span { font-size:0.8rem; color:#6b7fa3; }
+.tc-plaques { display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:0.5rem; margin-bottom:0.8rem; }
+.tc-plaque { text-align:center; padding:0.5rem 0.3rem; border-radius:12px; background:rgba(255,255,255,0.4); }
+.tc-plaque-v { font-weight:700; font-size:1.05rem; }
+.tc-plaque-l { font-size:0.65rem; color:#6b7fa3; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+.tc-shelf { display:grid; grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); gap:0.9rem 0.5rem; padding:0.6rem 0.4rem 0.9rem;
+  background:linear-gradient(to bottom, transparent calc(100% - 10px), rgba(140,95,60,0.45) calc(100% - 10px));
+  border-radius:0 0 8px 8px; }
+.tc-trophy { text-align:center; }
+.tc-icon { font-size:2rem; line-height:1.2; filter:drop-shadow(0 3px 4px rgba(0,0,0,0.15)); }
+.tc-name { font-size:0.68rem; font-weight:700; line-height:1.25; margin-top:0.15rem; }
+.tc-locked .tc-icon { opacity:0.35; filter:grayscale(1); }
+.tc-locked .tc-name { color:#6b7fa3; font-weight:600; }
+.tc-soon { font-size:0.75rem; color:#6b7fa3; margin-top:0.6rem; text-align:center; }
+@media (min-width: 900px) {
+  body.with-shell .trophy-cabinet { grid-column:1 / -1; background:var(--card-bg, rgba(255,255,255,0.35)); border:1px solid rgba(255,255,255,0.55); border-radius:20px; box-shadow:0 4px 18px rgba(0,0,0,0.05); padding:1.2rem 1.4rem; }
+  body.mode-smooth.with-shell .trophy-cabinet { background:#fff; border:1px solid #e3e3e3; }
+  body.mode-neon.with-shell .trophy-cabinet { background:#0e0e0e; border:1px solid rgba(0,200,255,0.3); }
+}
+body.mode-neon .tc-plaque { background:#141414; }
+body.mode-smooth .tc-plaque { background:#f4f4f8; }
 </style>
 </head>
 <body>
@@ -1034,7 +1059,7 @@ function cloudSave() {
   if (!currentUser) return;
   var data = {};
   ['pms_scores','pms_daily','pms_hanon','pms_pouch','pms_xp','pms_level',
-   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar'
+   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar','pms_achievements'
   ].forEach(function(key) {
     var val = localStorage.getItem(key);
     if (val) data[key] = val;
@@ -1724,6 +1749,7 @@ function saveScore(game, level, score, total) {
     if (data._lastDay !== today) {
       const y = new Date(Date.now() - 86400000).toISOString().slice(0,10);
       data._streak = (data._lastDay === y) ? (data._streak || 0) + 1 : 1;
+      data._bestStreak = Math.max(data._bestStreak || 0, data._streak);
       data._lastDay = today;
     }
     localStorage.setItem('pms_scores', JSON.stringify(data));
@@ -3388,6 +3414,24 @@ function uploadAvatar(input) {
   reader.readAsDataURL(file);
 }
 
+// ── Trophy Cabinet (on the Me tab) ──
+function trophyCabinetHtml() {
+  const d = loadScores(), got = getUnlockedAchievements(), ta = taBest();
+  const best = Math.max(d._bestStreak || 0, d._streak || 0);
+  let x = `<div class="trophy-cabinet"><div class="tc-title">🏆 Trophy Cabinet <span>${got.length} / ${ACHIEVEMENTS.length}</span></div>`;
+  x += `<div class="tc-plaques">`;
+  [['🔥', d._streak || 0, 'Day streak'], ['🏅', best, 'Best streak'],
+   ['⏱️', ta.notes_easy || '–', 'Notes Easy best'], ['⚡', ta.notes_hard || '–', 'Notes Hard best'], ['🎶', ta.intervals || '–', 'Intervals best']]
+    .forEach(([ic, v, l]) => { x += `<div class="tc-plaque"><div class="tc-plaque-v">${ic} ${v}</div><div class="tc-plaque-l">${l}</div></div>`; });
+  x += `</div><div class="tc-shelf">`;
+  ACHIEVEMENTS.forEach(a => {
+    const on = got.includes(a.id);
+    x += `<div class="tc-trophy${on ? '' : ' tc-locked'}" title="${a.name}: ${a.desc}"><div class="tc-icon">${on ? a.icon : '🔒'}</div><div class="tc-name">${on ? a.name : a.desc}</div></div>`;
+  });
+  x += `</div><div class="tc-soon">⚔️ Boss Battle trophies will go on this shelf too, once Boss Battles are built.</div></div>`;
+  return x;
+}
+
 function progressBar(current, total) {
   const pct = ((current + 1) / total * 100).toFixed(0);
   return `<div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>`;
@@ -3603,6 +3647,8 @@ function render(page) {
       h += `<div><div style="font-size:1.1rem;font-weight:700">${played}</div><div style="font-size:0.65rem;color:#6b7fa3">Games</div></div>`;
       h += `<div><div style="font-size:1.1rem;font-weight:700">${streak}</div><div style="font-size:0.65rem;color:#6b7fa3">Streak</div></div>`;
       h += `</div></div>`;
+      checkAchievements();
+      h += trophyCabinetHtml();
       items = [
         {go:"startFromHome('stats')",icon:'📊',name:'My Progress',desc:'Line and bar charts showing your improvement over the last 7 days, plus best scores for every game'},
         {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:'12 badges to unlock — play your first game, get a perfect score, try every mode, and more'},
