@@ -1025,6 +1025,19 @@ body.mode-neon .av-pick.active, body.mode-neon .av-color.active { border-color:#
 }
 body.mode-neon .tc-plaque { background:#141414; }
 body.mode-smooth .tc-plaque { background:#f4f4f8; }
+
+/* ── Practice Vibe ── */
+.vibe-wrap { margin:0.35rem 0 0.2rem; }
+.vibe-chip { font-family:inherit; font-weight:700; font-size:0.8rem; padding:0.3rem 0.8rem; border-radius:20px; border:none; cursor:pointer;
+  background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); }
+.vibe-chip.vibe-empty { background:transparent; border:1px dashed color-mix(in srgb, var(--accent) 50%, transparent); font-weight:600; }
+.vibe-menu { display:flex; flex-wrap:wrap; justify-content:center; gap:0.35rem; margin-top:0.5rem; }
+.vibe-opt { font-family:inherit; font-size:0.78rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:16px; cursor:pointer;
+  border:1px solid rgba(0,0,0,0.1); background:rgba(255,255,255,0.6); color:inherit; }
+.vibe-opt.active { border-color:var(--accent); color:var(--accent); }
+.vibe-clear { color:#6b7fa3; }
+body.mode-neon .vibe-chip { background:rgba(0,200,255,0.12); color:#00c8ff; }
+body.mode-neon .vibe-opt { background:#141414; border-color:rgba(0,200,255,0.25); }
 </style>
 </head>
 <body>
@@ -1059,7 +1072,7 @@ function cloudSave() {
   if (!currentUser) return;
   var data = {};
   ['pms_scores','pms_daily','pms_hanon','pms_pouch','pms_xp','pms_level',
-   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar','pms_achievements'
+   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar','pms_achievements','pms_vibe'
   ].forEach(function(key) {
     var val = localStorage.getItem(key);
     if (val) data[key] = val;
@@ -1752,6 +1765,7 @@ function saveScore(game, level, score, total) {
       data._bestStreak = Math.max(data._bestStreak || 0, data._streak);
       data._lastDay = today;
     }
+    logPracticeSession(data);
     localStorage.setItem('pms_scores', JSON.stringify(data));
   } catch(e) {}
   trackDaily(game, score, total);
@@ -2224,6 +2238,22 @@ function checkAchievements() {
 }
 
 // Records a correct answer: awards XP, bumps an optional counter, checks achievements
+// Remember when practice sessions happen (local time), for time-of-day achievements
+function localDay(offsetDays) {
+  const d = new Date(Date.now() - (offsetDays || 0) * 86400000);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function logPracticeSession(data) {
+  const now = new Date(), mins = now.getHours() * 60 + now.getMinutes(), today = localDay(0);
+  data._sessions = data._sessions || {};
+  (data._sessions[today] = data._sessions[today] || []).push(mins);
+  Object.keys(data._sessions).forEach(k => { if (k < localDay(7)) delete data._sessions[k]; });   // keep one week
+  if (now.getHours() >= 22) data._lateSession = true;
+  // The Metronome: a session today that has a match (within 30 min) on each of the 2 days before
+  const near = (list, m) => (list || []).some(x => Math.abs(x - m) <= 30);
+  if (near(data._sessions[localDay(1)], mins) && near(data._sessions[localDay(2)], mins)) data._sameTime3 = true;
+}
+
 function recordCorrectAnswer(counterKey) {
   addXP(10);
   if (counterKey) {
@@ -2293,6 +2323,9 @@ const ACHIEVEMENTS = [
   { id: 'ear_50', name: 'Golden Ear', desc: 'Get 50 ear training right', icon: '👂', check: d => (d._earCorrect || 0) >= 50 },
   { id: 'speed_demon', name: 'Speed Demon', desc: 'Set metronome above 180 BPM', icon: '💨', check: d => (d._maxBpm || 0) > 180 },
   { id: 'theory_1', name: 'Theory Starter', desc: 'Complete a theory lesson', icon: '📖', check: d => (d._theoryPassedCount || 0) >= 1 },
+  { id: 'same_time', name: 'The Metronome', desc: 'Practise at the same time of day, 3 days in a row', icon: '🕰️', check: d => !!d._sameTime3 },
+  { id: 'midnight', name: 'Midnight Mozart', desc: 'Finish a practice session after 10 PM', icon: '🌙', check: d => !!d._lateSession },
+  { id: 'one_hit', name: 'One-Hit Wonder', desc: '10 ear training answers right in a row, without pressing replay', icon: '🎯', check: d => (d._earRunBest || 0) >= 10 },
 ];
 
 
@@ -3141,7 +3174,7 @@ function newEarRound() {
   S.earTargetName = note.name;
   S.earTargetFlat = note.flat || '';
   S.earFeedback = null;
-  S.earTries = 0; S.earPicked = null; S.earCrossed = [];
+  S.earTries = 0; S.earPicked = null; S.earCrossed = []; S.earReplayed = false;
 
   if (S.level === '5') {
     let note2 = pick(pool);
@@ -3414,6 +3447,25 @@ function uploadAvatar(input) {
   reader.readAsDataURL(file);
 }
 
+// ── Practice Vibe: a status tag on the profile ──
+const VIBES = ['🎧 Headphones On', '🎹 Real Piano Mode', '🧠 Theory Only', '⚡ Speed Training', '🎯 Exam Prep', '😌 Chill Practice', '🔥 Locked In'];
+function getVibe() { try { return localStorage.getItem('pms_vibe') || ''; } catch(e) { return ''; } }
+function setVibe(v) {
+  try { if (v) localStorage.setItem('pms_vibe', v); else localStorage.removeItem('pms_vibe'); } catch(e) {}
+  S.vibeOpen = false; if (typeof cloudSave === 'function') cloudSave(); render('home');
+}
+function vibeHtml() {
+  const v = getVibe();
+  let x = `<div class="vibe-wrap"><button class="vibe-chip${v ? '' : ' vibe-empty'}" onclick="S.vibeOpen=!S.vibeOpen;render('home')">${v || '＋ Set your practice vibe'}</button>`;
+  if (S.vibeOpen) {
+    x += `<div class="vibe-menu">`;
+    VIBES.forEach(o => { x += `<button class="vibe-opt${o === v ? ' active' : ''}" onclick="setVibe('${o}')">${o}</button>`; });
+    if (v) x += `<button class="vibe-opt vibe-clear" onclick="setVibe('')">✕ Clear</button>`;
+    x += `</div>`;
+  }
+  return x + `</div>`;
+}
+
 // ── Trophy Cabinet (on the Me tab) ──
 function trophyCabinetHtml() {
   const d = loadScores(), got = getUnlockedAchievements(), ta = taBest();
@@ -3638,6 +3690,7 @@ function render(page) {
       h += `<div class="home-profile">`;
       h += `<div style="margin-bottom:0.3rem;display:flex;justify-content:center">${avatarHtml(84, true)}</div><div style="font-size:0.72rem"><a href="#" onclick="render('avatar');return false">Change picture</a></div>`;
       h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
+      h += vibeHtml();
       if (currentUser) h += `<div style="font-size:0.72rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
       else h += `<div style="font-size:0.72rem;color:#6b7fa3">Guest · saved on this device only · <a href="#" onclick="render('login');return false">Sign in</a></div>`;
       if (joinDate) h += `<div style="font-size:0.72rem;color:#6b7fa3">Joined ${joinDate}</div>`;
@@ -3651,7 +3704,7 @@ function render(page) {
       h += trophyCabinetHtml();
       items = [
         {go:"startFromHome('stats')",icon:'📊',name:'My Progress',desc:'Line and bar charts showing your improvement over the last 7 days, plus best scores for every game'},
-        {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:'12 badges to unlock — play your first game, get a perfect score, try every mode, and more'},
+        {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:ACHIEVEMENTS.length + ' badges to unlock — play your first game, get a perfect score, try every mode, and more'},
       ];
       if (showPebbles()) items.push({go:"startFromHome('wardrobe')",icon:'👗',name:'Pebbles Wardrobe',desc:'Six outfits for your dino — Classic, Cool, Party, Pirate, Space, and Winter'});
       items.push({go:"render('install')",icon:'📲',name:'Get the App',desc:'Put PianoMind on your phone, tablet or computer — then it opens even without internet'});
@@ -3714,10 +3767,10 @@ function render(page) {
     h += progressBar(r, total);
 
     if (S.level === '5' && S.earTarget2N != null) {
-      h += `<div class="play-btn" onclick="playTones(${S.earTargetN},${S.earTarget2N},0.8)">Hear both notes</div>`;
+      h += `<div class="play-btn" onclick="S.earReplayed=true;playTones(${S.earTargetN},${S.earTarget2N},0.8)">Hear both notes</div>`;
       if (!fb) h += `<p class="caption" style="text-align:center">Identify note ${S.earStep} of 2</p>`;
     } else {
-      h += `<div class="play-btn" onclick="playNote(${S.earTargetN})">Hear the note</div>`;
+      h += `<div class="play-btn" onclick="S.earReplayed=true;playNote(${S.earTargetN})">Hear the note</div>`;
     }
 
     if (!fb || fb === 'retry') {
@@ -5477,6 +5530,8 @@ function finishTimeAttack() {
   if (S.taNewBest) { best[S.taMode] = S.taScore; try { localStorage.setItem('pms_ta_best', JSON.stringify(best)); } catch(e) {} }
   addXP(S.taScore * 2);
   markGamePlayed('timeattack');
+  try { const d = loadScores(); logPracticeSession(d); localStorage.setItem('pms_scores', JSON.stringify(d)); } catch(e) {}
+  checkAchievements();
   render('ta_result');
 }
 function taReportText() {
@@ -5639,6 +5694,12 @@ function chordAnswer(answer) {
   render('chord_play');
 }
 
+function earNoReplayRun(ok) {
+  const d = loadScores();
+  d._earRun = ok ? (d._earRun || 0) + 1 : 0;
+  d._earRunBest = Math.max(d._earRunBest || 0, d._earRun);
+  try { localStorage.setItem('pms_scores', JSON.stringify(d)); } catch(e) {}
+}
 function earAnswer(answer) {
   // Level 5: two-note sequence
   if (S.level === '5' && S.earTarget2N != null && S.earStep === 1) {
@@ -5672,11 +5733,11 @@ function earAnswer(answer) {
   S.earTries = (S.earTries || 0) + 1;
   S.earPicked = answer;
   if (answer === correct) {
-    if (S.earTries === 1) { S.score++; S.earFeedback = 'correct'; recordCorrectAnswer('_earCorrect'); }
+    if (S.earTries === 1) { S.score++; S.earFeedback = 'correct'; earNoReplayRun(!S.earReplayed); recordCorrectAnswer('_earCorrect'); }
     else S.earFeedback = 'correct2';
     sfxCorrect();
   } else if (S.earTries === 1) {
-    S.earFeedback = 'retry'; S.earCrossed = [answer]; sfxWrong(); addToPouch(S.earTargetName, 'ear');
+    S.earFeedback = 'retry'; S.earCrossed = [answer]; sfxWrong(); addToPouch(S.earTargetName, 'ear'); earNoReplayRun(false);
     logMiss(earKeyName(S.earTargetN), answer);
   } else { S.earFeedback = 'wrong'; sfxWrong(); }
   render('ear_play');
