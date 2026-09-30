@@ -2513,7 +2513,7 @@ function weightedChoice(items, weights) {
 
 let audioCtx = null;
 function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); loadPianoSamples(audioCtx); }
   return audioCtx;
 }
 
@@ -2521,7 +2521,8 @@ function getAudioCtx() {
 //  INSTRUMENT ENGINE — every sound is built with Web Audio (no audio files)
 // ═══════════════════════════════════
 const INSTRUMENTS = {
-  piano:       { name: 'Grand Piano',     icon: '🎹', desc: 'Warm, rich piano tone' },
+  realpiano:   { name: 'Real Piano',      icon: '🎹', desc: 'Recorded from a real grand piano' },
+  piano:       { name: 'Synth Piano',     icon: '🎛️', desc: 'Piano made by code (no download)' },
   harpsichord: { name: 'Harpsichord',     icon: '🎼', desc: 'Bright and plucked, like Bach' },
   epiano:      { name: 'Electric Piano',  icon: '✨', desc: 'Soft, bell-like, a bit jazzy' },
   musicbox:    { name: 'Music Box',       icon: '🎁', desc: 'Tiny, twinkly and sweet' },
@@ -2529,7 +2530,36 @@ const INSTRUMENTS = {
   retro:       { name: 'Retro 8-bit',     icon: '👾', desc: 'Video-game chiptune' },
   classic:     { name: 'Classic Beep',    icon: '🔔', desc: 'The original PianoMind sound' }
 };
-function getInstrument() { const i = localStorage.getItem('pms_instrument'); return INSTRUMENTS[i] ? i : 'piano'; }
+function getInstrument() { const i = localStorage.getItem('pms_instrument'); return INSTRUMENTS[i] ? i : 'realpiano'; }
+
+// ── Real piano: Salamander Grand Piano recordings by Alexander Holm (CC BY 3.0) ──
+// One recording every 3 half steps; the notes in between are made by slightly speeding up / slowing down the nearest one.
+const PIANO_SAMPLES = ['A1','C2','Ds2','Fs2','A2','C3','Ds3','Fs3','A3','C4','Ds4','Fs4','A4','C5','Ds5','Fs5','A5','C6','Ds6','Fs6','A6','C7'];
+const pianoBuffers = {};   // sample name -> AudioBuffer
+const pianoGain = {};      // sample name -> level so every note plays equally loud
+let pianoLoading = false;
+function sampleMidi(name) {
+  const m = name.match(/^([A-G])(s?)(\d)$/);
+  return 12 * (+m[3] + 1) + {C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]] + (m[2] ? 1 : 0);
+}
+function loadPianoSamples(ctx) {
+  if (pianoLoading) return; pianoLoading = true;
+  PIANO_SAMPLES.forEach(name => {
+    fetch('piano/' + name + '.mp3').then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b))
+      .then(buf => {
+        const d = buf.getChannelData(0); let pk = 0;
+        for (let i = 0; i < d.length; i += 4) pk = Math.max(pk, Math.abs(d[i]));
+        pianoGain[name] = pk > 0 ? 1 / pk : 1;
+        pianoBuffers[name] = buf;
+      }).catch(() => {});
+  });
+}
+function nearestPianoSample(freq) {
+  const midi = 69 + 12 * Math.log2(freq / 440);
+  let best = null, bestD = 99;
+  PIANO_SAMPLES.forEach(name => { if (!pianoBuffers[name]) return; const d = Math.abs(sampleMidi(name) - midi); if (d < bestD) { bestD = d; best = name; } });
+  return best && bestD <= 6 ? { name: best, rate: Math.pow(2, (midi - sampleMidi(best)) / 12) } : null;
+}
 function setInstrument(id) {
   try { localStorage.setItem('pms_instrument', id); } catch(e) {}
   const ctx = getAudioCtx(), now = ctx.currentTime;
@@ -2555,6 +2585,22 @@ function osc(ctx, type, freq, t, dest) {
 // Starts one note. Returns { release(time) } — decaying instruments also fade by themselves.
 function startVoice(ctx, freq, t, vol, inst) {
   inst = inst || getInstrument();
+  if (inst === 'realpiano') {
+    const smp = nearestPianoSample(freq);
+    if (!smp) inst = 'piano';          // recordings still downloading (or offline first time): use the synth piano
+    else {
+      const out = ctx.createGain(); out.connect(getMaster(ctx));
+      out.gain.setValueAtTime(vol * 1.4 * (pianoGain[smp.name] || 1), t);
+      const src = ctx.createBufferSource(); src.buffer = pianoBuffers[smp.name];
+      src.playbackRate.setValueAtTime(smp.rate, t); src.connect(out); src.start(t);
+      let released = false;
+      return { sustains: false, release(at) {
+        if (released) return; released = true;
+        out.gain.cancelScheduledValues(at); out.gain.setValueAtTime(out.gain.value, at);
+        out.gain.setTargetAtTime(0, at, 0.08); try { src.stop(at + 0.5); } catch(e) {}
+      } };
+    }
+  }
   const out = ctx.createGain(); out.gain.setValueAtTime(0, t); out.connect(getMaster(ctx));
   const oscs = []; let sustains = false;
   const lowDecay = Math.pow(440 / freq, 0.35);     // low notes ring longer
@@ -4439,7 +4485,7 @@ function render(page) {
     h += `<p style="font-size:1.05rem;line-height:1.7;color:#2c3e50;margin:0.8rem 0">As every child\u2019s musical journey unfolds, PianoMind Studios evolves right alongside them. We are continuously improving our platform, adding new features, and listening closely to feedback from families and educators to make the experience even more magical.</p>`;
     h += `</div>`;
     h += `<div class="card">`;
-    h += `<p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.2rem 0"><strong>Please note:</strong> This app helps you practise skills like those in graded aural tests. It is not affiliated with, endorsed by, or using material from any exam board.</p>`;
+    h += `<p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.2rem 0"><strong>Piano sound:</strong> Salamander Grand Piano by Alexander Holm, used under the Creative Commons Attribution 3.0 licence (CC BY 3.0).</p><p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.6rem 0 0.2rem"><strong>Please note:</strong> This app helps you practise skills like those in graded aural tests. It is not affiliated with, endorsed by, or using material from any exam board.</p>`;
     h += `</div>`;
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('settings')">\u2B05 Back to Settings</button>`;
   }

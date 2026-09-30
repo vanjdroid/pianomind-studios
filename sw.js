@@ -1,10 +1,11 @@
 // PianoMind Studios service worker: lets the app open without internet.
 // Change VERSION to force every device to refresh its saved copy.
-const VERSION = 'pms-v4';
+const VERSION = 'pms-v5';
 const CORE = [
   './', './index.html', './piano_mind.html', './manifest.webmanifest',
   './icon-clef-192.png', './icon-clef-512.png', './apple-touch-icon.png',
-  './background.png', './pebbles_happy.png', './pebbles_asking.png', './pebbles_thinking.png'
+  './background.png', './pebbles_happy.png', './pebbles_asking.png', './pebbles_thinking.png',
+  './piano/A1.mp3', './piano/C2.mp3', './piano/Ds2.mp3', './piano/Fs2.mp3', './piano/A2.mp3', './piano/C3.mp3', './piano/Ds3.mp3', './piano/Fs3.mp3', './piano/A3.mp3', './piano/C4.mp3', './piano/Ds4.mp3', './piano/Fs4.mp3', './piano/A4.mp3', './piano/C5.mp3', './piano/Ds5.mp3', './piano/Fs5.mp3', './piano/A5.mp3', './piano/C6.mp3', './piano/Ds6.mp3', './piano/Fs6.mp3', './piano/A6.mp3', './piano/C7.mp3'
 ];
 // Outside sites we may save (Firebase code + fonts). Never Firestore/login traffic.
 const CDN = ['www.gstatic.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
