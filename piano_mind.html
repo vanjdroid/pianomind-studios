@@ -2588,7 +2588,13 @@ function whenPianoReady(fn) {
   return Promise.race([pianoReady, new Promise(r => setTimeout(r, 1500))]).then(fn);
 }
 window.addEventListener('load', () => setTimeout(prefetchPianoSamples, 600));
-['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (!audioCtx) getAudioCtx(); }, { once: true, capture: true }));
+// Browsers only allow sound after a real tap/click/key. On phones and iPads a touch only
+// counts when the finger LIFTS (pointerup/touchend), not when it lands. So we wake the
+// sound on every one of these, and also wake it again if the phone paused it (e.g. after a call).
+['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach(ev => document.addEventListener(ev, () => {
+  const c = getAudioCtx();
+  if (c.state !== 'running') c.resume().catch(() => {});
+}, { capture: true, passive: true }));
 function loadPianoSamples(ctx) {
   if (pianoLoading) return; pianoLoading = true;
   prefetchPianoSamples();

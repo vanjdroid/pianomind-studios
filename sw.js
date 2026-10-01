@@ -1,6 +1,6 @@
 // PianoMind Studios service worker: lets the app open without internet.
 // Change VERSION to force every device to refresh its saved copy.
-const VERSION = 'pms-v5';
+const VERSION = 'pms-v6';
 const CORE = [
   './', './index.html', './piano_mind.html', './manifest.webmanifest',
   './icon-clef-192.png', './icon-clef-512.png', './apple-touch-icon.png',
@@ -10,8 +10,14 @@ const CORE = [
 // Outside sites we may save (Firebase code + fonts). Never Firestore/login traffic.
 const CDN = ['www.gstatic.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
+// Firebase code the app needs to start. Saved on the FIRST visit so the app opens offline.
+const FIREBASE = ['app', 'auth', 'firestore'].map(n => `https://www.gstatic.com/firebasejs/10.12.0/firebase-${n}-compat.js`);
+
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE).then(() =>
+    // If Firebase can't be saved right now, still install; it gets saved on a later visit.
+    Promise.all(FIREBASE.map(u => c.add(new Request(u, { mode: 'cors' })).catch(() => {})))
+  )).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
