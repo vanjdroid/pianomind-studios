@@ -1,0 +1,40 @@
+rules_version = '2';
+// PianoMind Studios — Firestore safety rules
+// Paste ALL of this into: Firebase console > Firestore Database > Rules > Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Each person can only read and write their own progress.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Friend codes. You can look up one code you were given, but never see a list of codes.
+    match /codes/{code} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create: if request.auth != null
+        && code.matches('^[A-Z2-9]{6}$')
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    // Claps. Only the person receiving them can read or clear them.
+    // A sender must be signed in, must know the receiver's CURRENT code,
+    // and can only send one of five icons. Nothing else is allowed in the clap.
+    match /claps/{toUid}/in/{fromUid} {
+      allow read, delete: if request.auth != null && request.auth.uid == toUid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == fromUid
+        && fromUid != toUid
+        && request.resource.data.keys().hasOnly(['icon', 'code', 'at'])
+        && request.resource.data.icon in ['👏', '⭐', '🎹', '🔥', '🎉']
+        && request.resource.data.at == request.time
+        && request.resource.data.code is string
+        && get(/databases/$(database)/documents/codes/$(request.resource.data.code)).data.uid == toUid;
+    }
+
+    // Everything else is closed.
+  }
+}

@@ -365,6 +365,8 @@ canvas {
 }
 
 /* ── Piano keyboard ── */
+.piano-scroll { max-width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+@media (max-width: 520px) { .piano-scroll .piano-wrap { zoom: 0.72; } }
 .piano-wrap {
   position: relative;
   display: flex;
@@ -1018,6 +1020,20 @@ body.mode-neon .av-pick.active, body.mode-neon .av-color.active { border-color:#
 .tc-locked .tc-icon { opacity:0.35; filter:grayscale(1); }
 .tc-locked .tc-name { color:#6b7fa3; font-weight:600; }
 .tc-soon { font-size:0.75rem; color:#6b7fa3; margin-top:0.6rem; text-align:center; }
+.ap-code { font-size:2rem; font-weight:800; letter-spacing:0.25em; margin:0.2rem 0 0.3rem; color:#0f2744; }
+.ap-msg { font-weight:600; text-align:center; }
+.ap-row { display:flex; align-items:center; gap:0.6rem; padding:0.35rem 0; border-bottom:1px solid rgba(0,0,0,0.06); }
+.ap-row .caption { margin-left:auto; }
+.ap-new { font-weight:700; }
+.ap-icon { font-size:1.4rem; }
+.ap-friend { display:flex; align-items:center; flex-wrap:wrap; gap:0.4rem; padding:0.4rem 0; border-bottom:1px solid rgba(0,0,0,0.06); }
+.ap-fname { font-weight:700; flex:1 1 6rem; }
+.ap-btns { display:flex; gap:0.25rem; flex-wrap:wrap; }
+.ap-send, .ap-del { border:none; background:rgba(255,255,255,0.7); border-radius:10px; font-size:1.2rem; width:2.3rem; height:2.3rem; cursor:pointer; }
+.ap-send:active { transform:scale(1.2); }
+.ap-del { font-size:0.9rem; color:#6b7fa3; }
+.ap-input { display:block; width:100%; box-sizing:border-box; padding:0.6rem 0.8rem; margin-bottom:0.5rem; border-radius:12px; border:1px solid #c9d3e6; font-size:1rem; }
+body.mode-neon .ap-code { color:#fff; }
 @media (min-width: 900px) {
   body.with-shell .trophy-cabinet { grid-column:1 / -1; background:var(--card-bg, rgba(255,255,255,0.35)); border:1px solid rgba(255,255,255,0.55); border-radius:20px; box-shadow:0 4px 18px rgba(0,0,0,0.05); padding:1.2rem 1.4rem; }
   body.mode-smooth.with-shell .trophy-cabinet { background:#fff; border:1px solid #e3e3e3; }
@@ -1079,7 +1095,7 @@ function cloudSave() {
   if (!currentUser) return;
   var data = {};
   ['pms_scores','pms_daily','pms_hanon','pms_pouch','pms_xp','pms_level',
-   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar','pms_achievements','pms_vibe'
+   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar','pms_achievements','pms_vibe','pms_friends','pms_friend_code','pms_applause_off','pms_clap_seen'
   ].forEach(function(key) {
     var val = localStorage.getItem(key);
     if (val) data[key] = val;
@@ -1095,6 +1111,14 @@ function cloudLoad(callback) {
   db.collection('users').doc(currentUser.uid).get().then(function(doc) {
     if (doc.exists) {
       var data = doc.data();
+      // Keep the better of this device and the cloud for best scores + achievements (so guest records aren't lost)
+      try {
+        var la = JSON.parse(localStorage.getItem('pms_achievements') || '[]'), ca = JSON.parse(data.pms_achievements || '[]');
+        data.pms_achievements = JSON.stringify(Array.from(new Set(ca.concat(la))));
+        var lt = JSON.parse(localStorage.getItem('pms_ta_best') || '{}'), ct = JSON.parse(data.pms_ta_best || '{}');
+        Object.keys(lt).forEach(function(k) { ct[k] = Math.max(ct[k] || 0, lt[k] || 0); });
+        data.pms_ta_best = JSON.stringify(ct);
+      } catch(e) {}
       Object.keys(data).forEach(function(key) {
         if (key.startsWith('pms_')) {
           try { localStorage.setItem(key, data[key]); } catch(e) {}
@@ -2549,15 +2573,33 @@ function sampleMidi(name) {
   const m = name.match(/^([A-G])(s?)(\d)$/);
   return 12 * (+m[3] + 1) + {C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]] + (m[2] ? 1 : 0);
 }
+const pianoRaw = {};       // downloaded early (no sound needed for that)
+let pianoReadyResolve; const pianoReady = new Promise(r => { pianoReadyResolve = r; });
+function prefetchPianoSamples() {
+  PIANO_SAMPLES.forEach(name => {
+    if (!pianoRaw[name]) pianoRaw[name] = fetch('piano/' + name + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
+  });
+}
+function pianoSamplesReady() { return PIANO_SAMPLES.every(n => pianoBuffers[n]); }
+// Question audio waits (at most 1.5 s) for the recordings, so the first note isn't a different sound
+function whenPianoReady(fn) {
+  if (getInstrument() !== 'realpiano' || pianoSamplesReady()) return fn();
+  getAudioCtx();
+  return Promise.race([pianoReady, new Promise(r => setTimeout(r, 1500))]).then(fn);
+}
+window.addEventListener('load', () => setTimeout(prefetchPianoSamples, 600));
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (!audioCtx) getAudioCtx(); }, { once: true, capture: true }));
 function loadPianoSamples(ctx) {
   if (pianoLoading) return; pianoLoading = true;
+  prefetchPianoSamples();
   PIANO_SAMPLES.forEach(name => {
-    fetch('piano/' + name + '.mp3').then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b))
+    pianoRaw[name].then(b => ctx.decodeAudioData(b.slice(0)))
       .then(buf => {
         const d = buf.getChannelData(0); let pk = 0;
         for (let i = 0; i < d.length; i += 4) pk = Math.max(pk, Math.abs(d[i]));
         pianoGain[name] = pk > 0 ? 1 / pk : 1;
         pianoBuffers[name] = buf;
+        if (pianoSamplesReady()) pianoReadyResolve();
       }).catch(() => {});
   });
 }
@@ -2600,9 +2642,9 @@ function startVoice(ctx, freq, t, vol, inst) {
       out.gain.setValueAtTime(vol * 1.4 * (pianoGain[smp.name] || 1), t);
       const src = ctx.createBufferSource(); src.buffer = pianoBuffers[smp.name];
       src.playbackRate.setValueAtTime(smp.rate, t); src.connect(out); src.start(t);
-      let released = false;
+      let relAt = Infinity;
       return { sustains: false, release(at) {
-        if (released) return; released = true;
+        if (at >= relAt) return; relAt = at;
         out.gain.cancelScheduledValues(at + 0.0001);
         out.gain.setTargetAtTime(0, at, 0.08); try { src.stop(at + 0.6); } catch(e) {}
       } };
@@ -2681,11 +2723,11 @@ function startVoice(ctx, freq, t, vol, inst) {
     });
     out.gain.setValueAtTime(vol, t);
   }
-  let released = false;
+  let relAt = Infinity;
   return {
     sustains: sustains,
     release(at) {
-      if (released) return; released = true;
+      if (at >= relAt) return; relAt = at;   // a later call may only make the note end sooner
       const tail = sustains ? 0.08 : 0.15;
       // Fade smoothly from whatever the volume is at that moment (reading .value here gave the wrong level → click)
       out.gain.cancelScheduledValues(at + 0.0001);
@@ -2698,21 +2740,30 @@ function makeNote(ctx, freq, startTime, duration, vol) {
   const v = startVoice(ctx, freq, startTime, vol);
   // Decaying instruments ring a little past the written length; held ones stop on time
   v.release(startTime + (v.sustains ? duration : Math.max(duration, 0.9) + 0.6));
+  return v;
 }
 
 function playTones(n1, n2, speed) {
   const ctx = getAudioCtx(), now = ctx.currentTime;
-  makeNote(ctx, noteToFreq(n1), now, speed, 0.35);
-  makeNote(ctx, noteToFreq(n2), now + speed, speed, 0.35);
+  return [makeNote(ctx, noteToFreq(n1), now, speed, 0.35), makeNote(ctx, noteToFreq(n2), now + speed, speed, 0.35)];
 }
 
 function playNote(n) {
-  makeNote(getAudioCtx(), noteToFreq(n), getAudioCtx().currentTime, 1.0, 0.4);
+  return [makeNote(getAudioCtx(), noteToFreq(n), getAudioCtx().currentTime, 1.0, 0.4)];
+}
+
+// Question audio ("Hear the note/interval/chord"): a new play stops the old one, so fast clicks never pile up
+let questionVoices = [];
+function qPlay(fn) {
+  const ctx = getAudioCtx(), now = ctx.currentTime;
+  questionVoices.forEach(v => v.release(now));
+  questionVoices = [];
+  whenPianoReady(() => { questionVoices = fn() || []; });
 }
 
 function playChord(notes) {
   const ctx = getAudioCtx(), now = ctx.currentTime;
-  notes.forEach(n => makeNote(ctx, noteToFreq(n), now, 1.5, 0.22));
+  return notes.map(n => makeNote(ctx, noteToFreq(n), now, 1.5, 0.22));
 }
 
 // ═══════════════════════════════════
@@ -3368,7 +3419,7 @@ function newChordRound() {
 function buildPiano(hlNs) {
   hlNs = hlNs || [];
   const W = 30, BW = 20;
-  let h = '<div class="piano-wrap" style="height:120px">';
+  let h = '<div class="piano-scroll"><div class="piano-wrap" style="height:120px">';
   PIANO_WHITE.forEach(k => {
     const cls = hlNs.includes(k.n) ? ' p-hl' : '';
     h += `<div class="p-white${cls}" onmousedown="pianoDown(${k.n},'${k.name}')" onmouseup="pianoUp(${k.n})" onmouseleave="pianoUp(${k.n})" ontouchstart="event.preventDefault();pianoDown(${k.n},'${k.name}')" ontouchend="pianoUp(${k.n})"></div>`;
@@ -3378,7 +3429,7 @@ function buildPiano(hlNs) {
     const cls = hlNs.includes(k.n) ? ' p-bk-hl' : '';
     h += `<div class="p-black${cls}" onmousedown="pianoDown(${k.n},'${k.name}')" onmouseup="pianoUp(${k.n})" onmouseleave="pianoUp(${k.n})" ontouchstart="event.preventDefault();pianoDown(${k.n},'${k.name}')" ontouchend="pianoUp(${k.n})" style="left:${left}px"></div>`;
   });
-  h += '</div>';
+  h += '</div></div>';
   return h;
 }
 
@@ -3619,6 +3670,102 @@ function vibeHtml() {
     x += `</div>`;
   }
   return x + `</div>`;
+}
+
+// ── Applause (friends send a clap icon; no names, no messages) ──
+// Safety design: friends find you only with your 6-letter friend code.
+// Only a picture-icon is sent. The nickname you give a friend stays on YOUR account.
+const CLAP_ICONS = ['👏', '⭐', '🎹', '🔥', '🎉'];
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+S.ap = { inbox: null, msg: '', busy: false };
+function apFriends() { try { return JSON.parse(localStorage.getItem('pms_friends') || '[]'); } catch(e) { return []; } }
+function apSaveFriends(f) { try { localStorage.setItem('pms_friends', JSON.stringify(f)); } catch(e) {} cloudSave(); }
+function apOff() { return localStorage.getItem('pms_applause_off') === 'yes'; }
+function apErr(e) {
+  const c = e && e.code || '';
+  if (c === 'permission-denied') return 'Applause is not switched on yet. A grown-up needs to add the safety rules in Firebase first.';
+  if (!navigator.onLine || c === 'unavailable') return 'You are offline. Try again when you have internet.';
+  return 'Something went wrong. Please try again.';
+}
+function apRandomCode() { let c = ''; for (let i = 0; i < 6; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; return c; }
+async function apMakeCode() {
+  if (!currentUser) return;
+  S.ap.busy = true; S.ap.msg = ''; render('applause');
+  try {
+    const old = localStorage.getItem('pms_friend_code');
+    if (old) { try { await db.collection('codes').doc(old).delete(); } catch(e) {} }
+    let made = '';
+    for (let i = 0; i < 5 && !made; i++) {
+      const c = apRandomCode();
+      try { await db.collection('codes').doc(c).set({ uid: currentUser.uid }); made = c; }
+      catch(e) { if (e.code !== 'permission-denied' || i === 4) throw e; } // taken code = try another
+    }
+    localStorage.setItem('pms_friend_code', made); cloudSave();
+    S.ap.msg = old ? 'New code made. Old friends can no longer find you or clap for you until you share the new one.' : '';
+  } catch(e) { S.ap.msg = apErr(e); }
+  S.ap.busy = false; render('applause');
+}
+async function apAddFriend() {
+  const code = ($('apCode').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const nick = ($('apNick').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16);
+  if (code.length !== 6) { S.ap.msg = 'A friend code has 6 letters and numbers.'; render('applause'); return; }
+  if (!nick) { S.ap.msg = 'Give your friend a nickname. Only you will see it.'; render('applause'); return; }
+  if (code === localStorage.getItem('pms_friend_code')) { S.ap.msg = 'That is your own code!'; render('applause'); return; }
+  const f = apFriends();
+  if (f.some(x => x.code === code)) { S.ap.msg = 'That friend is already on your list.'; render('applause'); return; }
+  S.ap.busy = true; render('applause');
+  try {
+    const d = await db.collection('codes').doc(code).get();
+    if (!d.exists) S.ap.msg = 'No one has that code. Check each letter and try again.';
+    else { f.push({ code, nick, uid: d.data().uid }); apSaveFriends(f); S.ap.msg = nick + ' was added.'; }
+  } catch(e) { S.ap.msg = apErr(e); }
+  S.ap.busy = false; render('applause');
+}
+function apRemoveFriend(code) { apSaveFriends(apFriends().filter(x => x.code !== code)); render('applause'); }
+async function apClap(code, icon) {
+  const fr = apFriends().find(x => x.code === code);
+  if (!fr || !CLAP_ICONS.includes(icon)) return;
+  try {
+    await db.collection('claps').doc(fr.uid).collection('in').doc(currentUser.uid)
+      .set({ icon, code, at: firebase.firestore.FieldValue.serverTimestamp() });
+    S.ap.msg = 'You sent ' + icon + ' to ' + fr.nick + '.';
+  } catch(e) {
+    S.ap.msg = apErr(e);
+    if (e.code === 'permission-denied') {
+      try { const d = await db.collection('codes').doc(code).get(); if (!d.exists || d.data().uid !== fr.uid) S.ap.msg = fr.nick + ' changed their code. Ask them for the new one.'; } catch(e2) {}
+    }
+  }
+  render('applause');
+}
+async function apLoadInbox() {
+  if (!currentUser || apOff()) return;
+  try {
+    const q = await db.collection('claps').doc(currentUser.uid).collection('in').get();
+    S.ap.inbox = q.docs.map(d => ({ from: d.id, icon: d.data().icon, at: d.data().at ? d.data().at.toMillis() : 0 }))
+      .filter(x => CLAP_ICONS.includes(x.icon)).sort((a, b) => b.at - a.at);
+  } catch(e) { S.ap.inbox = []; if (S.page === 'applause') S.ap.msg = apErr(e); }
+  if (S.page === 'applause') render('applause'); else if (S.page === 'home' && S.homeTab === 'me') render('home');
+}
+async function apClearInbox() {
+  const list = S.ap.inbox || [];
+  try { await Promise.all(list.map(c => db.collection('claps').doc(currentUser.uid).collection('in').doc(c.from).delete())); S.ap.inbox = []; }
+  catch(e) { S.ap.msg = apErr(e); }
+  render('applause');
+}
+function apNewCount() {
+  const seen = parseInt(localStorage.getItem('pms_clap_seen') || '0', 10);
+  return (S.ap.inbox || []).filter(c => c.at > seen).length;
+}
+function apToggleOff() {
+  try { if (apOff()) localStorage.removeItem('pms_applause_off'); else localStorage.setItem('pms_applause_off', 'yes'); } catch(e) {}
+  cloudSave(); if (!apOff()) apLoadInbox(); render('applause');
+}
+function apAgo(ms) {
+  if (!ms) return 'just now';
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60); if (h < 24) return h + ' h ago';
+  return Math.round(h / 24) + ' days ago';
 }
 
 // ── Trophy Cabinet (on the Me tab) ──
@@ -3862,6 +4009,9 @@ function render(page) {
         {go:"startFromHome('stats')",icon:'📊',name:'My Progress',desc:'Line and bar charts showing your improvement over the last 7 days, plus best scores for every game'},
         {go:"startFromHome('achievements')",icon:'🏆',name:'Achievements',desc:ACHIEVEMENTS.length + ' badges to unlock — play your first game, get a perfect score, try every mode, and more'},
       ];
+      if (currentUser && !apOff() && S.ap.inbox === null) apLoadInbox();
+      const apNew = currentUser && !apOff() ? apNewCount() : 0;
+      items.push({go:"render('applause')",icon:'👏',name:'Applause' + (apNew ? ' · ' + apNew + ' new' : ''),desc:currentUser ? 'Add friends with a code and send each other a clap. Only an icon is sent — no names, no messages' : 'Sign in to send claps to friends'});
       if (showPebbles()) items.push({go:"startFromHome('wardrobe')",icon:'👗',name:'Pebbles Wardrobe',desc:'Six outfits for your dino — Classic, Cool, Party, Pirate, Space, and Winter'});
       items.push({go:"render('install')",icon:'📲',name:'Get the App',desc:'Put PianoMind on your phone, tablet or computer — then it opens even without internet'});
       items.push({go:"startFromHome('settings')",icon:'⚙️',name:'Settings',desc:'Switch between Cartoon, Smooth, and Neon modes — change themes, toggle Pebbles, and more'});
@@ -3923,10 +4073,10 @@ function render(page) {
     h += progressBar(r, total);
 
     if (S.level === '5' && S.earTarget2N != null) {
-      h += `<div class="play-btn" onclick="S.earReplayed=true;playTones(${S.earTargetN},${S.earTarget2N},0.8)">Hear both notes</div>`;
+      h += `<div class="play-btn" onclick="S.earReplayed=true;qPlay(()=>playTones(${S.earTargetN},${S.earTarget2N},0.8))">Hear both notes</div>`;
       if (!fb) h += `<p class="caption" style="text-align:center">Identify note ${S.earStep} of 2</p>`;
     } else {
-      h += `<div class="play-btn" onclick="S.earReplayed=true;playNote(${S.earTargetN})">Hear the note</div>`;
+      h += `<div class="play-btn" onclick="S.earReplayed=true;qPlay(()=>playNote(${S.earTargetN}))">Hear the note</div>`;
     }
 
     if (!fb || fb === 'retry') {
@@ -4121,7 +4271,7 @@ function render(page) {
     h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎶 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(r, total);
     if (S.intEarMode) {
-      h += `<div class="play-btn" onclick="if(S.intKeys.length>=2)playTones(S.intKeys[0],S.intKeys[1],0.6);else if(S.intKeys[0])playNote(S.intKeys[0])">Hear the interval</div>`;
+      h += `<div class="play-btn" onclick="qPlay(()=>S.intKeys.length>=2?playTones(S.intKeys[0],S.intKeys[1],0.6):(S.intKeys[0]!=null?playNote(S.intKeys[0]):[]))">Hear the interval</div>`;
     } else {
       h += `<canvas id="intCanvas" width="400" height="260"></canvas>`;
       h += `<div style="text-align:center">${buildPiano(S.intKeys)}</div>`;
@@ -4227,7 +4377,7 @@ function render(page) {
     if (!S.chordEarOnly) {
       h += `<canvas id="chordCanvas" width="360" height="260" style="display:block;margin:0.5rem auto;border-radius:14px"></canvas>`;
     }
-    h += `<div class="play-btn" onclick="playChord([${S.chordNotes}])">Hear the chord</div>`;
+    h += `<div class="play-btn" onclick="qPlay(()=>playChord([${S.chordNotes}]))">Hear the chord</div>`;
     if (!fb || fb === 'retry') {
       h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
       h += `<div class="card">`;
@@ -4519,6 +4669,58 @@ function render(page) {
     AVATAR_COLORS.forEach(c => { h += `<div class="av-color${c === col ? ' active' : ''}" style="background:${c}" onclick="pickAvatarColor('${c}')"></div>`; });
     h += `</div></div>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='me';render('home')">⬅ Back</button>`;
+  }
+
+  // ── APPLAUSE ──
+  else if (page === 'applause') {
+    h += `<h1>👏 Applause</h1>`;
+    if (!currentUser) {
+      h += `<div class="card"><p class="speech">Applause needs an account, so you must sign in first.</p><button class="btn btn-blue btn-wide" onclick="render('login')">Sign in</button></div>`;
+    } else {
+      const myCode = localStorage.getItem('pms_friend_code');
+      if (S.ap.msg) h += `<div class="card ap-msg">${S.ap.msg}</div>`;
+      // Your code
+      h += `<div class="card" style="text-align:center"><p class="section-label">Your friend code</p>`;
+      if (myCode) {
+        h += `<div class="ap-code">${myCode}</div><p class="caption">Only give this code to friends you know in real life.</p>`;
+        h += `<button class="btn btn-lilac" ${S.ap.busy ? 'disabled' : ''} onclick="apMakeCode()">Get a new code</button>`;
+        h += `<p class="caption">A new code stops everyone who has your old code.</p>`;
+      } else {
+        h += `<p class="caption">Make a code. Friends type it in to add you.</p><button class="btn btn-blue" ${S.ap.busy ? 'disabled' : ''} onclick="apMakeCode()">Make my code</button>`;
+      }
+      h += `</div>`;
+      // Claps you got
+      h += `<div class="card"><p class="section-label">Claps for you</p>`;
+      if (apOff()) h += `<p class="caption">Applause is turned off. You won't see any claps.</p>`;
+      else if (S.ap.inbox === null) { h += `<p class="caption">Loading…</p>`; apLoadInbox(); }
+      else if (!S.ap.inbox.length) h += `<p class="caption">No claps yet.</p>`;
+      else {
+        const fr = apFriends(), seen = parseInt(localStorage.getItem('pms_clap_seen') || '0', 10);
+        S.ap.inbox.forEach(c => {
+          const f = fr.find(x => x.uid === c.from);
+          h += `<div class="ap-row${c.at > seen ? ' ap-new' : ''}"><span class="ap-icon">${c.icon}</span><span>${f ? f.nick : 'A friend'}</span><span class="caption">${apAgo(c.at)}</span></div>`;
+        });
+        h += `<button class="btn btn-lilac" style="margin-top:0.5rem" onclick="apClearInbox()">Clear</button>`;
+        try { localStorage.setItem('pms_clap_seen', String(Math.max(seen, ...S.ap.inbox.map(c => c.at)))); } catch(e) {}
+      }
+      h += `</div>`;
+      // Friends
+      const fr = apFriends();
+      h += `<div class="card"><p class="section-label">Your friends</p>`;
+      if (!fr.length) h += `<p class="caption">No friends added yet.</p>`;
+      fr.forEach(f => {
+        h += `<div class="ap-friend"><div class="ap-fname">${f.nick}</div><div class="ap-btns">`;
+        CLAP_ICONS.forEach(ic => { h += `<button class="ap-send" title="Send ${ic}" onclick="apClap('${f.code}','${ic}')">${ic}</button>`; });
+        h += `<button class="ap-del" title="Remove" onclick="apRemoveFriend('${f.code}')">✕</button></div></div>`;
+      });
+      h += `<p class="section-label" style="margin-top:0.8rem">Add a friend</p>`;
+      h += `<input id="apCode" class="ap-input" maxlength="6" placeholder="Their code" autocomplete="off" style="text-transform:uppercase">`;
+      h += `<input id="apNick" class="ap-input" maxlength="16" placeholder="Nickname (only you see it)" autocomplete="off">`;
+      h += `<button class="btn btn-blue btn-wide" ${S.ap.busy ? 'disabled' : ''} onclick="apAddFriend()">Add</button></div>`;
+      h += `<div class="card"><button class="btn btn-lilac btn-wide" onclick="apToggleOff()">${apOff() ? 'Turn applause on' : 'Turn applause off'}</button>`;
+      h += `<p class="caption" style="margin-top:0.5rem">Only an icon is ever sent. No names. No messages. Your friend's nickname stays on your account.</p></div>`;
+    }
+    h += `<button class="btn btn-lilac btn-wide" onclick="S.ap.msg='';S.homeTab='me';render('home')">⬅ Back</button>`;
   }
 
   // ── TIME ATTACK: SETUP ──
@@ -5577,16 +5779,16 @@ function render(page) {
   // Auto-play tones
   if (page === 'ear_play' && !S.earFeedback) {
     if (S.level === '5' && S.earTarget2N != null) {
-      setTimeout(() => playTones(S.earTargetN, S.earTarget2N, 0.8), 400);
+      setTimeout(() => qPlay(() => playTones(S.earTargetN, S.earTarget2N, 0.8)), 400);
     } else {
-      setTimeout(() => playNote(S.earTargetN), 400);
+      setTimeout(() => qPlay(() => playNote(S.earTargetN)), 400);
     }
   }
   if (page === 'interval_play' && S.intEarMode && !S.intFeedback && S.intKeys.length >= 2) {
-    setTimeout(() => playTones(S.intKeys[0], S.intKeys[1], 0.6), 400);
+    setTimeout(() => qPlay(() => playTones(S.intKeys[0], S.intKeys[1], 0.6)), 400);
   }
   if (page === 'chord_play' && !S.chordFeedback) {
-    setTimeout(() => playChord(S.chordNotes), 400);
+    setTimeout(() => qPlay(() => playChord(S.chordNotes)), 400);
   }
 
   // Safety-net achievement check — catches any progress made during this render (e.g. level/streak changes)
