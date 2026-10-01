@@ -1038,6 +1038,13 @@ body.mode-smooth .tc-plaque { background:#f4f4f8; }
 .vibe-clear { color:#6b7fa3; }
 body.mode-neon .vibe-chip { background:rgba(0,200,255,0.12); color:#00c8ff; }
 body.mode-neon .vibe-opt { background:#141414; border-color:rgba(0,200,255,0.25); }
+
+/* ── Printable homework ── */
+.hw-opts { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:0.5rem; }
+.hw-opt { cursor:pointer; text-align:center; padding:0.7rem 0.4rem; border-radius:14px; font-weight:700; font-size:0.85rem; background:rgba(255,255,255,0.35); border:2px solid transparent; }
+.hw-opt.active { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); }
+body.mode-neon .hw-opt { background:#111; } body.mode-neon .hw-opt.active { border-color:#00c8ff; }
+body.mode-smooth .hw-opt { background:#fff; border-color:#e3e3e3; } body.mode-smooth .hw-opt.active { border-color:#7c6fef; }
 </style>
 </head>
 <body>
@@ -2596,8 +2603,8 @@ function startVoice(ctx, freq, t, vol, inst) {
       let released = false;
       return { sustains: false, release(at) {
         if (released) return; released = true;
-        out.gain.cancelScheduledValues(at); out.gain.setValueAtTime(out.gain.value, at);
-        out.gain.setTargetAtTime(0, at, 0.08); try { src.stop(at + 0.5); } catch(e) {}
+        out.gain.cancelScheduledValues(at + 0.0001);
+        out.gain.setTargetAtTime(0, at, 0.08); try { src.stop(at + 0.6); } catch(e) {}
       } };
     }
   }
@@ -2680,8 +2687,8 @@ function startVoice(ctx, freq, t, vol, inst) {
     release(at) {
       if (released) return; released = true;
       const tail = sustains ? 0.08 : 0.15;
-      out.gain.cancelScheduledValues(at);
-      out.gain.setValueAtTime(out.gain.value, at);
+      // Fade smoothly from whatever the volume is at that moment (reading .value here gave the wrong level → click)
+      out.gain.cancelScheduledValues(at + 0.0001);
       out.gain.setTargetAtTime(0, at, tail / 3);
       oscs.forEach(o => { try { o.stop(at + tail + 0.05); } catch(e) {} });
     }
@@ -3493,6 +3500,108 @@ function uploadAvatar(input) {
   reader.readAsDataURL(file);
 }
 
+// ═══════════════════════════════════
+//  PRINTABLE HOMEWORK — worksheet + answer key, printed or saved as PDF
+// ═══════════════════════════════════
+const HW_TYPES = {
+  notes:     { name: 'Name the Notes',    icon: '🎼', task: 'Write the letter name under each note.' },
+  draw:      { name: 'Draw the Notes',    icon: '✏️', task: 'Draw each note on the staff (a whole note is fine). Any octave is OK.' },
+  intervals: { name: 'Name the Intervals', icon: '🎶', task: 'Write the interval (for example: Major 3rd) under each pair of notes.' },
+  chords:    { name: 'Name the Chords',   icon: '🎸', task: 'Write the chord name (for example: C Major) under each chord.' }
+};
+const HW_LEVELS = ['Beginner', 'Easy', 'Medium', 'Hard'];
+const HW_ACC_GLYPH = { sharp: '♯', flat: '♭', double_sharp: '𝄪', double_flat: '𝄫' };
+
+// One small staff as SVG. notes = [{h, acc}], layout 'single' | 'melodic' | 'chord'
+function hwStaffSvg(clef, notes, layout) {
+  const W = 190, H = 120, gap = 10, bottom = 78, left = 8, right = W - 8;
+  const y = h => bottom - h * gap * 2 / 2 * 1;  // h is in staff steps of a line (1 = one line up)
+  const Y = h => bottom - h * gap;
+  let x = `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">`;
+  for (let i = 0; i < 5; i++) x += `<line x1="${left}" x2="${right}" y1="${Y(i)}" y2="${Y(i)}" stroke="#222" stroke-width="1"/>`;
+  x += clef === 'treble'
+    ? `<text x="${left + 2}" y="${Y(-0.55)}" font-size="52" font-family="'Noto Music','Segoe UI Symbol','Apple Symbols',serif">𝄞</text>`
+    : `<text x="${left + 4}" y="${Y(2.05)}" font-size="34" font-family="'Noto Music','Segoe UI Symbol','Apple Symbols',serif">𝄢</text>`;
+  const xs = layout === 'melodic' ? [92, 142] : [118];
+  notes.forEach((n, i) => {
+    const nx = layout === 'melodic' ? xs[i] : xs[0];
+    // ledger lines
+    for (let l = -1; l >= Math.ceil(n.h - 0.01) && l >= -3; l--) if (n.h <= l) x += `<line x1="${nx - 11}" x2="${nx + 11}" y1="${Y(l)}" y2="${Y(l)}" stroke="#222"/>`;
+    for (let l = 5; l <= n.h + 0.01; l++) x += `<line x1="${nx - 11}" x2="${nx + 11}" y1="${Y(l)}" y2="${Y(l)}" stroke="#222"/>`;
+    x += `<ellipse cx="${nx}" cy="${Y(n.h)}" rx="6.6" ry="4.8" transform="rotate(-20 ${nx} ${Y(n.h)})" fill="none" stroke="#111" stroke-width="2.2"/>`;
+    if (n.acc && n.acc !== 'natural') x += `<text x="${nx - 13 - (layout === 'chord' && i % 2 ? 10 : 0)}" y="${Y(n.h) + 5}" text-anchor="end" font-size="17" font-family="'Noto Music','Segoe UI Symbol','Apple Symbols',serif">${HW_ACC_GLYPH[n.acc]}</text>`;
+  });
+  return x + `</svg>`;
+}
+function hwQuestion(type, level, clefPick) {
+  const lv = HW_LEVELS.indexOf(level);
+  const clef = clefPick === 'both' ? pick(['treble', 'bass']) : clefPick;
+  if (type === 'notes' || type === 'draw') {
+    const hard = lv >= 3, names = hard ? noteNamesFor(clef) : (clef === 'treble' ? TREBLE_NAMES : BASS_NAMES), heights = hard ? HEIGHTS_HARD : HEIGHTS;
+    const spot = lv === 0 ? randInt(2, 10) : randInt(0, heights.length - 1);
+    const acc = lv <= 1 || type === 'draw' && lv < 2 ? 'natural' : weightedChoice(lv >= 3 ? ['natural','sharp','flat','double_sharp','double_flat'] : ['natural','sharp','flat'], lv >= 3 ? [3,3,3,1,1] : [4,3,3]);
+    const suf = { natural: '', sharp: '#', flat: 'b', double_sharp: '##', double_flat: 'bb' }[acc];
+    const n = { h: heights[spot], acc: acc };
+    return { clef, layout: 'single', notes: type === 'draw' ? [] : [n], keyNotes: [n], label: type === 'draw' ? prettyNote(names[spot] + suf) : '', answer: prettyNote(names[spot] + suf) };
+  }
+  if (type === 'intervals') {
+    const pool = [['Major 3rd','Perfect 5th'], EASY_INT, MEDIUM_INT, HARD_INT][lv].filter(nm => INTERVAL_PAIRS[nm] && INTERVAL_PAIRS[nm].length);
+    const nm = pick(pool), pr = pick(INTERVAL_PAIRS[nm]), up = Math.random() < 0.6;
+    const ns = (up ? [pr[0], pr[1]] : [pr[1], pr[0]]).map(h => ({ h: h, acc: 'natural' }));
+    return { clef: 'treble', layout: 'melodic', notes: ns, keyNotes: ns, label: '', answer: nm };
+  }
+  // chords
+  const types = [['Major','Minor'], EASY_CHORDS, MED_CHORDS, HARD_CHORDS][lv];
+  const t = pick(types), root = pick(Object.keys(clef === 'treble' ? TREBLE_CHORD_H : BASS_CHORD_H));
+  const info = getChordStaffInfo(root, t, clef);
+  const ns = info.heights.map((h, i) => ({ h: h, acc: info.accidentals[i] }));
+  return { clef, layout: 'chord', notes: ns, keyNotes: ns, label: '', answer: root + ' ' + t };
+}
+function makeWorksheet() {
+  const type = S.hwType || 'notes', level = S.hwLevel || 'Easy', clef = S.hwClef || 'treble';
+  const qs = [], seen = new Set();
+  for (let tries = 0; qs.length < 12 && tries < 300; tries++) {
+    const q = hwQuestion(type, level, type === 'intervals' ? 'treble' : clef);
+    const key = q.clef + q.answer + JSON.stringify(q.keyNotes);
+    if (seen.has(key) && tries < 200) continue;
+    seen.add(key); qs.push(q);
+  }
+  const T = HW_TYPES[type], date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const head = (title) => `<div class="hd"><div><div class="brand">PianoMind Studios</div><h1>${title}</h1><div class="meta">${T.name} · ${level}${type !== 'intervals' ? ' · ' + ({treble:'Treble clef',bass:'Bass clef',both:'Treble & bass clef'})[clef] : ' · Treble clef'}</div></div>
+    <div class="fields"><div>Name: <span></span></div><div>Date: <span>${title === 'Answer Key' ? date : ''}</span></div><div>Score: <span class="sc">&nbsp;&nbsp;&nbsp;&nbsp;/ ${qs.length}</span></div></div></div>`;
+  const grid = (withAnswers) => `<div class="grid">${qs.map((q, i) => `<div class="q"><div class="qn">${i + 1}${q.label ? ` <b>Draw: ${q.label}</b>` : ''}</div>${hwStaffSvg(q.clef, withAnswers ? q.keyNotes : q.notes, q.layout)}<div class="ans">${withAnswers ? q.answer : ''}</div></div>`).join('')}</div>`;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PianoMind Homework — ${T.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Noto+Music&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 14mm; }
+body { font-family: Quicksand, Arial, sans-serif; color: #111; margin: 0; }
+.page { page-break-after: always; } .page:last-child { page-break-after: auto; }
+.hd { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #111; padding-bottom:6px; margin-bottom:8px; }
+.brand { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#555; }
+h1 { margin:2px 0; font-size:24px; } .meta { font-size:12px; color:#444; }
+.fields { font-size:13px; text-align:right; line-height:1.9; } .fields span { display:inline-block; min-width:120px; border-bottom:1px solid #111; text-align:left; }
+.task { font-size:14px; margin:6px 0 10px; }
+.grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px 16px; }
+.q { border:1px solid #ccc; border-radius:8px; padding:6px 8px 8px; break-inside:avoid; }
+.qn { font-size:12px; font-weight:700; color:#333; } .qn b { margin-left:6px; font-size:14px; color:#111; }
+.ans { border-bottom:1px solid #111; height:22px; margin:2px 6px 0; font-weight:700; color:#c0262d; text-align:center; font-size:15px; }
+.foot { font-size:10px; color:#777; margin-top:10px; text-align:center; }
+.bar { position:fixed; top:0; left:0; right:0; background:#7c6fef; color:#fff; padding:10px; text-align:center; font-size:14px; }
+.bar button { font:inherit; font-weight:700; margin-left:10px; padding:6px 14px; border:none; border-radius:16px; cursor:pointer; }
+@media screen { body { padding:60px 24px 24px; max-width:820px; margin:0 auto; } .page { margin-bottom:40px; } }
+@media print { .bar { display:none; } }
+</style></head><body>
+<div class="bar">Your worksheet is ready. <button onclick="window.print()">🖨️ Print / Save as PDF</button></div>
+<div class="page">${head('Homework')}<div class="task">${T.task}</div>${grid(false)}<div class="foot">Made with PianoMind Studios · vanjdroid.github.io/pianomind-studios</div></div>
+<div class="page">${head('Answer Key')}<div class="task">For the teacher or parent: answers are in red.${type === 'draw' ? ' Any octave of the right note is correct.' : ''}</div>${grid(true)}</div>
+<script>document.fonts.ready.then(function(){ setTimeout(function(){ window.print(); }, 300); });<\/script>
+</body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { alert('Your browser blocked the worksheet window. Please allow pop-ups for this site and try again.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  markGamePlayed('homework');
+}
+
 // ── Practice Vibe: a status tag on the profile ──
 const VIBES = ['🎧 Headphones On', '🎹 Real Piano Mode', '🧠 Theory Only', '⚡ Speed Training', '🎯 Exam Prep', '😌 Chill Practice', '🔥 Locked In'];
 function getVibe() { try { return localStorage.getItem('pms_vibe') || ''; } catch(e) { return ''; } }
@@ -3722,6 +3831,7 @@ function render(page) {
         {go:"startFromHome('theory')",icon:'📖',name:'Music Theory',desc:'Step-by-step lessons covering the staff, accidentals, scales, time signatures, intervals, and the circle of fifths'},
         {go:"startFromHome('exercises')",icon:'📝',name:'Grade Exercises',desc:'Multiple-choice theory questions sorted by grade — from Grade 1 basics to Grade 6 and beyond'},
         {go:"startFromHome('songs')",icon:'🎵',name:'Song Library',desc:'Pick a song, see the notes on the staff, and play along at your own pace — the app waits for each note'},
+        {go:"render('homework')",icon:'🖨️',name:'Printable Homework',desc:'Make a printable worksheet (with answer key) for notes, intervals or chords at your level — practise away from the screen'},
         {go:"render('chord_mixer')",icon:'🎛',name:'Chord Mixer',desc:'Build chord progressions by tapping I, IV, V, vi — hear how pop, blues, and classical songs use chords'},
       ];
     } else if (S.homeTab === 'me') {
@@ -4367,6 +4477,27 @@ function render(page) {
     h += `</div>`;
 
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
+  }
+
+  // ── PRINTABLE HOMEWORK ──
+  else if (page === 'homework') {
+    const t = S.hwType || 'notes', lv = S.hwLevel || 'Easy', cl = S.hwClef || 'treble';
+    h += `<h1>🖨️ Printable Homework</h1>`;
+    h += `<div class="card"><p class="speech">Make a worksheet to print or save as a PDF. It has 12 new questions every time, plus an answer key on page 2.</p></div>`;
+    h += `<div class="card"><p class="section-label">Worksheet</p><div class="hw-opts">`;
+    Object.keys(HW_TYPES).forEach(k => { h += `<div class="hw-opt${t === k ? ' active' : ''}" onclick="S.hwType='${k}';render('homework')"><div style="font-size:1.5rem">${HW_TYPES[k].icon}</div><div>${HW_TYPES[k].name}</div></div>`; });
+    h += `</div><p class="section-label" style="margin-top:0.8rem">Level</p><div class="round-picker">`;
+    HW_LEVELS.forEach(l => { h += `<div class="round-opt${lv === l ? ' active' : ''}" onclick="S.hwLevel='${l}';render('homework')">${l}</div>`; });
+    h += `</div>`;
+    if (t !== 'intervals') {
+      h += `<p class="section-label" style="margin-top:0.8rem">Clef</p><div class="round-picker">`;
+      [['treble','Treble'],['bass','Bass'],['both','Both']].forEach(([k, n]) => { h += `<div class="round-opt${cl === k ? ' active' : ''}" onclick="S.hwClef='${k}';render('homework')">${n}</div>`; });
+      h += `</div>`;
+    } else h += `<p class="caption" style="margin-top:0.6rem">Interval worksheets use the treble clef.</p>`;
+    h += `</div>`;
+    h += `<button class="btn btn-mint btn-wide" onclick="makeWorksheet()">📄 Create worksheet</button>`;
+    h += `<p class="caption" style="text-align:center;margin-top:0.4rem">To make a PDF, choose "Save as PDF" as the printer.</p>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.6rem" onclick="S.homeTab='learn';render('home')">⬅ Back</button>`;
   }
 
   // ── PROFILE PICTURE ──
