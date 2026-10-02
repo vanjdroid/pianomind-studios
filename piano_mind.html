@@ -1387,9 +1387,6 @@ function intLetters(h1, h2) {
 // Hint after a first wrong answer — matched to the mistake
 function intHint(picked) {
   const correctNum = intNumberOf(S.intCorrect), pickedNum = intNumberOf(picked);
-  if (S.intEarMode) {
-    return `Listen to your answer, then the question again. Is the real one <strong>bigger or smaller</strong> than a ${picked}?`;
-  }
   if (pickedNum !== correctNum) {
     return `The number is off. Count the letter names from the <strong>lower</strong> note up to the <strong>higher</strong> note. Count both notes.`;
   }
@@ -1408,14 +1405,6 @@ function intWhyHtml() {
   x += `</div>`;
   return x;
 }
-// Play an interval of a given name, starting from the question's first note, same direction
-function playIntervalByName(name) {
-  const k = S.intKeys; if (!k || !k.length) return;
-  const up = S.intH2 >= S.intH1;
-  const semis = INT_SEMIS[name]; if (semis === undefined) return;
-  playTones(k[0], up ? k[0] + semis : k[0] - semis, 0.6);
-}
-
 const INTERVAL_PAIRS = {};
 for (let i = 0; i < HEIGHTS.length; i++) {
   for (let j = i; j < HEIGHTS.length; j++) {
@@ -2021,14 +2010,11 @@ function startMystery(level) {
 // Mixed ear questions. Each right answer hits the boss. Each wrong answer costs a heart.
 const BOSSES = [
   { name: 'Grumbleclef', icon: '👾', hp: 8,  says: 'My notes are all mixed up! You can\'t hear the difference!',
-    types: ['updown', 'chord', 'interval'], chords: ['Major', 'Minor'],
-    ints: ['Major 2nd', 'Major 3rd', 'Perfect 4th', 'Perfect 5th', 'Perfect Octave'] },
+    types: ['updown', 'chord', 'interval'], chords: ['Major', 'Minor'], ints: 'easy' },
   { name: 'Count Dischord', icon: '🧛', hp: 10, says: 'I will scramble every chord you know!',
-    types: ['chord', 'interval', 'interval'], chords: ['Major', 'Minor', 'Diminished', 'Augmented'],
-    ints: ['Minor 2nd', 'Major 2nd', 'Minor 3rd', 'Major 3rd', 'Perfect 4th', 'Augmented 4th', 'Perfect 5th', 'Minor 6th', 'Major 6th', 'Minor 7th', 'Major 7th', 'Perfect Octave'] },
-  { name: 'The Tritone Dragon', icon: '🐉', hp: 12, says: 'Two notes at once? Changed melodies? Ha! Good luck!',
-    types: ['chord', 'interval', 'harmonic', 'spot'], chords: ['Major', 'Minor', 'Diminished', 'Augmented'],
-    ints: ['Minor 2nd', 'Major 2nd', 'Minor 3rd', 'Major 3rd', 'Perfect 4th', 'Augmented 4th', 'Perfect 5th', 'Minor 6th', 'Major 6th', 'Minor 7th', 'Major 7th', 'Perfect Octave'] },
+    types: ['chord', 'interval', 'spot'], chords: ['Major', 'Minor', 'Diminished', 'Augmented'], ints: 'medium' },
+  { name: 'The Tritone Dragon', icon: '🐉', hp: 12, says: 'Tricky intervals? Changed melodies? Ha! Good luck!',
+    types: ['chord', 'interval', 'spot'], chords: ['Major', 'Minor', 'Diminished', 'Augmented'], ints: 'hard' },
 ];
 const CHORD_SHAPES = { Major: [0, 4, 7], Minor: [0, 3, 7], Diminished: [0, 3, 6], Augmented: [0, 4, 8] };
 function bossBeaten() { return loadScores()._bossBeaten || 0; }
@@ -2052,19 +2038,23 @@ function bossQuestion() {
     q.ask = 'The tune plays twice. Which note changed?';
     q.why = 'Note ' + (q.mm.at + 1) + ' changed from ' + degName(q.mm.key, q.mm.tune[q.mm.at]) + ' to ' + degName(q.mm.key, q.mm.changed[q.mm.at]) + '.';
   } else {
-    const name = pick(B.ints), semi = INT_SEMIS[name], lo = -9 + Math.floor(Math.random() * 10);
-    q.notes = [lo, lo + semi]; q.answer = name;
-    q.choices = shuffleArr([name, ...shuffleArr(B.ints.filter(x => x !== name)).slice(0, 3)]);
-    q.ask = type === 'harmonic' ? 'Two notes played TOGETHER. What interval?' : 'What interval is this?';
-    q.why = name + ' = ' + semi + ' half steps.';
+    // Interval: READ it on the staff (no sound)
+    const pool = (B.ints === 'easy' ? EASY_INT : B.ints === 'medium' ? MEDIUM_INT : HARD_INT).filter(n => INTERVAL_PAIRS[n] && INTERVAL_PAIRS[n].length);
+    const name = pick(pool), pair = pick(INTERVAL_PAIRS[name]);
+    S.intH1 = pair[0]; S.intH2 = pair[1];
+    q.answer = name;
+    q.choices = shuffleArr([name, ...shuffleArr(pool.filter(x => x !== name)).slice(0, 3)]);
+    q.ask = 'Read the staff. What interval is this?';
+    q.why = name + ' = ' + INT_SEMIS[name] + ' half steps.';
   }
   S.boss.q = q;
 }
 function bossPlay() {
   const q = S.boss.q;
+  if (q.type === 'interval') return;   // read, not heard
   if (q.type === 'spot') { S.mm = q.mm; S.mmLevel = 'medium'; mmPlay(); return; }
   qPlay(() => {
-    if (q.type === 'chord' || q.type === 'harmonic') return playChord(q.notes);
+    if (q.type === 'chord') return playChord(q.notes);
     return playTones(q.notes[0], q.notes[1], 0.7);
   });
 }
@@ -2616,7 +2606,7 @@ const THEORY_LESSONS = [
       { title: 'How to Count', text: "Count BOTH notes! From C to C = <strong>1st</strong> (unison). C to D = <strong>2nd</strong>. C to E = <strong>3rd</strong>. Count every letter: C-D-E, that's 3." },
       { title: 'Small Intervals', text: "<strong>2nd</strong> = right next door (C to D). Sounds tight.<br><strong>3rd</strong> = skip one note (C to E). Sounds sweet.<br><strong>4th</strong> = (C to F). Think of the Star Wars opening!" },
       { title: 'Big Intervals', text: "<strong>5th</strong> = (C to G). Strong and open, like a power chord!<br><strong>Octave</strong> = same note, higher up (C to C). Sounds like the same note, just higher!" },
-      { title: 'Why Intervals Matter', text: "Every melody is just a chain of intervals! When you can hear intervals, you can figure out songs by ear. That's a real superpower!" },
+      { title: 'Why Intervals Matter', text: "Every melody is just a chain of intervals! When you can read intervals, you see the jump between notes instead of naming every single note. That helps you sight-read." },
     ],
     quiz: [
       { q: 'What interval is C to E?', choices: ['2nd','3rd','4th','5th'], answer: '3rd' },
@@ -2945,7 +2935,7 @@ function playNote(n) {
   return [makeNote(getAudioCtx(), noteToFreq(n), getAudioCtx().currentTime, 1.0, 0.4)];
 }
 
-// Question audio ("Hear the note/interval/chord"): a new play stops the old one, so fast clicks never pile up
+// Question audio ("Hear the note/chord"): a new play stops the old one, so fast clicks never pile up
 let questionVoices = [];
 function qPlay(fn) {
   const ctx = getAudioCtx(), now = ctx.currentTime;
@@ -3118,6 +3108,9 @@ function drawIntervalStaff(canvasId, h1, h2) {
   ctx.font = '700 22px Quicksand';
   ctx.textAlign = 'center';
   ctx.fillText('What interval?', W / 2, 28);
+  // Say which clef, so the note names are clear
+  ctx.font = '600 14px Quicksand'; ctx.textAlign = 'left';
+  ctx.fillText('Treble clef', staffLeft, H - 12);
 }
 
 function drawChordStaff(canvasId, heights, accidentals, clef) {
@@ -3562,8 +3555,8 @@ function newIntervalRound() {
   S.intTries = 0;
   S.intPicked = null;
   S.intCrossed = [];
-  S.intEarMode = (S.level === '4' || S.level === '5');
-  const numChoices = S.level === '0' ? 3 : S.intEarMode ? 6 : 4;
+  S.intEarMode = false;   // intervals are read on the staff only, never heard
+  const numChoices = S.level === '0' ? 3 : 4;
   const choices = new Set([intName]);
   while (choices.size < Math.min(numChoices, avail.length)) choices.add(pick(avail));
   S.intChoices = [...choices].sort(() => Math.random() - 0.5);
@@ -4080,7 +4073,7 @@ function render(page) {
       { title: 'Home Screen', icon: '🏠', text: 'The home screen has four tabs: Play (games and practice), Tools (scales, metronome, Hanon exercises), Learn (music theory and grade exercises), and Settings.' },
       { title: 'Ear Training', icon: '🎵', text: 'The app plays a note. You listen and pick which note it is from a set of choices. Five levels — from one octave up to two-note melodies with sharps.' },
       { title: 'Note Reading', icon: '🎼', text: 'A note appears on the staff. You type its name. You can practise treble clef, bass clef, or both. Sharps and flats included at higher levels.' },
-      { title: 'Intervals & Chords', icon: '🎹', text: 'Learn to recognise the distance between two notes (intervals) and the sound of different chord types — major, minor, diminished, and more.' },
+      { title: 'Intervals & Chords', icon: '🎹', text: 'Learn to read the distance between two notes on the staff (intervals) and the sound of different chord types — major, minor, diminished, and more.' },
       { title: 'Scale Explorer', icon: '🎶', text: 'See and hear scales drawn on the staff. You can play along with your instrument using the microphone — the app listens and tracks your notes.' },
       { title: 'Hanon Exercises', icon: '🎹', text: 'All 20 Hanon Book 1 exercises. Hear each bar, step through the full exercise, and practise along with the microphone at any speed.' },
       { title: 'XP & Achievements', icon: '⭐', text: 'Every game earns XP. Level up and unlock achievements. Check your stats on the home screen.' },
@@ -4217,7 +4210,7 @@ function render(page) {
         {go:"startFromHome('chord')",icon:'🎸',name:'Chords',desc:'Hear a chord and identify it — Major, Minor, Diminished, Augmented, and 7ths at higher levels'},
         {go:"startFromHome('melody')",icon:'🎶',name:'Melody Echo',desc:'The app plays a short melody, then you tap it back in order on the piano — tests your musical memory'},
         {go:"render('mystery_level')",icon:'🕵️',name:'Mystery Melody',desc:'A tune plays twice. One note changes the second time. Can you spot which one?'},
-        {go:"render('boss_home')",icon:'⚔️',name:'Boss Battle',desc:'Mixed ear questions. Right answers hit the boss. Wrong answers cost a heart. Beat all 3 bosses!'},
+        {go:"render('boss_home')",icon:'⚔️',name:'Boss Battle',desc:'Chords, tunes and intervals on the staff. Right answers hit the boss. Wrong answers cost a heart. Beat all 3 bosses!'},
         {go:"render('ta_setup')",icon:'⏱️',name:'Time Attack',desc:'60 seconds on the clock — how many notes or intervals can you name? Beat your best score'},
         {go:"startFromHome('daily')",icon:'⭐',name:'Daily Challenge',desc:'One random game every day — play it, grow a flower in your garden, and keep your streak going'},
       ];
@@ -4452,11 +4445,7 @@ function render(page) {
             <button class="btn btn-mint" onclick="startGame('interval','2',selectedRounds)">🤔 Medium</button>
             <button class="btn btn-coral" onclick="startGame('interval','3',selectedRounds)">🔥 Hard</button>
           </div>`;
-    h += `<div class="btn-row">
-            <button class="btn btn-pink" onclick="startGame('interval','4',selectedRounds)">⚡ By Ear</button>
-            <button class="btn btn-lilac" onclick="startGame('interval','5',selectedRounds)">👑 Master</button>
-          </div>`;
-    h += `<p class="caption">Beginner = 3rds & 5ths only · Easy-Hard = visual · By Ear = listen · Master = everything</p>`;
+    h += `<p class="caption">You read every interval on the staff. Beginner = 3rds & 5ths only · Easy → Hard = more intervals.</p>`;
     h += `</div>`;
   }
 
@@ -4466,20 +4455,13 @@ function render(page) {
     const fb = S.intFeedback;
     h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🎶 Round ${r+1} of ${total}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(r, total);
-    if (S.intEarMode) {
-      h += `<div class="play-btn" onclick="qPlay(()=>S.intKeys.length>=2?playTones(S.intKeys[0],S.intKeys[1],0.6):(S.intKeys[0]!=null?playNote(S.intKeys[0]):[]))">Hear the interval</div>`;
-    } else {
-      h += `<canvas id="intCanvas" width="400" height="260"></canvas>`;
-      h += `<div style="text-align:center">${buildPiano(S.intKeys)}</div>`;
-    }
+    h += `<canvas id="intCanvas" width="400" height="260"></canvas>`;
+    h += `<div style="text-align:center">${buildPiano(S.intKeys)}</div>`;
     if (!fb || fb === 'retry') {
       h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
       h += `<div class="card">`;
       if (fb === 'retry') {
         h += `<div class="hint-box"><div class="hint-title">💡 Not quite. That's not a ${S.intPicked}. Here's a hint:</div><div>${intHint(S.intPicked)}</div>`;
-        if (S.intEarMode) {
-          h += `<div class="btn-row" style="margin-top:0.6rem"><button class="btn btn-blue" onclick="playIntervalByName(S.intPicked)">▶ Hear your answer</button><button class="btn btn-mint" onclick="playTones(S.intKeys[0],S.intKeys[1],0.6)">▶ Hear the question</button></div>`;
-        }
         h += `</div>`;
         h += `<p class="speech" style="margin-top:0.6rem"><strong>One more try!</strong></p>`;
       } else {
@@ -4505,8 +4487,6 @@ function render(page) {
       h += `<div class="card why-card">`;
       h += `<div class="why-title">🔍 Why is it a ${S.intCorrect}?</div>`;
       h += intWhyHtml();
-      h += `<div class="why-listen">Listen to the difference:</div>`;
-      h += `<div class="btn-row"><button class="btn btn-coral" onclick="playIntervalByName(S.intPicked)">▶ Yours: ${S.intPicked}</button><button class="btn btn-mint" onclick="playIntervalByName(S.intCorrect)">▶ Right: ${S.intCorrect}</button></div>`;
       h += `</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
     }
@@ -4916,7 +4896,7 @@ function render(page) {
   else if (page === 'boss_home') {
     const beaten = bossBeaten();
     h += `<h1>⚔️ Boss Battle</h1>`;
-    h += `<div class="card"><p class="speech">Answer ear questions. Each right answer hits the boss. Each wrong answer costs you a ❤️. You have 3 hearts.</p></div>`;
+    h += `<div class="card"><p class="speech">Listen to chords and tunes, and read intervals on the staff. Each right answer hits the boss. Each wrong answer costs you a ❤️. You have 3 hearts.</p></div>`;
     BOSSES.forEach((B, i) => {
       const open = i <= beaten, done = i < beaten;
       h += `<div class="level-card${open ? '' : ' boss-locked'}" ${open ? `onclick="startBoss(${i})"` : ''}><div style="display:flex;align-items:center;gap:0.7rem"><span style="font-size:2rem">${open ? B.icon : '🔒'}</span><div><strong>${B.name}</strong>${done ? ' ✅' : ''}<div class="caption">${open ? B.hp + ' hit points' : 'Beat ' + BOSSES[i - 1].name + ' first'}</div></div></div></div>`;
@@ -4942,7 +4922,8 @@ function render(page) {
       h += `<button class="btn btn-blue btn-wide" onclick="startBoss(${b.lvl})">Try again</button><button class="btn btn-lilac btn-wide" onclick="render('boss_home')">Back to bosses</button>`;
     } else {
       const q = b.q;
-      h += `<div class="card" style="text-align:center"><p class="speech">${q.ask}</p><button class="btn btn-blue" onclick="bossPlay()">🔊 Play again</button>`;
+      h += `<div class="card" style="text-align:center"><p class="speech">${q.ask}</p>`;
+      h += q.type === 'interval' ? `<canvas id="bossCanvas" width="400" height="260" style="max-width:100%"></canvas>` : `<button class="btn btn-blue" onclick="bossPlay()">🔊 Play again</button>`;
       h += `<div class="choice-grid" style="margin-top:0.7rem">`;
       q.choices.forEach(c => {
         let cls = 'btn-lilac';
@@ -6017,8 +5998,11 @@ function render(page) {
     drawStaff('staffCanvas', S.noteHeight, S.noteAccidental, S.noteClef);
     if (!S.noteFeedback || S.noteFeedback === 'retry') setTimeout(() => $('noteAns')?.focus(), 100);
   }
-  if (page === 'interval_play' && !S.intEarMode) {
+  if (page === 'interval_play') {
     drawIntervalStaff('intCanvas', S.intH1, S.intH2);
+  }
+  if (page === 'boss_play' && S.boss && S.boss.state === 'fight' && S.boss.q.type === 'interval') {
+    drawIntervalStaff('bossCanvas', S.intH1, S.intH2);
   }
   if (page === 'chord_play' && !S.chordEarOnly) {
     drawChordStaff('chordCanvas', S.chordHeights, S.chordAccidentals, S.chordClef);
@@ -6070,9 +6054,6 @@ function render(page) {
     } else {
       setTimeout(() => qPlay(() => playNote(S.earTargetN)), 400);
     }
-  }
-  if (page === 'interval_play' && S.intEarMode && !S.intFeedback && S.intKeys.length >= 2) {
-    setTimeout(() => qPlay(() => playTones(S.intKeys[0], S.intKeys[1], 0.6)), 400);
   }
   if (page === 'chord_play' && !S.chordFeedback) {
     setTimeout(() => qPlay(() => playChord(S.chordNotes)), 400);
