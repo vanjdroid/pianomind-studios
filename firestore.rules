@@ -24,7 +24,9 @@ service cloud.firestore {
     // A sender must be signed in, must know the receiver's CURRENT code,
     // and can only send one of five icons. Nothing else is allowed in the clap.
     match /claps/{toUid}/in/{fromUid} {
-      allow read, delete: if request.auth != null && request.auth.uid == toUid;
+      allow read: if request.auth != null && request.auth.uid == toUid;
+      // the receiver can clear claps; the sender can take back their own clap (used by "Delete my account")
+      allow delete: if request.auth != null && (request.auth.uid == toUid || request.auth.uid == fromUid);
       allow create, update: if request.auth != null
         && request.auth.uid == fromUid
         && fromUid != toUid

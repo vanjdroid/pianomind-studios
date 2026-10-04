@@ -1026,6 +1026,11 @@ body.mode-neon .av-pick.active, body.mode-neon .av-color.active { border-color:#
 .level-card { background:var(--card-bg, rgba(255,255,255,0.55)); border:1px solid rgba(255,255,255,0.7); border-radius:16px; padding:0.8rem 1rem; margin-bottom:0.6rem; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
 .level-card:active { transform:scale(0.98); }
 body.mode-neon .level-card { background:#0e0e0e; border-color:rgba(0,200,255,0.3); }
+.pv-date { font-size:0.8rem; color:#6b7fa3; margin:0 0 0.4rem; }
+.pv-h { font-size:1.02rem; margin:0.9rem 0 0.3rem; color:#0f2744; }
+.pv-p, .pv-list li { font-size:0.92rem; line-height:1.55; margin:0.3rem 0; }
+.pv a { word-break:break-all; }
+body.mode-neon .pv-h { color:#fff; }
 .mm-nums { display:flex; flex-wrap:wrap; justify-content:center; gap:0.4rem; margin-top:0.8rem; }
 .mm-num { width:2.8rem; height:2.8rem; border-radius:50%; border:2px solid #7c6fef; background:rgba(255,255,255,0.8); font-size:1.1rem; font-weight:800; color:#0f2744; cursor:pointer; }
 .mm-right { background:#7ed9a6; border-color:#3aa86b; }
@@ -1043,6 +1048,18 @@ body.mode-neon .level-card { background:#0e0e0e; border-color:rgba(0,200,255,0.3
 @keyframes bossShake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-10px) rotate(-8deg); } 75% { transform:translateX(10px) rotate(8deg); } }
 @keyframes bossGrow { 50% { transform:scale(1.25); } }
 .boss-locked { opacity:0.55; cursor:default; }
+.mw-stage { position:fixed; left:0; right:0; bottom:8%; height:190px; pointer-events:none; z-index:1001; overflow:hidden; }
+.mw-glide { position:absolute; bottom:0; left:0; animation:mwGlide 5s linear forwards; }
+.mw-step { position:relative; animation:mwStep 0.5s ease-in-out infinite; }
+.mw-dino { width:130px; display:block; }
+.mw-shadow { width:90px; height:12px; margin:-6px auto 0; border-radius:50%; background:rgba(0,0,0,0.18); }
+.mw-n { position:absolute; font-size:1.6rem; color:#7c6fef; opacity:0; animation:mwNote 1s ease-out infinite; }
+.mw-n1 { left:-10px; top:30px; } .mw-n2 { left:-30px; top:70px; animation-delay:0.33s; } .mw-n3 { left:-14px; top:110px; animation-delay:0.66s; }
+.mw-label { position:absolute; top:0; left:50%; transform:translateX(-50%); background:rgba(255,255,255,0.92); color:#0f2744; font-weight:800; padding:0.35rem 0.9rem; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,0.12); white-space:nowrap; }
+@keyframes mwGlide { from { transform:translateX(-160px); } to { transform:translateX(110vw); } }
+@keyframes mwStep { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-6px) rotate(3deg); } }
+@keyframes mwNote { 0% { opacity:0; transform:translate(0,0); } 30% { opacity:1; } 100% { opacity:0; transform:translate(-30px,-40px); } }
+@media (prefers-reduced-motion: reduce) { .mw-glide { animation:none; left:50%; transform:translateX(-50%); } .mw-step, .mw-n { animation:none; } }
 .secret-pop { position:fixed; inset:0; background:rgba(15,39,68,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px; }
 .secret-card { background:#fff; color:#0f2744; border-radius:20px; padding:1.3rem; max-width:340px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
 .secret-card p { font-size:0.9rem; margin:0.4rem 0; }
@@ -1118,7 +1135,7 @@ var authReady = false;
 
 // Save all user data to Firestore
 function cloudSave() {
-  if (!currentUser) return;
+  if (!currentUser || S.deleting) return;
   var data = {};
   ['pms_scores','pms_daily','pms_hanon','pms_pouch','pms_xp','pms_level',
    'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar','pms_achievements','pms_vibe','pms_friends','pms_friend_code','pms_applause_off','pms_clap_seen'
@@ -1184,6 +1201,56 @@ function signOut() {
   auth.signOut();
 }
 
+// ── Delete my account (and everything saved with it) ──
+function clearDeviceData() {
+  try { Object.keys(localStorage).filter(k => k.startsWith('pms_')).forEach(k => localStorage.removeItem(k)); } catch(e) {}
+}
+function deleteGuestData() {
+  if (!confirm('Delete all your progress on this device? This cannot be undone.')) return;
+  clearDeviceData(); S.deletedMsg = 'Everything on this device was deleted.'; render('login');
+}
+async function deleteMyAccount() {
+  const box = $('delConfirm');
+  if (!box || box.value.trim().toUpperCase() !== 'DELETE') { S.delMsg = 'Type DELETE in the box first.'; render('delete_account'); return; }
+  const user = currentUser; if (!user) return;
+  S.delMsg = ''; S.delBusy = true; render('delete_account');
+  try {
+    // 1. Prove it's really you (Firebase needs a fresh sign-in before deleting)
+    const viaGoogle = user.providerData.some(p => p.providerId === 'google.com');
+    if (viaGoogle) await user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+    else {
+      const pw = prompt('Type your password to confirm:');
+      if (!pw) throw { code: 'cancelled' };
+      await user.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(user.email, pw));
+    }
+    S.deleting = true;   // stop auto-save from bringing the data back
+    const uid = user.uid, ignore = () => {};
+    // 2. Claps people sent you
+    const inbox = await db.collection('claps').doc(uid).collection('in').get().catch(() => ({ docs: [] }));
+    await Promise.all(inbox.docs.map(d => d.ref.delete().catch(ignore)));
+    // 3. Claps you sent friends
+    await Promise.all(apFriends().filter(f => f.uid).map(f => db.collection('claps').doc(f.uid).collection('in').doc(uid).delete().catch(ignore)));
+    // 4. Your friend code
+    const code = localStorage.getItem('pms_friend_code');
+    if (code) await db.collection('codes').doc(code).delete().catch(ignore);
+    // 5. Your progress
+    await db.collection('users').doc(uid).delete();
+    // 6. The account itself, then this device's copy
+    await user.delete();
+    clearDeviceData();
+    S.deletedMsg = 'Your account and all your data were deleted.';
+    S.deleting = false; S.delBusy = false;
+    if (location.hash) history.replaceState(null, '', location.pathname);
+    render('login');
+  } catch (e) {
+    S.deleting = false; S.delBusy = false;
+    S.delMsg = e.code === 'cancelled' || e.code === 'auth/popup-closed-by-user' ? 'Cancelled. Nothing was deleted.'
+      : e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Wrong password. Nothing was deleted.'
+      : 'Something went wrong (' + (e.code || 'error') + '). Please try again.';
+    render('delete_account');
+  }
+}
+
 // Guest mode: play without an account (progress stays on this device)
 function isGuest() { return !currentUser && localStorage.getItem('pms_guest') === 'yes'; }
 function startGuest() {
@@ -1197,15 +1264,20 @@ auth.onAuthStateChanged(function(user) {
   currentUser = user;
   authReady = true;
   if (user) {
+    S.deletedMsg = '';
     try { localStorage.removeItem('pms_guest'); } catch(e) {}
     // Show loading while fetching cloud data
     document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Welcome back!</div><div style="font-size:0.85rem;color:#6b7fa3;margin-top:0.3rem">Loading your progress...</div></div></div>';
     cloudLoad(function() {
       applyMode();
-      if (localStorage.getItem('pms_tutorial_done')) render('home');
+      if (location.hash === '#delete') render('delete_account');
+      else if (location.hash === '#privacy') render('privacy');
+      else if (localStorage.getItem('pms_tutorial_done')) render('home');
       else render('welcome');
     });
-  } else if (localStorage.getItem('pms_guest') === 'yes') {
+  } else if (location.hash === '#privacy') {
+    render('privacy');
+  } else if (localStorage.getItem('pms_guest') === 'yes' && location.hash !== '#delete') {
     startGuest();
   } else {
     render('login');
@@ -2086,6 +2158,24 @@ function bossNext() {
   b.flash = null; render('boss_play');
 }
 
+// ── Easter egg: Pebbles moonwalks (faces one way, glides the other) ──
+function moonwalk() {
+  if (document.querySelector('.mw-stage')) return;
+  const d = loadScores(); d._moonwalk = true;
+  try { localStorage.setItem('pms_scores', JSON.stringify(d)); } catch(e) {}
+  checkAchievements(); cloudSave();
+  // a short, original funky bass line (not from any song)
+  try {
+    const ctx = getAudioCtx(), t0 = ctx.currentTime + 0.05;
+    [-21, -21, -14, -12, -21, -16, -14, -21, -21, -14, -12, -9].forEach((n, i) => makeNote(ctx, noteToFreq(n), t0 + i * 0.25, 0.18, 0.4));
+  } catch(e) {}
+  const st = document.createElement('div');
+  st.className = 'mw-stage';
+  st.innerHTML = `<div class="mw-glide"><div class="mw-step"><img src="pebbles_happy.png" alt="" class="mw-dino"><div class="mw-shadow"></div></div><span class="mw-n mw-n1">♪</span><span class="mw-n mw-n2">♫</span><span class="mw-n mw-n3">♪</span></div><div class="mw-label">🕺 Pebbles is moonwalking!</div>`;
+  document.body.appendChild(st);
+  setTimeout(() => st.remove(), 5200);
+}
+
 // ── Easter egg: play B♭ A C B on the free piano (that's B-A-C-H in German note names) ──
 const BACH_NOTES = [1, 0, 3, 2];
 function secretCheck(n) {
@@ -2537,6 +2627,7 @@ const ACHIEVEMENTS = [
   { id: 'boss_2', name: 'Discord Breaker', desc: 'Beat Count Dischord in Boss Battle', icon: '🧛', check: d => (d._bossBeaten || 0) >= 2 },
   { id: 'boss_3', name: 'Dragon Tamer', desc: 'Beat the Tritone Dragon in Boss Battle', icon: '🐉', check: d => (d._bossBeaten || 0) >= 3 },
   { id: 'secret_bach', name: 'B-A-C-H', desc: 'Find the secret hidden in the free piano', icon: '🎼', check: d => !!d._bach },
+  { id: 'secret_moonwalk', name: 'Smooth Moves', desc: 'Find the secret hidden in Note Reading', icon: '🕺', check: d => !!d._moonwalk },
 ];
 
 
@@ -4036,6 +4127,8 @@ function render(page) {
     h += `<div class="welcome-card">`;
     h += `<div class="welcome-logo" style="margin-bottom:0.4rem">${appLogo(84)}</div>`;
     h += `<div class="welcome-title">Piano Mind<br>Studios</div>`;
+    if (S.deletedMsg) h += `<div class="alert alert-success">${S.deletedMsg}</div>`;
+    if (location.hash === '#delete') h += `<div class="alert alert-error">Sign in to delete your account.</div>`;
     h += `<div class="welcome-sub" style="margin-bottom:1rem">Sign in to save your progress</div>`;
 
     h += `<button class="btn btn-blue btn-wide" style="margin-bottom:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.5rem" onclick="signInGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" style="vertical-align:middle"> Sign in with Google</button>`;
@@ -4794,10 +4887,13 @@ function render(page) {
       h += `<p style="font-size:0.85rem;color:#6b7fa3;margin:0.3rem 0">Signed in as: <strong style="color:#0f2744">${currentUser.email || currentUser.displayName || 'Unknown'}</strong></p>`;
       h += `<button class="btn btn-mint btn-wide" style="margin:0.3rem 0" onclick="cloudSave();alert('Progress saved!')">Save to cloud</button>`;
       h += `<button class="btn btn-coral btn-wide" onclick="if(confirm('Sign out?'))signOut()">Sign out</button>`;
+      h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.3rem" onclick="S.delMsg='';render('delete_account')">🗑️ Delete my account</button>`;
     } else {
       h += `<p style="font-size:0.85rem;color:#6b7fa3">Not signed in — progress is only saved on this device.</p>`;
       h += `<button class="btn btn-blue btn-wide" onclick="render('login')">Sign in</button>`;
+      h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.3rem" onclick="deleteGuestData()">🗑️ Delete everything on this device</button>`;
     }
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.3rem" onclick="render('privacy')">🔒 Privacy</button>`;
     h += `</div>`;
 
     h += `<div class="card">`;
@@ -4940,6 +5036,26 @@ function render(page) {
         h += `<button class="btn btn-lilac btn-wide" onclick="bossNext()">Next →</button>`;
       }
     }
+  }
+
+  // ── PRIVACY ──
+  else if (page === 'privacy') {
+    h += `<h1>🔒 Privacy</h1><div class="card pv"><p class="pv-date">Last updated: 3 October 2026</p><h2 class="pv-h">The short version</h2><p class="pv-p">PianoMind Studios is a free piano practice app. There are no ads. We do not sell your data. We do not track you around the internet.</p><p class="pv-p">You can play as a <strong>guest</strong>. Then nothing leaves your device.</p><h2 class="pv-h">What we save if you make an account</h2><p class="pv-p"><strong>Your email address</strong>, so you can sign in. If you sign in with Google, Google tells us your email and name.</p><p class="pv-p"><strong>The name you type</strong> in the app.</p><p class="pv-p"><strong>Your practice progress:</strong> scores, XP, levels, streaks, trophies, and settings like your theme and piano sound.</p><p class="pv-p"><strong>Your profile picture</strong>, if you upload one. It is made small before saving. Only you see it.</p><p class="pv-p"><strong>Applause</strong> (only if you use it): your 6-letter friend code, the nicknames you give friends, and the claps you get. A clap is only an icon. No names or messages are ever sent.</p><h2 class="pv-h">Where it is kept</h2><p class="pv-p">On your device, so the app works offline.</p><p class="pv-p">In <strong>Google Firebase</strong>, a service run by Google that stores accounts and data for apps. Safety rules let each person read and change only their own data.</p><h2 class="pv-h">Other services the app talks to</h2><p class="pv-p"><strong>Google Fonts</strong> (the letters you see) and <strong>Firebase</strong> code are loaded from Google. Like any website, Google can see your device's internet address when this happens.</p><p class="pv-p"><strong>GitHub Pages</strong> hosts the app's files.</p><h2 class="pv-h">Who can see your data</h2><p class="pv-p">Only you, when signed in. The app's owner can see the list of accounts in Firebase to keep the app running. We never share it with anyone else.</p><h2 class="pv-h">How to delete everything</h2><p class="pv-p">In the app: <strong>Me → Settings → Delete my account</strong>. This deletes your account, your progress, your friend code and your claps.</p><p class="pv-p">Or open this link and sign in: <a href="https://vanjdroid.github.io/pianomind-studios/piano_mind.html#delete">vanjdroid.github.io/pianomind-studios/piano_mind.html#delete</a></p><p class="pv-p">Guests: <strong>Settings → Delete everything on this device</strong>.</p><p class="pv-p">We keep your data until you delete it.</p><h2 class="pv-h">Kids</h2><p class="pv-p">This app is made for children. Kids, please ask a parent or carer before you make an account. Guest mode needs no account at all.</p></div>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="if(location.hash)history.replaceState(null,'',location.pathname);render(currentUser||isGuest()?'settings':'login')">⬅ Back</button>`;
+  }
+
+  // ── DELETE MY ACCOUNT ──
+  else if (page === 'delete_account') {
+    h += `<h1>🗑️ Delete my account</h1>`;
+    if (!currentUser) {
+      h += `<div class="card"><p class="speech">Sign in first. Then you can delete your account.</p><button class="btn btn-blue btn-wide" onclick="render('login')">Sign in</button></div>`;
+    } else {
+      h += `<div class="card"><p class="speech">This deletes <strong>everything</strong>:</p><ul class="pv-list"><li>your account (${currentUser.email || ''})</li><li>your scores, XP, trophies and settings</li><li>your profile picture</li><li>your friend code and claps</li></ul><p class="speech"><strong>You cannot undo this.</strong></p>`;
+      h += `<p class="caption">Type <strong>DELETE</strong> to confirm:</p><input id="delConfirm" class="ap-input" autocomplete="off" placeholder="DELETE">`;
+      if (S.delMsg) h += `<div class="alert alert-error">${S.delMsg}</div>`;
+      h += `<button class="btn btn-coral btn-wide" ${S.delBusy ? 'disabled' : ''} onclick="deleteMyAccount()">${S.delBusy ? 'Deleting…' : 'Delete my account forever'}</button></div>`;
+    }
+    h += `<button class="btn btn-lilac btn-wide" onclick="S.delMsg='';if(location.hash)history.replaceState(null,'',location.pathname);render(currentUser?'settings':'login')">⬅ Back</button>`;
   }
 
   // ── APPLAUSE ──
@@ -6296,6 +6412,11 @@ function nextExQuestion() {
 function checkNote() {
   const input = $('noteAns');
   if (!input || !input.value.trim()) return;
+  // Secret: type "moonwalk" (or the King of Pop's name) and Pebbles moonwalks across the screen
+  const secret = input.value.toLowerCase().replace(/[^a-z]/g, '');
+  if (['moonwalk', 'michaeljackson', 'michealjackson', 'micheljackson', 'mikejackson'].includes(secret)) {
+    input.value = ''; moonwalk(); return;
+  }
   const clean = normNoteInput(input.value);
   S.noteTries = (S.noteTries || 0) + 1;
   S.notePicked = clean;
@@ -7172,12 +7293,12 @@ function applyMode() {
   document.body.classList.remove('mode-smooth', 'mode-neon');
   if (mode === 'smooth') {
     document.body.classList.add('mode-smooth');
-    document.body.style.backgroundImage = "url('bg_smooth.png')";
+    document.body.style.backgroundImage = bgUrl('bg_smooth.png');
     document.body.style.backgroundColor = '#f0f0f0';
     document.body.style.color = '#333';
   } else if (mode === 'neon') {
     document.body.classList.add('mode-neon');
-    document.body.style.backgroundImage = "url('bg_neon.png')";
+    document.body.style.backgroundImage = bgUrl('bg_neon.png');
     document.body.style.backgroundColor = '#0a0a0a';
     document.body.style.color = '#e0e0e0';
   } else {
@@ -7185,12 +7306,23 @@ function applyMode() {
   }
 }
 
+// Phones held upright: use background pictures without the "PianoMind Studios" words,
+// so the words don't sit behind page titles.
+function bgUrl(img) {
+  const phone = { 'background.png?v=2': 'background_phone.png', 'bg_sunset.png': 'bg_sunset_phone.jpg', 'bg_forest.png': 'bg_forest_phone.jpg',
+    'bg_galaxy.png': 'bg_galaxy_phone.jpg', 'bg_candy.png': 'bg_candy_phone.jpg', 'bg_smooth.png': 'bg_smooth_phone.jpg',
+    'bg_neon.png': '' };   // neon on phones: plain dark background
+  const im = window.matchMedia('(max-width: 700px)').matches && img in phone ? phone[img] : img;
+  return im ? `url('${im}')` : 'none';
+}
+try { window.matchMedia('(max-width: 700px)').addEventListener('change', () => applyMode()); } catch(e) {}
+
 function applyTheme() {
   const id = localStorage.getItem('pms_theme') || 'default';
   const t = APP_THEMES[id];
   if (getMode() !== 'cartoon') return;
   document.body.style.backgroundColor = t.bg;
-  document.body.style.backgroundImage = `url('${t.img}')`;
+  document.body.style.backgroundImage = bgUrl(t.img);
   document.documentElement.style.setProperty('--accent', t.accent);
   document.documentElement.style.setProperty('--card-bg', t.card);
   document.documentElement.style.setProperty('--shell-bg', id === 'galaxy' ? 'rgba(28,16,66,0.82)' : 'rgba(255,255,255,0.74)');
