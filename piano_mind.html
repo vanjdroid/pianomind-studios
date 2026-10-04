@@ -18,6 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%E2%99%AF%E2%99%AD%F0%9D%84%AA%F0%9D%84%AB%E2%99%AE&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1031,6 +1032,13 @@ body.mode-neon .level-card { background:#0e0e0e; border-color:rgba(0,200,255,0.3
 .pv-p, .pv-list li { font-size:0.92rem; line-height:1.55; margin:0.3rem 0; }
 .pv a { word-break:break-all; }
 body.mode-neon .pv-h { color:#fff; }
+.nk-pad { margin:0.4rem 0 0.6rem; }
+.nk-row { display:flex; justify-content:center; gap:0.35rem; margin-bottom:0.4rem; flex-wrap:wrap; }
+.nk-key { min-width:2.6rem; height:2.9rem; padding:0 0.4rem; border-radius:12px; border:2px solid rgba(124,111,239,0.45); background:rgba(255,255,255,0.88); color:#0f2744; font-size:1.3rem; font-weight:800; cursor:pointer; touch-action:manipulation; }
+.nk-key:active { transform:scale(0.93); background:#e5e0ff; }
+.nk-sign { font-family:'Noto Music','Segoe UI Symbol',serif; font-weight:400; font-size:1.75rem; line-height:1; }
+.nk-back { border-color:rgba(0,0,0,0.15); color:#6b7fa3; }
+body.mode-neon .nk-key { background:#111; color:#fff; border-color:rgba(0,200,255,0.5); }
 .mm-nums { display:flex; flex-wrap:wrap; justify-content:center; gap:0.4rem; margin-top:0.8rem; }
 .mm-num { width:2.8rem; height:2.8rem; border-radius:50%; border:2px solid #7c6fef; background:rgba(255,255,255,0.8); font-size:1.1rem; font-weight:800; color:#0f2744; cursor:pointer; }
 .mm-right { background:#7ed9a6; border-color:#3aa86b; }
@@ -1621,7 +1629,8 @@ function noteLetterRule(h, clef) {
   return `Start at the ${h < 0 ? 'bottom' : 'top'} line (${path[0]}) and count one letter per line or space: <strong>${path.join(' → ')}</strong>.`;
 }
 function normNoteInput(raw) {
-  let clean = raw.toLowerCase().replace(/\s/g, '')
+  let clean = raw.replace(/𝄪/g, '##').replace(/𝄫/g, 'bb').replace(/♯/g, '#').replace(/♭/g, 'b')
+    .toLowerCase().replace(/\s/g, '')
     .replace('doublesharp', '##').replace('doubleflat', 'bb')
     .replace('sharp', '#').replace('flat', 'b');
   clean = clean.replace(/([a-g])x/g, '$1##');
@@ -3642,8 +3651,8 @@ function newIntervalRound() {
   const avail = pool.filter(n => INTERVAL_PAIRS[n]?.length);
   const intName = pick(avail);
   const pair = pick(INTERVAL_PAIRS[intName]);
-  if (Math.random() < 0.5) { S.intH1 = pair[0]; S.intH2 = pair[1]; }
-  else { S.intH1 = pair[1]; S.intH2 = pair[0]; }
+  // Always lower note first, then higher (left to right), so the staff matches the keyboard
+  S.intH1 = Math.min(pair[0], pair[1]); S.intH2 = Math.max(pair[0], pair[1]);
   S.intCorrect = intName;
   S.intFeedback = null;
   S.intTries = 0;
@@ -3878,7 +3887,7 @@ function hwQuestion(type, level, clefPick) {
   }
   if (type === 'intervals') {
     const pool = [['Major 3rd','Perfect 5th'], EASY_INT, MEDIUM_INT, HARD_INT][lv].filter(nm => INTERVAL_PAIRS[nm] && INTERVAL_PAIRS[nm].length);
-    const nm = pick(pool), pr = pick(INTERVAL_PAIRS[nm]), up = Math.random() < 0.6;
+    const nm = pick(pool), pr = pick(INTERVAL_PAIRS[nm]), up = true;   // always ascending: lower note first
     const ns = (up ? [pr[0], pr[1]] : [pr[1], pr[0]]).map(h => ({ h: h, acc: 'natural' }));
     return { clef: 'treble', layout: 'melodic', notes: ns, keyNotes: ns, label: '', answer: nm };
   }
@@ -4475,11 +4484,24 @@ function render(page) {
       } else {
         h += `<p class="speech"><strong>Pebbles asks:</strong> '${pick(P.ASK_NOTE)}'</p>`;
       }
+      // On-screen note pad: tap a letter, then a sign if there is one. No phone keyboard needed.
+      const touch = window.matchMedia('(pointer: coarse)').matches;
+      const letters = S.level === '0' ? ['C', 'D', 'E'] : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+      const signs = S.level === '3' || S.level === '5' ? ['♯', '♭', '𝄪', '𝄫'] : (S.level === '2' || S.level === '4') ? ['♯', '♭'] : [];
       h += `<div class="input-wrap"><label>Your answer:</label>
-            <input id="noteAns" type="text" placeholder="e.g. C, F#, Bb..."
+            <input id="noteAns" type="text" inputmode="none" ${touch ? 'readonly' : ''} placeholder="Tap a letter below" autocomplete="off"
                    onkeydown="if(event.key==='Enter')checkNote()"></div>`;
+      h += `<div class="nk-pad"><div class="nk-row">`;
+      letters.forEach(l => { h += `<button class="nk-key nk-letter" onclick="nkLetter('${l}')">${l}</button>`; });
+      h += `</div>`;
+      if (signs.length) {
+        h += `<div class="nk-row">`;
+        signs.forEach(g => { h += `<button class="nk-key nk-sign" onclick="nkSign('${g}')">${g}</button>`; });
+        h += `<button class="nk-key nk-sign" onclick="nkSign('')" title="No sign">♮</button><button class="nk-key nk-back" onclick="nkBack()" title="Delete">⌫</button></div>`;
+      }
+      h += `</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="checkNote()">Check ✓</button>`;
-      h += `<p class="caption">Type letter names or solfège. Use # or x for sharps, b for flats, ## for double sharp, bb for double flat.</p>`;
+      h += `<p class="caption">${signs.length ? 'Tap the letter, then the sign (♯ sharp, ♭ flat' + (signs.length > 2 ? ', 𝄪 double sharp, 𝄫 double flat' : '') + ').' : 'Tap the letter.'} You can also type on a keyboard.</p>`;
       h += `</div>`;
     } else if (fb === 'correct') {
       h += pebbles('happy');
@@ -6115,7 +6137,7 @@ function render(page) {
   }
   if (page === 'note_play') {
     drawStaff('staffCanvas', S.noteHeight, S.noteAccidental, S.noteClef);
-    if (!S.noteFeedback || S.noteFeedback === 'retry') setTimeout(() => $('noteAns')?.focus(), 100);
+    if ((!S.noteFeedback || S.noteFeedback === 'retry') && !window.matchMedia('(pointer: coarse)').matches) setTimeout(() => $('noteAns')?.focus(), 100);
   }
   if (page === 'interval_play') {
     drawIntervalStaff('intCanvas', S.intH1, S.intH2);
@@ -6408,6 +6430,16 @@ function nextExQuestion() {
   }
   render('exercise_play');
 }
+
+// On-screen note pad
+function nkLetter(l) { const i = $('noteAns'); if (i) i.value = l; }
+function nkSign(g) {
+  const i = $('noteAns'); if (!i) return;
+  const letter = (i.value.match(/^[A-Ga-g]/) || [''])[0].toUpperCase();
+  if (!letter) return;              // pick a letter first
+  i.value = letter + g;
+}
+function nkBack() { const i = $('noteAns'); if (i) i.value = Array.from(i.value).slice(0, -1).join(''); }
 
 function checkNote() {
   const input = $('noteAns');
