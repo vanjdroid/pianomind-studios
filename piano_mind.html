@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%E2%99%AF%E2%99%AD%F0%9D%84%AA%F0%9D%84%AB%E2%99%AE&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%E2%99%AF%E2%99%AD%F0%9D%84%AA%F0%9D%84%AB%E2%99%AE%F0%9D%84%9E%F0%9D%84%A2&display=swap" rel="stylesheet">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1039,6 +1039,17 @@ body.mode-neon .pv-h { color:#fff; }
 .nk-sign { font-family:'Noto Music','Segoe UI Symbol',serif; font-weight:400; font-size:1.75rem; line-height:1; }
 .nk-back { border-color:rgba(0,0,0,0.15); color:#6b7fa3; }
 body.mode-neon .nk-key { background:#111; color:#fff; border-color:rgba(0,200,255,0.5); }
+.streak-banner { margin-top:0.6rem; padding:0.5rem 0.8rem; border-radius:12px; font-size:0.88rem; background:rgba(255,255,255,0.6); color:#0f2744; }
+.streak-banner.warn { background:#fff3cd; }
+.streak-banner.done { background:#d9f5e5; }
+body.mode-neon .streak-banner { background:#111; color:#fff; }
+.br-tap { font-size:1.6rem; padding:1.5rem; border-radius:30px; margin-top:0.4rem; touch-action:manipulation; }
+.br-marks { font-size:1.4rem; letter-spacing:0.15rem; margin:0.5rem 0; }
+.tl-chips { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.6rem; }
+.tl-chip { border:2px solid rgba(124,111,239,0.35); background:rgba(255,255,255,0.75); color:#0f2744; border-radius:999px; padding:0.35rem 0.75rem; font-size:0.85rem; font-weight:700; cursor:pointer; }
+.tl-chip.on { background:var(--accent, #7c6fef); border-color:var(--accent, #7c6fef); color:#fff; }
+.tl-link { background:rgba(255,255,255,0.85); border-radius:12px; padding:0.6rem 0.8rem; font-size:0.8rem; word-break:break-all; margin-bottom:0.6rem; color:#0f2744; }
+body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; }
 .mm-nums { display:flex; flex-wrap:wrap; justify-content:center; gap:0.4rem; margin-top:0.8rem; }
 .mm-num { width:2.8rem; height:2.8rem; border-radius:50%; border:2px solid #7c6fef; background:rgba(255,255,255,0.8); font-size:1.1rem; font-weight:800; color:#0f2744; cursor:pointer; }
 .mm-right { background:#7ed9a6; border-color:#3aa86b; }
@@ -1279,19 +1290,62 @@ auth.onAuthStateChanged(function(user) {
     document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Welcome back!</div><div style="font-size:0.85rem;color:#6b7fa3;margin-top:0.3rem">Loading your progress...</div></div></div>';
     cloudLoad(function() {
       applyMode();
-      if (location.hash === '#delete') render('delete_account');
+      if (TEACH_REQ && !S.teachDone) { S.teachDone = true; launchTeacherGame(TEACH_REQ); }
+      else if (location.hash === '#delete') render('delete_account');
       else if (location.hash === '#privacy') render('privacy');
       else if (localStorage.getItem('pms_tutorial_done')) render('home');
       else render('welcome');
     });
   } else if (location.hash === '#privacy') {
     render('privacy');
+  } else if (TEACH_REQ && !S.teachDone) {
+    // Students don't need an account: play as a guest (saved on this device only)
+    S.teachDone = true;
+    try { localStorage.setItem('pms_guest', 'yes'); } catch(e) {}
+    applyMode(); launchTeacherGame(TEACH_REQ);
   } else if (localStorage.getItem('pms_guest') === 'yes' && location.hash !== '#delete') {
     startGuest();
   } else {
     render('login');
   }
 });
+
+// ═══════════════════════════════════
+//  TEACHER LINKS: a link that opens straight into one game + level
+// ═══════════════════════════════════
+const TEACH_GAMES = {
+  note:     { name: 'Note Reading', icon: '🎼', rounds: true, levels: [['0','Beginner (C, D, E)'],['1t','Easy · Treble clef'],['1b','Easy · Bass clef'],['2','Medium (sharps & flats)'],['3','Hard (extended)'],['4','Bass clef'],['5','Master']] },
+  interval: { name: 'Intervals', icon: '🎶', rounds: true, levels: [['0','Beginner (3rds & 5ths)'],['1','Easy'],['2','Medium'],['3','Hard']] },
+  chord:    { name: 'Chords', icon: '🎸', rounds: true, levels: [['0','Beginner (major chords, treble)'],['1','Easy'],['2','Medium'],['3','Hard'],['4','By Ear'],['5','Master']] },
+  ear:      { name: 'Ear Training', icon: '🎵', rounds: true, levels: [['0','Beginner'],['1','Easy'],['2','Medium'],['3','Hard'],['4','Expert'],['5','Master']] },
+  melody:   { name: 'Melody Echo', icon: '🎶', rounds: true, levels: [['beginner','Beginner (2 notes)'],['easy','Easy (3 notes)'],['medium','Medium (4 notes)'],['hard','Hard (5 notes)']] },
+  mystery:  { name: 'Mystery Melody', icon: '🕵️', rounds: false, levels: [['easy','Easy'],['medium','Medium'],['hard','Hard']] },
+  rhythm:   { name: 'Rhythm Training', icon: '🥁', rounds: false, levels: [['easy','Easy'],['medium','Medium'],['hard','Hard'],['dotted','Dotted'],['syncopation','Syncopation'],['master','Master']] },
+  ta:       { name: 'Time Attack', icon: '⏱️', rounds: false, levels: [['notes_easy','Notes · Easy'],['notes_hard','Notes · Hard'],['intervals','Intervals']] },
+};
+const APP_URL = 'https://vanjdroid.github.io/pianomind-studios/piano_mind.html';
+function teachLinkFor(g, lv, n) { return APP_URL + '?play=' + g + '&level=' + encodeURIComponent(lv) + (TEACH_GAMES[g].rounds ? '&rounds=' + n : ''); }
+// Read a teacher link once, when the app opens
+const TEACH_REQ = (function() {
+  try {
+    const q = new URLSearchParams(location.search), g = q.get('play'), lv = q.get('level');
+    if (!TEACH_GAMES[g] || !TEACH_GAMES[g].levels.some(l => l[0] === lv)) return null;
+    const n = [5, 10, 15, 20].includes(+q.get('rounds')) ? +q.get('rounds') : 10;
+    return { g, lv, n };
+  } catch(e) { return null; }
+})();
+function launchTeacherGame(r) {
+  history.replaceState(null, '', location.pathname);   // so a refresh doesn't restart it
+  if (!S.name) S.name = 'Player';
+  S.resultScored = false; S.isDaily = false;
+  const { g, lv, n } = r;
+  if (g === 'note') { if (lv === '1t') startGame('note', '1', n, 'treble'); else if (lv === '1b') startGame('note', '1', n, 'bass'); else startGame('note', lv, n); }
+  else if (g === 'melody') { S.melodyLevel = lv; S.melodyScore = 0; S.melodyRound = 0; S.melodyTotal = n; newMelodyRound(); render('melody_play'); }
+  else if (g === 'mystery') startMystery(lv);
+  else if (g === 'rhythm') startRhythmLevel(lv);
+  else if (g === 'ta') { render('ta_setup'); startTimeAttack(lv); }
+  else startGame(g, lv, n);
+}
 
 // ═══════════════════════════════════
 //  AMAYA'S GAME DATA
@@ -1584,6 +1638,16 @@ function earChoiceToN(choice, nearN) {
   const cands = [...PIANO_WHITE, ...PIANO_BLACK].filter(k => (k.flat ? k.name + '/' + k.flat : k.name) === choice);
   if (!cands.length) return null;
   return cands.reduce((a, b) => Math.abs(b.n - nearN) < Math.abs(a.n - nearN) ? b : a).n;
+}
+// Reference note: middle C. Most people can't name a note out of nowhere (that's "perfect pitch").
+// But almost anyone can learn to hear how far a note is from one they already know ("relative pitch").
+const EAR_REF_N = -9;   // middle C
+function earPlayWithRef() {
+  const ctx = getAudioCtx(), t = ctx.currentTime + 0.02, v = [makeNote(ctx, noteToFreq(EAR_REF_N), t, 0.7, 0.33)];
+  if (S.level === '5' && S.earTarget2N != null) {
+    v.push(makeNote(ctx, noteToFreq(S.earTargetN), t + 1.15, 0.7, 0.35), makeNote(ctx, noteToFreq(S.earTarget2N), t + 1.95, 0.7, 0.35));
+  } else v.push(makeNote(ctx, noteToFreq(S.earTargetN), t + 1.15, 0.9, 0.35));
+  return v;
 }
 function earWhyTargetN() { return (S.level === '5' && S.earStep === 2) ? S.earTarget2N : S.earTargetN; }
 function earHint(picked) {
@@ -2100,6 +2164,8 @@ const BOSSES = [
     types: ['chord', 'interval', 'spot'], chords: ['Major', 'Minor', 'Diminished', 'Augmented'], ints: 'medium' },
   { name: 'The Tritone Dragon', icon: '🐉', hp: 12, says: 'Tricky intervals? Changed melodies? Ha! Good luck!',
     types: ['chord', 'interval', 'spot'], chords: ['Major', 'Minor', 'Diminished', 'Augmented'], ints: 'hard' },
+  { name: 'Captain Off-Beat', icon: '🥁', hp: 6, says: 'Keep the beat? Ha! Everyone rushes in the end!',
+    types: ['rhythm'], rhythm: ['medium', 'hard', 'dotted', 'syncopation'] },
 ];
 const CHORD_SHAPES = { Major: [0, 4, 7], Minor: [0, 3, 7], Diminished: [0, 3, 6], Augmented: [0, 4, 8] };
 function bossBeaten() { return loadScores()._bossBeaten || 0; }
@@ -2117,6 +2183,12 @@ function bossQuestion() {
     q.notes = CHORD_SHAPES[name].map(x => root + x); q.answer = name; q.choices = B.chords.slice();
     q.ask = 'What kind of chord is this?';
     q.why = name + ' = ' + CHORD_SHAPES[name][1] + ' then ' + (CHORD_SHAPES[name][2] - CHORD_SHAPES[name][1]) + ' half steps up from the bottom note.';
+  } else if (type === 'rhythm') {
+    // Listen to a rhythm, then tap it back in time
+    q.level = pick(B.rhythm);
+    q.pattern = generateRhythmPattern(q.level); q.bpm = RHYTHM_LEVELS[q.level].bpm;
+    q.phase = 'listen'; q.taps = []; q.answer = 'pass'; q.choices = [];
+    q.ask = 'Listen, then tap the rhythm back in time.';
   } else if (type === 'spot') {
     S.mmLevel = 'medium'; newMysteryRound(); q.mm = S.mm;
     q.answer = 'Note ' + (q.mm.at + 1); q.choices = q.mm.tune.map((_, i) => 'Note ' + (i + 1));
@@ -2138,12 +2210,58 @@ function bossPlay() {
   if (!S.boss || S.boss.state !== 'fight' || !S.boss.q || S.page !== 'boss_play') return;   // left the fight before the sound started
   const q = S.boss.q;
   if (q.type === 'interval') return;   // read, not heard
+  if (q.type === 'rhythm') { if (q.phase === 'listen') brPlayPattern(); return; }
   if (q.type === 'spot') { S.mm = q.mm; S.mmLevel = 'medium'; mmPlay(); return; }
   qPlay(() => {
     if (q.type === 'chord') return playChord(q.notes);
     return playTones(q.notes[0], q.notes[1], 0.7);
   });
 }
+// ── Rhythm questions in Boss Battle ──
+let brTimers = [];
+function brClear() { brTimers.forEach(clearTimeout); brTimers = []; }
+function brPlayPattern() {
+  const q = S.boss && S.boss.q; if (!q || q.type !== 'rhythm') return;
+  brClear(); getAudioCtx().resume();
+  rhythmOnsets(q.pattern, q.bpm).forEach((t, i) => brTimers.push(setTimeout(() => {
+    if (q.pattern[i] !== 'rest') metroClick(i === 0);
+    document.querySelectorAll('.br-note').forEach((el, j) => el.classList.toggle('current', j === i));
+  }, t)));
+}
+function brStartTapping() {
+  const q = S.boss.q; brClear(); getAudioCtx().resume();
+  q.phase = 'tap'; q.taps = []; q.start = null; render('boss_play');
+  const beat = 60000 / q.bpm;
+  for (let b = 0; b < 4; b++) brTimers.push(setTimeout(() => metroClick(b === 0), b * beat));
+  brTimers.push(setTimeout(() => { q.start = performance.now(); const c = $('brCue'); if (c) c.textContent = 'GO! Tap it!'; }, 4 * beat));
+  const on = rhythmOnsets(q.pattern, q.bpm), last = q.pattern[q.pattern.length - 1];
+  const dur = on[on.length - 1] + RHYTHM_NOTE_TYPES[last].beats * beat;
+  brTimers.push(setTimeout(() => { if (q.phase === 'tap') brFinish(); }, 4 * beat + dur + 1200));
+}
+function brTap() {
+  const q = S.boss && S.boss.q; if (!q || q.phase !== 'tap' || q.start == null) return;
+  q.taps.push(performance.now() - q.start); metroClick(false);
+  const need = q.pattern.filter(t => t !== 'rest').length, c = $('brCount');
+  if (c) c.textContent = q.taps.length + ' / ' + need + ' taps';
+  if (q.taps.length >= need) setTimeout(brFinish, 200);
+}
+function brFinish() {
+  const q = S.boss.q; if (q.phase !== 'tap') return;
+  brClear(); q.phase = 'done';
+  const on = rhythmOnsets(q.pattern, q.bpm); let k = 0, hits = 0, notes = 0;
+  q.marks = on.map((t, i) => {
+    if (q.pattern[i] === 'rest') return '·';
+    notes++; const tap = q.taps[k++];
+    if (tap == null) return '❌';
+    const err = Math.abs(tap - t);
+    if (err <= 300) { hits++; return err <= 100 ? '💯' : err <= 200 ? '👍' : '🙂'; }
+    return '❌';
+  });
+  const pass = hits >= Math.ceil(notes * 0.75);
+  q.why = 'You tapped ' + hits + ' of ' + notes + ' notes in time. ' + (pass ? '' : 'You need ' + Math.ceil(notes * 0.75) + '. Tip: count "1 2 3 4" in your head while you listen.');
+  bossAnswer(pass ? 'pass' : 'fail');
+}
+
 function startBoss(lvl) {
   if (lvl > bossBeaten()) return;
   S.boss = { lvl, hp: BOSSES[lvl].hp, hearts: 3, hits: 0, state: 'intro' };
@@ -2230,6 +2348,7 @@ function playMelodySequence() {
     makeNote(ctx, noteToFreq(note.n), now + i * 0.6, 0.5, 0.35);
   });
   setTimeout(function() {
+    if (S.page !== 'melody_play' || S.melodyPhase === 'done') return;   // player left or round finished
     S.melodyPhase = 'play';
     render('melody_play');
   }, S.melodyNotes.length * 600 + 300);
@@ -2243,7 +2362,7 @@ function melodyTap(noteNum, noteName) {
   var target = S.melodyNotes[idx];
 
   if (noteNum !== target.n) {
-    S.melodyFeedback = 'wrong';
+    S.melodyFeedback = 'wrong'; S.melodyPhase = 'done'; S.melodyWrongAt = idx;
     sfxWrong();
     render('melody_play');
     return;
@@ -2252,7 +2371,7 @@ function melodyTap(noteNum, noteName) {
   sfxCorrect();
   if (S.melodyPlayerNotes.length >= S.melodyNotes.length) {
     S.melodyScore++;
-    S.melodyFeedback = 'correct';
+    S.melodyFeedback = 'correct'; S.melodyPhase = 'done';
     recordCorrectAnswer('_melodyCorrect');
     render('melody_play');
   } else {
@@ -2637,6 +2756,7 @@ const ACHIEVEMENTS = [
   { id: 'boss_1', name: 'Clef Crusher', desc: 'Beat Grumbleclef in Boss Battle', icon: '👾', check: d => (d._bossBeaten || 0) >= 1 },
   { id: 'boss_2', name: 'Discord Breaker', desc: 'Beat Count Dischord in Boss Battle', icon: '🧛', check: d => (d._bossBeaten || 0) >= 2 },
   { id: 'boss_3', name: 'Dragon Tamer', desc: 'Beat the Tritone Dragon in Boss Battle', icon: '🐉', check: d => (d._bossBeaten || 0) >= 3 },
+  { id: 'boss_4', name: 'Beat Keeper', desc: 'Beat Captain Off-Beat in Boss Battle', icon: '🥁', check: d => (d._bossBeaten || 0) >= 4 },
   { id: 'secret_bach', name: 'B-A-C-H', desc: 'Find the secret hidden in the free piano', icon: '🎼', check: d => !!d._bach },
   { id: 'secret_moonwalk', name: 'Smooth Moves', desc: 'Find the secret hidden in Note Reading', icon: '🕺', check: d => !!d._moonwalk },
 ];
@@ -3122,6 +3242,18 @@ function staffColors() {
   return { bg: '#d4e8fc', lines: '#3a5a7a', text: '#2c5f8a', note: '#1a2a3a', accent: '#7c6fef', green: '#4CAF50', red: '#e53935', purple: '#7c6fef' };
 }
 
+// Draw a real clef sign at the start of a staff (font: Noto Music, loaded from Google Fonts)
+function drawClef(ctx, clef, x, yOf, color) {
+  ctx.save(); ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  if (clef === 'bass') { ctx.font = "112px 'Noto Music','Segoe UI Symbol','Apple Symbols',serif"; ctx.fillText('𝄢', x, yOf(BASS_CLEF_Y)); }
+  else { ctx.font = "112px 'Noto Music','Segoe UI Symbol','Apple Symbols',serif"; ctx.fillText('𝄞', x, yOf(TREBLE_CLEF_Y)); }
+  ctx.restore();
+}
+const TREBLE_CLEF_Y = 0, BASS_CLEF_Y = 0.5;
+// Redraw the last staff once the clef font has arrived
+let lastStaffDraw = null;
+try { document.fonts.load("112px 'Noto Music'", '𝄞𝄢').then(() => { if (lastStaffDraw) lastStaffDraw(); }); } catch(e) {}
+
 function drawStaff(canvasId, noteHeight, accidental, clef) {
   const c = $(canvasId);
   const ctx = c.getContext('2d');
@@ -3143,6 +3275,8 @@ function drawStaff(canvasId, noteHeight, accidental, clef) {
     const y = yOf(i);
     ctx.beginPath(); ctx.moveTo(staffLeft, y); ctx.lineTo(staffRight, y); ctx.stroke();
   }
+  drawClef(ctx, clef, staffLeft + 2, yOf, sc.note);
+  lastStaffDraw = () => { if ($(canvasId)) drawStaff(canvasId, noteHeight, accidental, clef); };
 
   const noteX = W / 2;
   const ledgerHalf = 22;
@@ -3197,6 +3331,8 @@ function drawIntervalStaff(canvasId, h1, h2) {
     const y = yOf(i);
     ctx.beginPath(); ctx.moveTo(staffLeft, y); ctx.lineTo(staffRight, y); ctx.stroke();
   }
+  drawClef(ctx, 'treble', staffLeft + 2, yOf, sc.note);
+  lastStaffDraw = () => { if ($(canvasId)) drawIntervalStaff(canvasId, h1, h2); };
 
   const noteX1 = W / 2 - 45, noteX2 = W / 2 + 45;
   [{ x: noteX1, h: h1 }, { x: noteX2, h: h2 }].forEach(({ x, h }) => {
@@ -3213,9 +3349,6 @@ function drawIntervalStaff(canvasId, h1, h2) {
   ctx.font = '700 22px Quicksand';
   ctx.textAlign = 'center';
   ctx.fillText('What interval?', W / 2, 28);
-  // Say which clef, so the note names are clear
-  ctx.font = '600 14px Quicksand'; ctx.textAlign = 'left';
-  ctx.fillText('Treble clef', staffLeft, H - 12);
 }
 
 function drawChordStaff(canvasId, heights, accidentals, clef) {
@@ -3239,6 +3372,8 @@ function drawChordStaff(canvasId, heights, accidentals, clef) {
     const y = yOf(i);
     ctx.beginPath(); ctx.moveTo(staffLeft, y); ctx.lineTo(staffRight, y); ctx.stroke();
   }
+  drawClef(ctx, clef, staffLeft + 2, yOf, sc.note);
+  lastStaffDraw = () => { if ($(canvasId)) drawChordStaff(canvasId, heights, accidentals, clef); };
 
   const noteX = W / 2 + 10;
   const lh = 26;
@@ -3673,17 +3808,18 @@ function newIntervalRound() {
 }
 
 function newChordRound() {
-  const BEGINNER_CHORDS = ['Major','Minor'];
+  const BEGINNER_CHORDS = ['Major'];   // Beginner: just major triads, treble clef — name the chord by its root
   const types = S.level==='0' ? BEGINNER_CHORDS : S.level==='1' ? EASY_CHORDS : S.level==='2' ? MED_CHORDS :
     (S.level==='4' || S.level==='5') ? HARD_CHORDS : HARD_CHORDS;
   // Levels 4-5: ear only (no staff shown)
   S.chordEarOnly = (S.level === '4' || S.level === '5');
   S.chordType = pick(types);
   // Pick clef
-  S.chordClef = S.level === '1' ? 'treble' : pick(['treble', 'bass']);
+  S.chordClef = (S.level === '0' || S.level === '1') ? 'treble' : pick(['treble', 'bass']);
   // Pick root from available roots for the clef
   const rootMap = S.chordClef === 'treble' ? TREBLE_CHORD_H : BASS_CHORD_H;
-  const rootNames = Object.keys(rootMap);
+  // Beginner: friendly roots only (C, F, G have no sharps; D and A have one)
+  const rootNames = S.level === '0' ? ['C', 'D', 'F', 'G', 'A'] : Object.keys(rootMap);
   S.chordRootName = pick(rootNames);
   // Get note numbers for audio
   const rootNMap = S.chordClef === 'treble' ? TREBLE_ROOT_N : BASS_ROOT_N;
@@ -3699,7 +3835,10 @@ function newChordRound() {
   // Build choices — mix of roots and types
   const numChordChoices = (S.level === '4' || S.level === '5') ? 6 : 4;
   const choices = new Set([S.chordAnswer]);
-  while (choices.size < numChordChoices) {
+  if (S.chordEarOnly) {
+    // By ear you name the chord TYPE; the bottom note is shown, so no perfect pitch needed
+    shuffleArr(types).forEach(t => { if (choices.size < Math.min(numChordChoices, types.length)) choices.add(S.chordRootName + ' ' + t); });
+  } else while (choices.size < numChordChoices) {
     const r = pick(rootNames);
     const t = pick(types);
     choices.add(r + ' ' + t);
@@ -4125,6 +4264,7 @@ function render(page) {
   if (page !== 'chord_mixer' && S.mixerPlaying) stopMixerPlay();
   if (page !== 'ta_play' && S.taTimer) stopTimeAttack();
   if (page !== 'rhythm_play') clearRhythmTimers();
+  if (page !== 'boss_play' && typeof brClear === 'function') brClear();
   if (page !== 'sightread_play' && page !== 'song_play' && S.sightReadPlaying) stopSightReading();
   S.page = page;
   document.body.classList.toggle('on-home', page === 'home');
@@ -4217,7 +4357,14 @@ function render(page) {
   // ── HOME ──
   else if (page === 'home') {
     const homeData = loadScores();
-    var streak = homeData._streak || 0;
+    // A streak only counts if you played today or yesterday (dates match how the app saves them)
+    var todayK = new Date().toISOString().slice(0, 10), yestK = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    var playedToday = homeData._lastDay === todayK, aliveStreak = playedToday || homeData._lastDay === yestK;
+    var streak = aliveStreak ? (homeData._streak || 0) : 0;
+    var streakMsg = playedToday ? `✅ Practice done today! Your streak: <strong>${streak} day${streak === 1 ? '' : 's'}</strong> 🔥`
+      : streak > 0 ? `🔥 Play one game today to keep your <strong>${streak}-day streak</strong>!`
+      : (homeData._streak || 0) > 1 ? `Your streak ended. Play one game to start a new one 🌱`
+      : `Play one game a day to grow a streak 🔥`;
     var played = homeData._played || 0;
     var lvl = parseInt(localStorage.getItem('pms_level') || '1', 10);
 
@@ -4235,6 +4382,7 @@ function render(page) {
     h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
     h += `</div></div>`;
     h += `<input id="nameIn" class="home-name" type="text" value="${S.name}" placeholder="Your name...">`;
+    h += `<div class="streak-banner${playedToday ? ' done' : streak > 0 ? ' warn' : ''}">${streakMsg}</div>`;
     h += `</div>`;
 
     // Stats
@@ -4263,6 +4411,7 @@ function render(page) {
         {go:"startFromHome('scales')",icon:'🎵',name:'Scale Explorer',desc:'Pick any scale in any key, see it on the staff, hear it played, and follow along with your microphone'},
         {go:"startFromHome('hanon')",icon:'🎹',name:'Hanon Exercises',desc:'All 20 Book 1 exercises with note display, fingering, speed control, and mic practice'},
         {go:"startFromHome('metronome')",icon:'⏱',name:'Metronome',desc:'Visual pendulum with tap tempo — set any BPM and time signature'},
+        {go:"S.tg=S.tg||'note';S.tl=null;render('teacher')",icon:'🧑‍🏫',name:'Teacher Links',desc:'Teachers: pick a game and level, copy the link, and send it to your class. Students open it straight into that game — no account needed'},
         {go:"startFromHome('rhythm')",icon:'🥁',name:'Rhythm Training',desc:'The app plays a rhythm pattern, you tap it back — tests your timing accuracy'},
         {go:"startFromHome('sightread')",icon:'📖',name:'Sight Reading',desc:'Notes scroll across the staff while you play them on your instrument using the microphone'},
         {go:"render('pouch')",icon:'🎒',name:'Tricky Notes',desc:'Notes you got wrong are collected here — listen to them and mark them off as you learn them'},
@@ -4311,7 +4460,7 @@ function render(page) {
       items.push({go:"startFromHome('settings')",icon:'⚙️',name:'Settings',desc:'Switch between Cartoon, Smooth, and Neon modes — change themes, toggle Pebbles, and more'});
     } else {
       items = [
-        {go:"startFromHome('ear')",icon:'🎵',name:'Ear Training',desc:'The app plays a note, you pick which one it is — from 3 easy notes up to two-note melodies with sharps'},
+        {go:"startFromHome('ear')",icon:'🎵',name:'Ear Training',desc:'You hear C first, then a mystery note. Work out the mystery note by comparing it to C — no perfect pitch needed'},
         {go:"startFromHome('note')",icon:'🎼',name:'Note Reading',desc:'A note appears on the staff and you name it — treble, bass, sharps, flats, and double accidentals'},
         {go:"startFromHome('interval')",icon:'🎶',name:'Intervals',desc:'Two notes on the staff — name the distance between them, from 3rds and 5ths up to compound intervals'},
         {go:"startFromHome('chord')",icon:'🎸',name:'Chords',desc:'Hear a chord and identify it — Major, Minor, Diminished, Augmented, and 7ths at higher levels'},
@@ -4369,11 +4518,13 @@ function render(page) {
     h += progressBar(r, total);
 
     if (S.level === '5' && S.earTarget2N != null) {
-      h += `<div class="play-btn" onclick="S.earReplayed=true;qPlay(()=>playTones(${S.earTargetN},${S.earTarget2N},0.8))">Hear both notes</div>`;
+      h += `<div class="play-btn" onclick="S.earReplayed=true;qPlay(earPlayWithRef)">Hear C, then both notes</div>`;
       if (!fb) h += `<p class="caption" style="text-align:center">Identify note ${S.earStep} of 2</p>`;
     } else {
-      h += `<div class="play-btn" onclick="S.earReplayed=true;qPlay(()=>playNote(${S.earTargetN}))">Hear the note</div>`;
+      h += `<div class="play-btn" onclick="S.earReplayed=true;qPlay(earPlayWithRef)">Hear C, then the mystery note</div>`;
     }
+    h += `<div style="text-align:center;margin-top:0.3rem"><button class="btn btn-lilac" style="padding:0.35rem 0.9rem;font-size:0.85rem" onclick="qPlay(()=>playNote(${EAR_REF_N}))">🔊 Hear C again</button></div>`;
+    h += `<p class="caption" style="text-align:center">First you hear <strong>C</strong>. Then the mystery note. Is it higher than C? How far? Count up the keys from C.</p>`;
 
     if (!fb || fb === 'retry') {
       h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
@@ -4648,6 +4799,7 @@ function render(page) {
       h += `<div class="round-opt ${selectedRounds===n?'active':''}" onclick="selectedRounds=${n};render('chord_level')">${n}</div>`;
     });
     h += `</div>`;
+    h += `<p class="section-label" style="margin-top:0.6rem">👀 Read it (on the staff)</p>`;
     h += `<div class="btn-row">
             <button class="btn btn-lilac" onclick="startGame('chord','0',selectedRounds)">🌱 Beginner</button>
             <button class="btn btn-blue" onclick="startGame('chord','1',selectedRounds)">😊 Easy</button>
@@ -4656,11 +4808,12 @@ function render(page) {
             <button class="btn btn-mint" onclick="startGame('chord','2',selectedRounds)">🤔 Medium</button>
             <button class="btn btn-coral" onclick="startGame('chord','3',selectedRounds)">🔥 Hard</button>
           </div>`;
+    h += `<p class="section-label" style="margin-top:0.6rem">👂 Hear it (no staff)</p>`;
     h += `<div class="btn-row">
             <button class="btn btn-pink" onclick="startGame('chord','4',selectedRounds)">⚡ By Ear</button>
             <button class="btn btn-lilac" onclick="startGame('chord','5',selectedRounds)">👑 Master</button>
           </div>`;
-    h += `<p class="caption">Beginner = Major vs Minor only · Easy-Hard = see + hear · By Ear = hear only · Master = everything</p>`;
+    h += `<p class="caption"><strong>Read it:</strong> Beginner = major chords, treble clef · Easy = Major vs Minor · Medium/Hard = more chord types. You can play the sound to check.<br><strong>Hear it:</strong> no notes shown. You're told the bottom note, and you name the chord type by ear.</p>`;
     h += `</div>`;
   }
 
@@ -4673,6 +4826,7 @@ function render(page) {
     if (!S.chordEarOnly) {
       h += `<canvas id="chordCanvas" width="360" height="260" style="display:block;margin:0.5rem auto;border-radius:14px"></canvas>`;
     }
+    else h += `<p class="speech" style="text-align:center">The bottom note is <strong>${S.chordRootName}</strong>. Listen: what <strong>type</strong> of chord is built on it?</p>`;
     h += `<div class="play-btn" onclick="qPlay(()=>playChord([${S.chordNotes}]))">Hear the chord</div>`;
     if (!fb || fb === 'retry') {
       h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
@@ -5045,6 +5199,26 @@ function render(page) {
       h += `<button class="btn btn-blue btn-wide" onclick="startBoss(${b.lvl})">Try again</button><button class="btn btn-lilac btn-wide" onclick="render('boss_home')">Back to bosses</button>`;
     } else {
       const q = b.q;
+      if (q.type === 'rhythm') {
+        h += `<div class="card" style="text-align:center"><p class="speech">${q.ask}</p><div class="rhythm-staff">`;
+        q.pattern.forEach(t => { h += `<span class="rhythm-note br-note">${RHYTHM_NOTE_TYPES[t].symbol}</span>`; });
+        h += `</div><p class="caption">${RHYTHM_LEVELS[q.level].label} · ${q.bpm} beats per minute</p>`;
+        if (q.phase === 'listen') {
+          h += `<button class="btn btn-blue" onclick="brPlayPattern()">🔊 Play again</button>`;
+          h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.5rem" onclick="brStartTapping()">👆 I'm ready — tap it!</button>`;
+        } else if (q.phase === 'tap') {
+          h += `<p id="brCue" class="speech" style="font-weight:700">Get ready… 1 2 3 4</p><p id="brCount" class="caption">0 / ${q.pattern.filter(t => t !== 'rest').length} taps</p>`;
+          h += `<button class="btn btn-coral btn-wide br-tap" onpointerdown="event.preventDefault();brTap()">👆 TAP</button>`;
+        } else {
+          h += `<div class="br-marks">${(q.marks || []).join(' ')}</div>`;
+        }
+        h += `</div>`;
+        if (q.picked !== null) {
+          const ok = q.picked === q.answer;
+          h += `<div class="alert ${ok ? 'alert-success' : 'alert-error'}">${ok ? '💥 Hit!' : '😖 Ouch!'} ${q.why}</div>`;
+          h += `<button class="btn btn-lilac btn-wide" onclick="bossNext()">Next →</button>`;
+        }
+      } else {
       h += `<div class="card" style="text-align:center"><p class="speech">${q.ask}</p>`;
       h += q.type === 'interval' ? `<canvas id="bossCanvas" width="400" height="260" style="max-width:100%"></canvas>` : `<button class="btn btn-blue" onclick="bossPlay()">🔊 Play again</button>`;
       h += `<div class="choice-grid" style="margin-top:0.7rem">`;
@@ -5059,7 +5233,32 @@ function render(page) {
         h += `<div class="alert ${ok ? 'alert-success' : 'alert-error'}">${ok ? '💥 Hit!' : '😖 Ouch! It was ' + q.answer + '.'} ${q.why}</div>`;
         h += `<button class="btn btn-lilac btn-wide" onclick="bossNext()">Next →</button>`;
       }
+      }
     }
+  }
+
+  // ── TEACHER LINKS ──
+  else if (page === 'teacher') {
+    const G = TEACH_GAMES[S.tg] || TEACH_GAMES.note;
+    if (!S.tl || !G.levels.some(l => l[0] === S.tl)) S.tl = G.levels[0][0];
+    S.tn = S.tn || 10;
+    h += `<h1>🧑‍🏫 Teacher Links</h1>`;
+    h += `<div class="card"><p class="speech">Pick a game and level. Send the link to your students. It opens straight into that game.</p>`;
+    h += `<p class="section-label">1. Game</p><div class="tl-chips">`;
+    Object.entries(TEACH_GAMES).forEach(([k, g]) => { h += `<button class="tl-chip${k === S.tg ? ' on' : ''}" onclick="S.tg='${k}';S.tl=null;render('teacher')">${g.icon} ${g.name}</button>`; });
+    h += `</div><p class="section-label">2. Level</p><div class="tl-chips">`;
+    G.levels.forEach(([v, l]) => { h += `<button class="tl-chip${v === S.tl ? ' on' : ''}" onclick="S.tl='${v}';render('teacher')">${l}</button>`; });
+    h += `</div>`;
+    if (G.rounds) {
+      h += `<p class="section-label">3. Questions</p><div class="tl-chips">`;
+      [5, 10, 15, 20].forEach(n => { h += `<button class="tl-chip${n === S.tn ? ' on' : ''}" onclick="S.tn=${n};render('teacher')">${n}</button>`; });
+      h += `</div>`;
+    }
+    const link = teachLinkFor(S.tg, S.tl, S.tn);
+    h += `<p class="section-label">Your link</p><div class="tl-link" id="tlLink">${link}</div>`;
+    h += `<div class="btn-row"><button class="btn btn-blue" onclick="copyTeachLink()">📋 Copy link</button><button class="btn btn-mint" onclick="launchTeacherGame({g:S.tg,lv:S.tl,n:S.tn})">▶ Try it</button></div>`;
+    h += `<p class="caption">Students don't need an account. They play as a guest, and their scores stay on their own device. At the end they can tap "Copy report" to send you their score.</p></div>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='tools';render('home')">⬅ Back</button>`;
   }
 
   // ── PRIVACY ──
@@ -5404,12 +5603,13 @@ function render(page) {
       h += pebbles('happy', 100);
       h += `<div class="card" style="text-align:center">`;
       h += `<p class="speech"><strong>Pebbles says:</strong> 'Listen carefully!'</p>`;
+      h += `<p class="speech">The first note is <strong>${S.melodyNotes[0].name}</strong>. Listen to how the tune moves from there.</p>`;
       h += `<div style="font-size:1.5rem;font-weight:700;margin:0.5rem 0">${S.melodyNotes.map(function(n){return '🎵'}).join(' ')}</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="playMelodySequence()">Play Melody</button>`;
       h += `</div>`;
     } else if (S.melodyPhase === 'play') {
       h += `<div class="card" style="text-align:center">`;
-      h += `<p class="speech">Now play it back! Note ${S.melodyPlayerNotes.length + 1} of ${S.melodyNotes.length}</p>`;
+      h += `<p class="speech">Now play it back! Note ${Math.min(S.melodyPlayerNotes.length + 1, S.melodyNotes.length)} of ${S.melodyNotes.length}${S.melodyPlayerNotes.length ? '' : ` — start on <strong>${S.melodyNotes[0].name}</strong> (it's lit up)`}</p>`;
       h += `<div style="font-size:1.2rem;font-weight:700;margin:0.4rem 0">`;
       S.melodyNotes.forEach(function(n, i) {
         if (i < S.melodyPlayerNotes.length) h += `<span style="color:#4CAF50">✓ </span>`;
@@ -5417,7 +5617,7 @@ function render(page) {
         else h += `<span style="color:#ccc">· </span>`;
       });
       h += `</div>`;
-      h += `<div style="margin:0.5rem auto">${buildPiano()}</div>`;
+      h += `<div style="margin:0.5rem auto">${buildPiano(S.melodyPlayerNotes.length ? [] : [S.melodyNotes[0].n])}</div>`;
       h += `<button class="btn btn-blue" style="margin-top:0.4rem" onclick="playMelodySequence();S.melodyPhase='listen';S.melodyPlayerNotes=[];render('melody_play')">Hear Again</button>`;
       h += `</div>`;
     } else if (S.melodyFeedback === 'correct') {
@@ -5426,7 +5626,7 @@ function render(page) {
       h += `<button class="btn btn-lilac btn-wide" onclick="S.melodyRound++;if(S.melodyRound>=S.melodyTotal){render('melody_result')}else{newMelodyRound();render('melody_play')}">Next →</button>`;
     } else if (S.melodyFeedback === 'wrong') {
       h += pebbles('thinking');
-      h += `<div class="alert alert-error">Not quite! The melody was: ${S.melodyNotes.map(function(n){return n.name}).join(' → ')}</div>`;
+      h += `<div class="alert alert-error">Not quite! Note ${(S.melodyWrongAt || 0) + 1} should have been <strong>${S.melodyNotes[S.melodyWrongAt || 0].name}</strong>. The melody was: ${S.melodyNotes.map(function(n){return n.name}).join(' → ')}</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="S.melodyRound++;if(S.melodyRound>=S.melodyTotal){render('melody_result')}else{newMelodyRound();render('melody_play')}">Next →</button>`;
     }
   }
@@ -6193,9 +6393,9 @@ function render(page) {
   // Auto-play tones
   if (page === 'ear_play' && !S.earFeedback) {
     if (S.level === '5' && S.earTarget2N != null) {
-      setTimeout(() => qPlay(() => playTones(S.earTargetN, S.earTarget2N, 0.8)), 400);
+      setTimeout(() => { if (S.page === 'ear_play') qPlay(earPlayWithRef); }, 400);
     } else {
-      setTimeout(() => qPlay(() => playNote(S.earTargetN)), 400);
+      setTimeout(() => { if (S.page === 'ear_play') qPlay(earPlayWithRef); }, 400);
     }
   }
   if (page === 'chord_play' && !S.chordFeedback) {
@@ -6431,6 +6631,13 @@ function nextExQuestion() {
     else addXP(5);
   }
   render('exercise_play');
+}
+
+function copyTeachLink() {
+  const link = teachLinkFor(S.tg, S.tl, S.tn);
+  const done = () => alert('Link copied! Paste it into an email, message or your class page.');
+  if (navigator.clipboard) navigator.clipboard.writeText(link).then(done).catch(() => prompt('Copy this link:', link));
+  else prompt('Copy this link:', link);
 }
 
 // On-screen note pad
