@@ -24,6 +24,18 @@ if errorlevel 1 (
   exit /b
 )
 
+echo.
+echo Getting any changes made on the GitHub website first...
+git pull --rebase --autostash
+if errorlevel 1 (
+  echo.
+  echo Could not combine with the changes on GitHub. Nothing was published.
+  echo Copy the message above and send it to Claude.
+  echo.
+  pause
+  exit /b
+)
+
 git push
 if errorlevel 1 (
   echo.

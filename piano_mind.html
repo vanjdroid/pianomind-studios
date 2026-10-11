@@ -2192,7 +2192,7 @@ function bossQuestion() {
   } else if (type === 'spot') {
     S.mmLevel = 'medium'; newMysteryRound(); q.mm = S.mm;
     q.answer = 'Note ' + (q.mm.at + 1); q.choices = q.mm.tune.map((_, i) => 'Note ' + (i + 1));
-    q.ask = 'The tune plays twice. Which note changed?';
+    q.ask = 'Key of ' + q.mm.key.name + ' major — the tune starts on ' + q.mm.key.name + '. It plays twice. Which note changed?';
     q.why = 'Note ' + (q.mm.at + 1) + ' changed from ' + degName(q.mm.key, q.mm.tune[q.mm.at]) + ' to ' + degName(q.mm.key, q.mm.changed[q.mm.at]) + '.';
   } else {
     // Interval: READ it on the staff (no sound)
@@ -5139,6 +5139,7 @@ function render(page) {
     h += `<div style="display:flex;justify-content:space-between;align-items:center"><h1>🕵️ Round ${S.mmRound + 1} of ${S.mmTotal}</h1><button class="btn btn-coral" style="padding:0.3rem 0.8rem;font-size:0.8rem" onclick="render('home')">Quit</button></div>`;
     h += progressBar(S.mmRound, S.mmTotal);
     h += `<div class="card" style="text-align:center"><p class="speech">Which note changed the second time?</p>`;
+    h += `<p class="caption">Key of <strong>${m.key.name} major</strong> — the tune starts on <strong>${m.key.name}</strong>. <button class="btn btn-lilac" style="padding:0.2rem 0.7rem;font-size:0.8rem" onclick="qPlay(()=>playNote(${m.key.n}))">🔊 Hear ${m.key.name}</button></p>`;
     h += `<button class="btn btn-blue" onclick="mmPlay()">🔊 Play both again</button>`;
     if (m.picked === null && !m.hint) h += ` <button class="btn btn-lilac" onclick="S.mm.hint=true;render('mystery_play')">💡 Hint</button>`;
     if (m.hint && m.picked === null) h += `<p class="caption" style="margin-top:0.5rem">Hint: the change is in the <strong>${m.at < m.tune.length / 2 ? 'first' : 'second'} half</strong> of the tune.</p>`;
