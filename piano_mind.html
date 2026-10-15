@@ -1071,14 +1071,15 @@ body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; 
 .mw-stage { position:fixed; left:0; right:0; bottom:8%; height:190px; pointer-events:none; z-index:1001; overflow:hidden; }
 .mw-glide { position:absolute; bottom:0; left:0; animation:mwGlide 5s linear forwards; }
 .mw-step { position:relative; animation:mwStep 0.5s ease-in-out infinite; }
-.mw-dino { width:130px; display:block; }
+.mw-dino { width:140px; display:block; }
 .mw-shadow { width:90px; height:12px; margin:-6px auto 0; border-radius:50%; background:rgba(0,0,0,0.18); }
 .mw-n { position:absolute; font-size:1.6rem; color:#7c6fef; opacity:0; animation:mwNote 1s ease-out infinite; }
-.mw-n1 { left:-10px; top:30px; } .mw-n2 { left:-30px; top:70px; animation-delay:0.33s; } .mw-n3 { left:-14px; top:110px; animation-delay:0.66s; }
+.mw-n1 { left:150px; top:30px; } .mw-n2 { left:170px; top:70px; animation-delay:0.33s; } .mw-n3 { left:154px; top:110px; animation-delay:0.66s; }
 .mw-label { position:absolute; top:0; left:50%; transform:translateX(-50%); background:rgba(255,255,255,0.92); color:#0f2744; font-weight:800; padding:0.35rem 0.9rem; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,0.12); white-space:nowrap; }
-@keyframes mwGlide { from { transform:translateX(-160px); } to { transform:translateX(110vw); } }
-@keyframes mwStep { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-6px) rotate(3deg); } }
-@keyframes mwNote { 0% { opacity:0; transform:translate(0,0); } 30% { opacity:1; } 100% { opacity:0; transform:translate(-30px,-40px); } }
+/* Pebbles faces right but slides left: that's the moonwalk */
+@keyframes mwGlide { from { transform:translateX(105vw); } to { transform:translateX(-200px); } }
+@keyframes mwStep { 0%,100% { transform:translateY(0) rotate(0deg); } 50% { transform:translateY(-3px) rotate(-2deg); } }
+@keyframes mwNote { 0% { opacity:0; transform:translate(0,0); } 30% { opacity:1; } 100% { opacity:0; transform:translate(30px,-40px); } }
 @media (prefers-reduced-motion: reduce) { .mw-glide { animation:none; left:50%; transform:translateX(-50%); } .mw-step, .mw-n { animation:none; } }
 .secret-pop { position:fixed; inset:0; background:rgba(15,39,68,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px; }
 .secret-card { background:#fff; color:#0f2744; border-radius:20px; padding:1.3rem; max-width:340px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
@@ -1095,6 +1096,29 @@ body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; 
 .ap-send, .ap-del { border:none; background:rgba(255,255,255,0.7); border-radius:10px; font-size:1.2rem; width:2.3rem; height:2.3rem; cursor:pointer; }
 .ap-send:active { transform:scale(1.2); }
 .ap-del { font-size:0.9rem; color:#6b7fa3; }
+.ta-key { display:none; font-size:0.7rem; opacity:0.6; margin-right:0.35rem; border:1px solid currentColor; border-radius:4px; padding:0 0.25rem; }
+@media (hover:hover) and (pointer:fine) { .ta-key { display:inline-block; } }
+/* Start here path */
+.lp { background:rgba(255,255,255,0.82); border:2px solid #c9b8f0; color:#2d2346; border-radius:18px; padding:0.9rem 1rem; margin:0 0 1rem; grid-column:1 / -1; box-shadow:0 2px 8px rgba(120,90,200,0.08); }
+.lp-head { display:flex; justify-content:space-between; align-items:center; gap:0.5rem; }
+.lp-head span { font-size:0.85rem; opacity:0.75; }
+.lp-step { display:flex; align-items:center; gap:0.6rem; padding:0.55rem 0.6rem; border-radius:12px; cursor:pointer; margin-top:0.35rem; border:1px solid transparent; }
+.lp-step:hover { background:rgba(160,130,230,0.08); }
+.lp-step > div { flex:1; min-width:0; }
+.lp-next { border-color:#a98be8; background:rgba(169,139,232,0.10); }
+.lp-done { opacity:0.6; }
+.lp-n { width:1.7rem; height:1.7rem; flex:0 0 1.7rem; border-radius:50%; background:#ece4fb; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; }
+.lp-done .lp-n { background:#cdeccf; }
+.lp-ic { font-size:1.3rem; }
+.lp-name { font-weight:700; }
+.lp-desc { font-size:0.82rem; opacity:0.75; }
+.lp-go { font-size:0.8rem; font-weight:700; color:#7a55d6; white-space:nowrap; }
+.lp-hide { margin-top:0.6rem; background:none; border:none; color:#7a55d6; text-decoration:underline; cursor:pointer; font-size:0.85rem; padding:0.2rem; }
+.lp-mini { grid-column:1 / -1; justify-self:start; display:inline-block; margin:0 0 0.8rem; padding:0.35rem 0.8rem; border-radius:999px; background:rgba(255,255,255,0.82); font-size:0.85rem; color:#7a55d6; cursor:pointer; }
+.fb-kinds { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.6rem; }
+.fb-kind { font-family:inherit; color:#2d2346; padding:0.45rem 0.75rem; border-radius:999px; border:1px solid #c9d3e6; background:#fff; cursor:pointer; font-size:0.9rem; }
+.fb-kind.on { background:#e7defc; border-color:#a98be8; font-weight:700; }
+.fb-text { min-height:7rem; resize:vertical; font-family:inherit; }
 .ap-input { display:block; width:100%; box-sizing:border-box; padding:0.6rem 0.8rem; margin-bottom:0.5rem; border-radius:12px; border:1px solid #c9d3e6; font-size:1rem; }
 body.mode-neon .ap-code { color:#fff; }
 @media (min-width: 900px) {
@@ -1153,45 +1177,111 @@ const db = firebase.firestore();
 var currentUser = null;
 var authReady = false;
 
+// A player's name is shown inside the page, so it may not contain HTML characters
+function cleanName(n) { return String(n || '').replace(/[<>"'&`\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24); }
+
+// Grade Exercises you have passed, stored as {"1_3": 1, ...}
+function gxData() { try { return JSON.parse(localStorage.getItem('pms_gradeex') || '{}'); } catch(e) { return {}; } }
+function gxDone(g, n) { return !!gxData()[g + '_' + n]; }
+function gxMark(g, n) { const d = gxData(); d[g + '_' + n] = 1; try { localStorage.setItem('pms_gradeex', JSON.stringify(d)); } catch(e) {} cloudSave(); }
+(function moveOldGradeKeys() {   // older versions saved these without the pms_ prefix
+  try {
+    const d = gxData(); let moved = false;
+    Object.keys(localStorage).filter(k => k.startsWith('_gradeExDone_')).forEach(k => {
+      const parts = k.split('_').filter(Boolean);   // ['gradeExDone', g, n]
+      if (parts.length === 3) { d[parts[1] + '_' + parts[2]] = 1; moved = true; }
+      localStorage.removeItem(k);
+    });
+    if (moved) localStorage.setItem('pms_gradeex', JSON.stringify(d));
+  } catch(e) {}
+})();
+
+// ── Cloud save ──
+// Keys that belong to this device, not to a person. They are never sent to the cloud.
+const DEVICE_ONLY_KEYS = ['pms_guest', 'pms_owner', 'pms_fb_last'];
+function cloudKeys() {
+  try { return Object.keys(localStorage).filter(k => k.startsWith('pms_') && !DEVICE_ONLY_KEYS.includes(k)); } catch(e) { return []; }
+}
+var cloudReady = false;      // true only after this account's cloud copy has been loaded and merged
+var lastCloudJson = '';      // what we last sent, so we don't resend the same thing every 30 seconds
+
 // Save all user data to Firestore
-function cloudSave() {
-  if (!currentUser || S.deleting) return;
+function cloudSave(force) {
+  if (!currentUser || S.deleting || !cloudReady) return Promise.resolve();
   var data = {};
-  ['pms_scores','pms_daily','pms_hanon','pms_pouch','pms_xp','pms_level',
-   'pms_theme','pms_mode','pms_outfit','pms_sfx','pms_pebbles','pms_tutorial_done','pms_ta_best','pms_instrument','pms_avatar','pms_achievements','pms_vibe','pms_friends','pms_friend_code','pms_applause_off','pms_clap_seen'
-  ].forEach(function(key) {
-    var val = localStorage.getItem(key);
-    if (val) data[key] = val;
-  });
+  cloudKeys().forEach(function(key) { var val = localStorage.getItem(key); if (val) data[key] = val; });
   data.name = S ? S.name : '';
+  var json = JSON.stringify(data);
+  if (!force && json === lastCloudJson) return Promise.resolve();
   data.lastSaved = new Date().toISOString();
-  db.collection('users').doc(currentUser.uid).set(data, { merge: true }).catch(function(e) { console.log('Cloud save error:', e); });
+  // set() without merge: the cloud copy becomes exactly this device's copy, so things you cleared stay cleared
+  return db.collection('users').doc(currentUser.uid).set(data)
+    .then(function() { lastCloudJson = json; })
+    .catch(function(e) { console.log('Cloud save error:', e); });
 }
 
-// Load user data from Firestore
+// Join two saved copies (cloud + this device) without losing progress from either
+function mergeVal(a, b) {
+  if (typeof a === 'number' && typeof b === 'number') return Math.max(a, b);
+  if (typeof a === 'string' && typeof b === 'string') return a > b ? a : b;
+  if (typeof a === 'boolean' && typeof b === 'boolean') return a || b;
+  if (Array.isArray(a) && Array.isArray(b)) return a.every(x => typeof x !== 'object') && b.every(x => typeof x !== 'object') ? Array.from(new Set(a.concat(b))) : a;
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    if ('best' in a && 'best' in b) return (b.best > a.best) ? b : a;   // a best score: keep the whole better record
+    return mergeObj(a, b);
+  }
+  return a;
+}
+function mergeObj(c, l) {
+  const r = Object.assign({}, c);
+  Object.keys(l).forEach(k => { r[k] = (k in c) ? mergeVal(c[k], l[k]) : l[k]; });
+  return r;
+}
+function mergeScores(c, l) {
+  const r = mergeObj(c, l);
+  // a streak belongs with its own last-played day: take both from whichever copy played most recently
+  const src = (l._lastDay || '') > (c._lastDay || '') ? l : c;
+  if (src._lastDay) { r._lastDay = src._lastDay; r._streak = src._streak || 0; }
+  const dsrc = (l._dailyDate || '') > (c._dailyDate || '') ? l : c;
+  if (dsrc._dailyDate) { r._dailyDate = dsrc._dailyDate; r._dailyScore = dsrc._dailyScore; r._dailyTotal = dsrc._dailyTotal; }
+  if (typeof r._xp === 'number') r._level = Math.floor(Math.sqrt(r._xp / 50)) + 1;
+  return r;
+}
+
+// Load user data from Firestore and merge it with this device
 function cloudLoad(callback) {
-  if (!currentUser || !navigator.onLine) { if (callback) callback(); return; }
-  db.collection('users').doc(currentUser.uid).get().then(function(doc) {
+  const done = () => { if (callback) { const cb = callback; callback = null; cb(); } };
+  if (!currentUser) { done(); return; }
+  const uid = currentUser.uid;
+  // This device holds someone else's progress: clear it so it can't leak into this account
+  const owner = localStorage.getItem('pms_owner');
+  if (owner && owner !== 'guest' && owner !== uid) clearDeviceData(true);
+  if (!navigator.onLine) { done(); return; }   // try again when back online (see the 'online' listener)
+  db.collection('users').doc(uid).get().then(function(doc) {
+    if (!currentUser || currentUser.uid !== uid) return done();
     if (doc.exists) {
       var data = doc.data();
-      // Keep the better of this device and the cloud for best scores + achievements (so guest records aren't lost)
-      try {
-        var la = JSON.parse(localStorage.getItem('pms_achievements') || '[]'), ca = JSON.parse(data.pms_achievements || '[]');
-        data.pms_achievements = JSON.stringify(Array.from(new Set(ca.concat(la))));
-        var lt = JSON.parse(localStorage.getItem('pms_ta_best') || '{}'), ct = JSON.parse(data.pms_ta_best || '{}');
-        Object.keys(lt).forEach(function(k) { ct[k] = Math.max(ct[k] || 0, lt[k] || 0); });
-        data.pms_ta_best = JSON.stringify(ct);
-      } catch(e) {}
       Object.keys(data).forEach(function(key) {
-        if (key.startsWith('pms_')) {
-          try { localStorage.setItem(key, data[key]); } catch(e) {}
+        if (!key.startsWith('pms_') || DEVICE_ONLY_KEYS.includes(key)) return;
+        var local = localStorage.getItem(key), val = data[key];
+        if (local && local !== val) {
+          try {
+            var c = JSON.parse(val), l = JSON.parse(local);
+            if (key === 'pms_scores') val = JSON.stringify(mergeScores(c, l));
+            else if (c && l && typeof c === 'object' && typeof l === 'object') val = JSON.stringify(mergeVal(c, l));
+          } catch(e) {}   // plain text settings (theme, mode…): the cloud copy wins
         }
+        try { localStorage.setItem(key, val); } catch(e) {}
       });
-      if (data.name && S) S.name = data.name;
+      if (data.name && S && !S.name) S.name = cleanName(data.name);
     }
-    if (callback) callback();
-  }).catch(function(e) { console.log('Cloud load error:', e); if (callback) callback(); });
+    try { localStorage.setItem('pms_owner', uid); } catch(e) {}
+    cloudReady = true;
+    cloudSave(true);   // send the merged copy back up
+    done();
+  }).catch(function(e) { console.log('Cloud load error:', e); done(); });
 }
+window.addEventListener('online', function() { if (currentUser && !cloudReady) cloudLoad(function() { if (S.page === 'home') render('home'); }); });
 
 // Auto-save every 30 seconds
 setInterval(function() { if (currentUser) cloudSave(); }, 30000);
@@ -1205,9 +1295,13 @@ function signInGoogle() {
 // Sign in with email/password
 function signInEmail(email, password) {
   auth.signInWithEmailAndPassword(email, password).catch(function(e) {
-    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
-      // Try creating account
-      auth.createUserWithEmailAndPassword(email, password).catch(function(e2) { alert('Error: ' + e2.message); });
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-login-credentials') {
+      // Either a new person or a wrong password. Newer Firebase can't tell us which, so try making the account.
+      auth.createUserWithEmailAndPassword(email, password).catch(function(e2) {
+        if (e2.code === 'auth/email-already-in-use') alert('That password is not right for this email. Please try again.');
+        else if (e2.code === 'auth/weak-password') alert('New account? Your password needs at least 6 characters.');
+        else alert('Error: ' + e2.message);
+      });
     } else {
       alert('Sign in failed: ' + e.message);
     }
@@ -1216,14 +1310,22 @@ function signInEmail(email, password) {
 
 // Sign out
 function signOut() {
-  cloudSave();
-  try { localStorage.removeItem('pms_guest'); } catch(e) {}
-  auth.signOut();
+  if (S.signingOut) return;
+  if (currentUser && !cloudReady && !confirm("You're offline, so your latest progress isn't saved to your account yet. Sign out anyway?")) return;
+  S.signingOut = true;
+  document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Saving and signing out…</div></div></div>';
+  const finish = () => {
+    clearDeviceData(true);   // the next person on this device starts fresh
+    auth.signOut().catch(function() {}).then(function() { location.reload(); });
+  };
+  Promise.race([cloudSave(true), new Promise(r => setTimeout(r, 5000))]).then(finish, finish);
 }
 
 // ── Delete my account (and everything saved with it) ──
-function clearDeviceData() {
-  try { Object.keys(localStorage).filter(k => k.startsWith('pms_')).forEach(k => localStorage.removeItem(k)); } catch(e) {}
+function clearDeviceData(keepTutorial) {
+  try { Object.keys(localStorage).filter(k => k.startsWith('pms_') && !(keepTutorial && k === 'pms_tutorial_done')).forEach(k => localStorage.removeItem(k)); } catch(e) {}
+  if (typeof S !== 'undefined') { S.name = ''; if (S.ap) S.ap.inbox = null; }
+  lastCloudJson = '';
 }
 function deleteGuestData() {
   if (!confirm('Delete all your progress on this device? This cannot be undone.')) return;
@@ -1274,7 +1376,7 @@ async function deleteMyAccount() {
 // Guest mode: play without an account (progress stays on this device)
 function isGuest() { return !currentUser && localStorage.getItem('pms_guest') === 'yes'; }
 function startGuest() {
-  try { localStorage.setItem('pms_guest', 'yes'); } catch(e) {}
+  try { localStorage.setItem('pms_guest', 'yes'); if (!localStorage.getItem('pms_owner')) localStorage.setItem('pms_owner', 'guest'); } catch(e) {}
   applyMode();
   render(localStorage.getItem('pms_tutorial_done') ? 'home' : 'welcome');
 }
@@ -1283,6 +1385,7 @@ function startGuest() {
 auth.onAuthStateChanged(function(user) {
   currentUser = user;
   authReady = true;
+  cloudReady = false; lastCloudJson = '';
   if (user) {
     S.deletedMsg = '';
     try { localStorage.removeItem('pms_guest'); } catch(e) {}
@@ -1334,8 +1437,8 @@ const TEACH_REQ = (function() {
     return { g, lv, n };
   } catch(e) { return null; }
 })();
-function launchTeacherGame(r) {
-  history.replaceState(null, '', location.pathname);   // so a refresh doesn't restart it
+function launchTeacherGame(r, inApp) {
+  if (!inApp) history.replaceState(null, '', location.pathname);   // so a refresh doesn't restart it
   if (!S.name) S.name = 'Player';
   S.resultScored = false; S.isDaily = false;
   const { g, lv, n } = r;
@@ -1345,6 +1448,76 @@ function launchTeacherGame(r) {
   else if (g === 'rhythm') startRhythmLevel(lv);
   else if (g === 'ta') { render('ta_setup'); startTimeAttack(lv); }
   else startGame(g, lv, n);
+}
+
+// ═══════════════════════════════════
+//  FEEDBACK: players send a short note to the app's owner
+//  Saved in Firestore "feedback". No name, email or account is attached.
+// ═══════════════════════════════════
+function escAttr(t) { return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+const FB_KINDS = [['bug','🐞 Something broke'],['idea','💡 An idea'],['like','❤️ Something I like'],['other','💬 Other']];
+function fbOpen() {
+  let from = ''; try { from = loadScores()._lastGame || ''; } catch(e) {}
+  S.fb = { kind: (S.fb && S.fb.kind) || 'idea', draft: (S.fb && !S.fb.sent && S.fb.draft) || '', msg: '', busy: false, sent: false, from: String(from).slice(0, 40) };
+  render('feedback');
+}
+function fbSend() {
+  const f = S.fb; if (!f || f.busy) return;
+  const box = document.getElementById('fbText');
+  const text = (box ? box.value : f.draft).trim();
+  f.draft = text;
+  if (text.length < 3) { f.msg = 'Please write a few words first.'; render('feedback'); return; }
+  if (text.length > 1000) { f.msg = 'That is a bit long. Please keep it under 1000 letters.'; render('feedback'); return; }
+  if (/[^\s@]+@[^\s@]+\.[a-z]{2,}/i.test(text) || /(\d[\s\-().]*){7,}/.test(text)) {
+    f.msg = 'It looks like there is an email or phone number in there. Please take it out — we never need it.'; render('feedback'); return;
+  }
+  let last = 0; try { last = parseInt(localStorage.getItem('pms_fb_last') || '0', 10); } catch(e) {}
+  if (Date.now() - last < 30000) { f.msg = 'Thanks! Please wait 30 seconds before sending another one.'; render('feedback'); return; }
+  if (navigator.onLine === false) { f.msg = 'You seem to be offline. Your words are still here — try again when you have internet.'; render('feedback'); return; }
+  f.busy = true; f.msg = ''; render('feedback');
+  let done = false;
+  const finish = (ok, msg) => {
+    if (done) return; done = true; f.busy = false;
+    if (ok) { f.sent = true; f.draft = ''; try { localStorage.setItem('pms_fb_last', String(Date.now())); } catch(e) {} }
+    else f.msg = msg;
+    if (S.page === 'feedback') render('feedback');
+  };
+  const data = { kind: f.kind, text: text, at: firebase.firestore.FieldValue.serverTimestamp() };
+  if (f.from) data.page = f.from;
+  db.collection('feedback').add(data).then(() => finish(true)).catch(err => {
+    finish(false, err && err.code === 'permission-denied'
+      ? 'Sorry, feedback is not switched on yet. Please try again in a few days.'
+      : 'Could not send it. Check your internet and try again.');
+  });
+  setTimeout(() => finish(false, 'This is taking too long. Check your internet and try again.'), 12000);
+}
+
+// ═══════════════════════════════════
+//  START HERE: a suggested order for new players
+// ═══════════════════════════════════
+const LEARN_PATH = [
+  { key: 'note_0',          icon: '🎼', name: 'Read notes',          desc: 'Note Reading · Beginner (C, D, E)',          go: { g: 'note', lv: '0', n: 10 } },
+  { key: 'interval_0',      icon: '🎶', name: 'Read intervals',      desc: 'Intervals · Beginner (3rds & 5ths)',         go: { g: 'interval', lv: '0', n: 10 } },
+  { key: 'chord_0',         icon: '🎸', name: 'Read major chords',   desc: 'Chords · Beginner (treble clef)',            go: { g: 'chord', lv: '0', n: 10 } },
+  { key: 'melody_beginner', icon: '🎵', name: 'Echo a tune',         desc: 'Melody Echo · Beginner (2 notes)',           go: { g: 'melody', lv: 'beginner', n: 5 } },
+  { key: 'ear_0',           icon: '👂', name: 'Hear notes from C',   desc: 'Ear Training · Beginner (C, D, E)',          go: { g: 'ear', lv: '0', n: 10 } },
+  { key: 'mystery_easy',    icon: '🕵️', name: 'Spot the change',     desc: 'Mystery Melody · Easy',                      go: { g: 'mystery', lv: 'easy', n: 10 } },
+];
+function learnPathHtml() {
+  const d = loadScores(), done = LEARN_PATH.map(st => !!d[st.key]), next = done.indexOf(false);
+  let hidden = false; try { hidden = localStorage.getItem('pms_path_hidden') === 'yes'; } catch(e) {}
+  if (hidden) {
+    return `<div class="lp-mini" onclick="try{localStorage.removeItem('pms_path_hidden')}catch(e){};render('home')">🧭 Show "Start here" path (${done.filter(Boolean).length}/${LEARN_PATH.length})</div>`;
+  }
+  let x = `<div class="lp"><div class="lp-head"><strong>🧭 Start here</strong><span>${done.filter(Boolean).length} / ${LEARN_PATH.length} done</span></div>`;
+  x += `<p class="caption" style="margin:0.2rem 0 0.5rem">New? Try the games in this order. Each one builds on the last.</p>`;
+  LEARN_PATH.forEach((st, i) => {
+    const cls = done[i] ? ' lp-done' : i === next ? ' lp-next' : '';
+    x += `<div class="lp-step${cls}" onclick="launchTeacherGame(${JSON.stringify(st.go).replace(/"/g, '&quot;')}, true)"><span class="lp-n">${done[i] ? '✓' : i + 1}</span><span class="lp-ic">${st.icon}</span><div><div class="lp-name">${st.name}</div><div class="lp-desc">${st.desc}</div></div>${i === next ? '<span class="lp-go">Start ▶</span>' : ''}</div>`;
+  });
+  if (next === -1) x += `<p class="caption" style="margin-top:0.5rem">🎉 Path complete! Try higher levels, Boss Battle, or Time Attack.</p>`;
+  x += `<button class="lp-hide" onclick="try{localStorage.setItem('pms_path_hidden','yes')}catch(e){};render('home')">Hide</button></div>`;
+  return x;
 }
 
 // ═══════════════════════════════════
@@ -1642,8 +1815,11 @@ function earChoiceToN(choice, nearN) {
 // Reference note: middle C. Most people can't name a note out of nowhere (that's "perfect pitch").
 // But almost anyone can learn to hear how far a note is from one they already know ("relative pitch").
 const EAR_REF_N = -9;   // middle C
+// The C just below the target: middle C for low notes, the next C up for high notes. Keeps the jump small.
+function earRefN(t) { return t >= 3 ? 3 : -9; }
+function earRefName(t) { return earRefN(t) === -9 ? 'middle C' : 'the C above middle C'; }
 function earPlayWithRef() {
-  const ctx = getAudioCtx(), t = ctx.currentTime + 0.02, v = [makeNote(ctx, noteToFreq(EAR_REF_N), t, 0.7, 0.33)];
+  const ctx = getAudioCtx(), t = ctx.currentTime + 0.02, v = [makeNote(ctx, noteToFreq(earRefN(S.earTargetN)), t, 0.7, 0.33)];
   if (S.level === '5' && S.earTarget2N != null) {
     v.push(makeNote(ctx, noteToFreq(S.earTargetN), t + 1.15, 0.7, 0.35), makeNote(ctx, noteToFreq(S.earTarget2N), t + 1.95, 0.7, 0.35));
   } else v.push(makeNote(ctx, noteToFreq(S.earTargetN), t + 1.15, 0.9, 0.35));
@@ -1658,16 +1834,16 @@ function earHint(picked) {
 function earWhyHtml(picked) {
   const t = earWhyTargetN(), p = earChoiceToN(picked, t);
   const right = earKeyName(t), diff = Math.abs(t - p);
-  const fromC = t - (-9);
-  const cLine = fromC === 0 ? `It <strong>is</strong> middle C.` :
-    `It's <strong>${Math.abs(fromC)} half step${Math.abs(fromC) === 1 ? '' : 's'} ${fromC > 0 ? 'above' : 'below'}</strong> middle C.`;
+  const refN = earRefN(t), refName = earRefName(t), fromC = t - refN;
+  const cLine = fromC === 0 ? `It <strong>is</strong> ${refName}.` :
+    `It's <strong>${Math.abs(fromC)} half step${Math.abs(fromC) === 1 ? '' : 's'} ${fromC > 0 ? 'above' : 'below'}</strong> ${refName}.`;
   const steps = [
-    ['1', `<strong>Start from home:</strong> middle C is your anchor note. ${cLine}`],
+    ['1', `<strong>Start from home:</strong> ${refName} is your anchor note. ${cLine}`],
     ['2', `<strong>Compare:</strong> ${right} is ${diff} half step${diff === 1 ? '' : 's'} <strong>${t > p ? 'higher' : 'lower'}</strong> than your answer, ${picked}.`],
     ['✓', `So the note was <strong>${right}</strong>.`]
   ];
   const btns = `<div class="why-listen">Listen:</div><div class="btn-row">
-    <button class="btn btn-blue" onclick="playNote(-9)">▶ Middle C</button>
+    <button class="btn btn-blue" onclick="playNote(${refN})">▶ ${refN === -9 ? 'Middle C' : 'High C'}</button>
     <button class="btn btn-coral" onclick="playNote(${p})">▶ Yours: ${picked}</button>
     <button class="btn btn-mint" onclick="playNote(${t})">▶ Right: ${right}</button></div>`;
   return whyBox(`Why is it ${right}?`, steps, btns);
@@ -1837,13 +2013,43 @@ const SCALE_ROOTS = [
 const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const FLAT_NAMES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 const FLAT_ROOTS = new Set(['F','Bb','Eb','Ab','Db']);
-function getScaleNoteNames(rootIdx, type) {
-  const root = SCALE_ROOTS[rootIdx];
-  const intervals = SCALE_TYPES[type];
-  const names = FLAT_ROOTS.has(root.name) ? FLAT_NAMES : SHARP_NAMES;
-  const rootSemi = ((root.n + 9) % 12 + 12) % 12;
-  return intervals.slice(0,-1).map(s => names[(rootSemi + s) % 12]);
+// ── Spelling notes the way theory books do ──
+// Each scale degree gets its own letter (C D E F G A B in turn); the sharp or flat is worked out from the semitones.
+// So F♯ major ends with E♯ (not F), and C minor has E♭ (not D♯).
+const LET7 = 'CDEFGAB', NAT_SEMI = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
+function parseNoteName(n) {
+  const letter = n.charAt(0).toUpperCase(); let alt = 0;
+  for (const c of n.slice(1)) { if (c === '#' || c === '♯') alt++; else if (c === 'b' || c === '♭') alt--; }
+  return { letter, alt };
 }
+function spellFrom(rootName, letterStep, semis) {
+  const r = parseNoteName(rootName);
+  const L = LET7[(LET7.indexOf(r.letter) + letterStep) % 7];
+  const target = (((NAT_SEMI[r.letter] + r.alt + semis) % 12) + 12) % 12;
+  let alt = ((target - NAT_SEMI[L]) % 12 + 12) % 12; if (alt > 6) alt -= 12;
+  return { letter: L, alt };
+}
+const ALT_SYM = { '-2': '𝄫', '-1': '♭', '0': '', '1': '♯', '2': '𝄪' };
+const ALT_ACC = { '-2': 'double_flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double_sharp' };
+function spelledName(sp) { return sp.letter + ALT_SYM[sp.alt]; }
+// Which letter each scale note uses, counted up from the root's letter
+const SCALE_LETTER_STEPS = {
+  'Major': [0,1,2,3,4,5,6], 'Natural Minor': [0,1,2,3,4,5,6], 'Harmonic Minor': [0,1,2,3,4,5,6],
+  'Pentatonic': [0,1,2,4,5], 'Blues': [0,2,3,3,4,6],   // blues: 1 ♭3 4 ♯4 5 ♭7
+};
+// D♭ minor and A♭ minor would need double flats, so music uses C♯ minor and G♯ minor instead
+function scaleRootName(rootIdx, type) {
+  const n = SCALE_ROOTS[rootIdx].name;
+  if (/Minor/.test(type) && n === 'Db') return 'C#';
+  if (/Minor/.test(type) && n === 'Ab') return 'G#';
+  return n;
+}
+function scaleRootLabel(rootIdx, type) { return spelledName(parseNoteName(scaleRootName(rootIdx, type))); }
+function getScaleSpelling(rootIdx, type) {
+  const rn = scaleRootName(rootIdx, type), steps = SCALE_LETTER_STEPS[type];
+  return SCALE_TYPES[type].slice(0, -1).map((semis, i) => spellFrom(rn, steps[i], semis));
+}
+function getScaleNoteNames(rootIdx, type) { return getScaleSpelling(rootIdx, type).map(spelledName); }
 const STEP_LABELS = {
   'Major':'W W H W W W H', 'Natural Minor':'W H W W H W W',
   'Harmonic Minor':'W H W W H W+H H', 'Pentatonic':'W W W+H W W+H',
@@ -1886,17 +2092,19 @@ const HANON_EXERCISES = [
 function getScaleStaffHeights(rootIdx, type) {
   const root = SCALE_ROOTS[rootIdx];
   const intervals = SCALE_TYPES[type];
-  const names = getScaleNoteNames(rootIdx, type);
+  const sp = getScaleSpelling(rootIdx, type);
+  const names = sp.map(spelledName);
   const BASE_H = {'C':-1,'D':-0.5,'E':0,'F':0.5,'G':1,'A':1.5,'B':2};
   const letterOrder = 'CDEFGAB';
-  const rootLetter = names[0].charAt(0);
+  const rootLetter = sp[0].letter;
   const rootLetterIdx = letterOrder.indexOf(rootLetter);
   const rootOct = root.n <= 2 ? 4 : 5;
   const result = [];
   for (let i = 0; i <= names.length; i++) {
-    const name = i < names.length ? names[i] : names[0];
-    const letter = name.charAt(0);
-    const acc = name.length > 1 ? (name.charAt(1) === '#' ? 'sharp' : 'flat') : 'natural';
+    const k = i < names.length ? i : 0;
+    const name = names[k];
+    const letter = sp[k].letter;
+    const acc = ALT_ACC[sp[k].alt];
     const letterIdx = letterOrder.indexOf(letter);
     let oct = rootOct;
     if (i > 0 && letterIdx < rootLetterIdx) oct++;
@@ -1946,13 +2154,13 @@ function saveScore(game, level, score, total) {
     const data = JSON.parse(localStorage.getItem('pms_scores') || '{}');
     const key = game + '_' + level;
     if (!data[key] || score > data[key].best) {
-      data[key] = { best: score, total: total, date: new Date().toISOString().slice(0,10) };
+      data[key] = { best: score, total: total, date: localDay(0) };
     }
     data._played = (data._played || 0) + 1;
     data._lastGame = game;
-    const today = new Date().toISOString().slice(0,10);
+    const today = localDay(0);
     if (data._lastDay !== today) {
-      const y = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+      const y = localDay(1);
       data._streak = (data._lastDay === y) ? (data._streak || 0) + 1 : 1;
       data._bestStreak = Math.max(data._bestStreak || 0, data._streak);
       data._lastDay = today;
@@ -2066,7 +2274,7 @@ function addToPouch(noteName, game) {
   var key = noteName.toLowerCase();
   if (!pouch[key]) pouch[key] = { count: 0, game: game, lastMissed: '' };
   pouch[key].count++;
-  pouch[key].lastMissed = new Date().toISOString().slice(0, 10);
+  pouch[key].lastMissed = localDay(0);
   try { localStorage.setItem('pms_pouch', JSON.stringify(pouch)); } catch(e) {}
 }
 
@@ -2131,7 +2339,7 @@ function mmPlay() {
     const ctx = getAudioCtx(), now = ctx.currentTime + 0.05, gap = S.mmLevel === 'hard' ? 0.42 : 0.5;
     const v = [];
     m.tune.forEach((d, i) => v.push(makeNote(ctx, noteToFreq(m.key.n + degSemis(d)), now + i * gap, gap * 0.9, 0.33)));
-    const start2 = now + m.tune.length * gap + 1.0;
+    const start2 = now + m.tune.length * gap + 2.0;   // a clear 2-second break between tune 1 and tune 2
     m.changed.forEach((d, i) => v.push(makeNote(ctx, noteToFreq(m.key.n + degSemis(d)), start2 + i * gap, gap * 0.9, 0.33)));
     return v;
   });
@@ -2145,7 +2353,7 @@ function mmAnswer(i) {
 }
 function mmNext() {
   S.mmRound++;
-  if (S.mmRound >= S.mmTotal) { trackDaily('mystery', S.mmScore, S.mmTotal); render('mystery_result'); }
+  if (S.mmRound >= S.mmTotal) { saveScore('mystery', S.mmLevel, S.mmScore, S.mmTotal); checkAchievements(); render('mystery_result'); }
   else { newMysteryRound(); render('mystery_play'); setTimeout(() => { if (S.page === 'mystery_play') mmPlay(); }, 400); }
 }
 function startMystery(level) {
@@ -2228,12 +2436,16 @@ function brPlayPattern() {
     document.querySelectorAll('.br-note').forEach((el, j) => el.classList.toggle('current', j === i));
   }, t)));
 }
+// Sound reaches your ears a little late (more with Bluetooth). The browser tells us roughly how late.
+function audioDelayMs() {
+  try { const c = getAudioCtx(); return Math.min(500, Math.max(0, ((c.outputLatency || 0) + (c.baseLatency || 0)) * 1000)); } catch(e) { return 0; }
+}
 function brStartTapping() {
   const q = S.boss.q; brClear(); getAudioCtx().resume();
   q.phase = 'tap'; q.taps = []; q.start = null; render('boss_play');
   const beat = 60000 / q.bpm;
   for (let b = 0; b < 4; b++) brTimers.push(setTimeout(() => metroClick(b === 0), b * beat));
-  brTimers.push(setTimeout(() => { q.start = performance.now(); const c = $('brCue'); if (c) c.textContent = 'GO! Tap it!'; }, 4 * beat));
+  brTimers.push(setTimeout(() => { q.start = performance.now() + audioDelayMs(); const c = $('brCue'); if (c) c.textContent = 'GO! Tap it!'; }, 4 * beat));
   const on = rhythmOnsets(q.pattern, q.bpm), last = q.pattern[q.pattern.length - 1];
   const dur = on[on.length - 1] + RHYTHM_NOTE_TYPES[last].beats * beat;
   brTimers.push(setTimeout(() => { if (q.phase === 'tap') brFinish(); }, 4 * beat + dur + 1200));
@@ -2281,8 +2493,8 @@ function bossNext() {
     b.state = 'won';
     const d = loadScores(); d._bossBeaten = Math.max(d._bossBeaten || 0, b.lvl + 1);
     try { localStorage.setItem('pms_scores', JSON.stringify(d)); } catch(e) {}
-    addXP(50 * (b.lvl + 1)); checkAchievements(); confetti(); cloudSave();
-  } else if (b.hearts <= 0) b.state = 'lost';
+    addXP(50 * (b.lvl + 1)); saveScore('boss', b.lvl, b.hits, b.hits + 3 - b.hearts); checkAchievements(); confetti(); cloudSave();
+  } else if (b.hearts <= 0) { b.state = 'lost'; saveScore('boss', b.lvl, b.hits, b.hits + 3); }
   else { bossQuestion(); setTimeout(bossPlay, 400); }
   b.flash = null; render('boss_play');
 }
@@ -2300,7 +2512,7 @@ function moonwalk() {
   } catch(e) {}
   const st = document.createElement('div');
   st.className = 'mw-stage';
-  st.innerHTML = `<div class="mw-glide"><div class="mw-step"><img src="pebbles_happy.png" alt="" class="mw-dino"><div class="mw-shadow"></div></div><span class="mw-n mw-n1">♪</span><span class="mw-n mw-n2">♫</span><span class="mw-n mw-n3">♪</span></div><div class="mw-label">🕺 Pebbles is moonwalking!</div>`;
+  st.innerHTML = `<div class="mw-glide"><div class="mw-step"><img src="pebbles_moonwalk.png" alt="" class="mw-dino"><div class="mw-shadow"></div></div><span class="mw-n mw-n1">♪</span><span class="mw-n mw-n2">♫</span><span class="mw-n mw-n3">♪</span></div><div class="mw-label">🕺 Pebbles is moonwalking!</div>`;
   document.body.appendChild(st);
   setTimeout(() => st.remove(), 5200);
 }
@@ -2328,6 +2540,7 @@ function secretCheck(n) {
 // ═══════════════════════════════════
 
 function newMelodyRound() {
+  if (!S.melodyRound) S.resultScored = false;   // a new melody game is starting
   var pool = S.melodyLevel === 'hard' ? [...PIANO_WHITE, ...PIANO_BLACK].filter(function(k) { return k.n >= -9 && k.n <= 7; }) : S.melodyLevel === 'beginner' ? PIANO_WHITE.slice(0, 3) : PIANO_WHITE.slice(0, 8);
   var notes = [];
   var count = S.melodyLevel === 'beginner' ? 2 : S.melodyLevel === 'easy' ? 3 : S.melodyLevel === 'medium' ? 4 : 5;
@@ -2341,14 +2554,15 @@ function newMelodyRound() {
   S.melodyFeedback = null;
 }
 
+var melodyGen = 0;   // bumps each time; an old timer with an old number does nothing
 function playMelodySequence() {
-  var ctx = getAudioCtx(); ctx.resume();
-  var now = ctx.currentTime + 0.05;
-  S.melodyNotes.forEach(function(note, i) {
-    makeNote(ctx, noteToFreq(note.n), now + i * 0.6, 0.5, 0.35);
+  const gen = ++melodyGen;
+  qPlay(function() {
+    var ctx = getAudioCtx(), now = ctx.currentTime + 0.05;
+    return S.melodyNotes.map(function(note, i) { return makeNote(ctx, noteToFreq(note.n), now + i * 0.6, 0.5, 0.35); });
   });
   setTimeout(function() {
-    if (S.page !== 'melody_play' || S.melodyPhase === 'done') return;   // player left or round finished
+    if (gen !== melodyGen || S.page !== 'melody_play' || S.melodyPhase === 'done') return;   // replayed, left, or round finished
     S.melodyPhase = 'play';
     render('melody_play');
   }, S.melodyNotes.length * 600 + 300);
@@ -2381,7 +2595,7 @@ function melodyTap(noteNum, noteName) {
 
 function trackDaily(game, score, total) {
   var data = loadDaily();
-  var today = new Date().toISOString().slice(0, 10);
+  var today = localDay(0);
   if (!data[today]) data[today] = { games: {}, scores: [] };
   data[today].games[game] = (data[today].games[game] || 0) + 1;
   if (score !== undefined && total) {
@@ -2395,8 +2609,7 @@ function trackDaily(game, score, total) {
 function getLast7Days() {
   var days = [];
   for (var i = 6; i >= 0; i--) {
-    var d = new Date(Date.now() - i * 86400000);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(localDay(i));
   }
   return days;
 }
@@ -2558,9 +2771,9 @@ function loadScores() {
 function saveDailyScore(score, total) {
   try {
     const data = JSON.parse(localStorage.getItem('pms_scores') || '{}');
-    const today = new Date().toISOString().slice(0,10);
+    const today = localDay(0);
     data._dailyScore = score; data._dailyTotal = total; data._dailyDate = today;
-    const y = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+    const y = localDay(1);
     if (data._dailyPrevDay === y) data._dailyStreak = (data._dailyStreak || 0) + 1;
     else if (data._dailyPrevDay !== today) data._dailyStreak = 1;
     data._dailyPrevDay = today;
@@ -2573,12 +2786,12 @@ function getDailyGame() {
   return games[day];
 }
 function getDailyTheme() {
-  var themes = ['Melody Monday','Tune-up Tuesday','Workout Wednesday','Theory Thursday','Fun Friday','Scale Saturday','Chill Sunday'];
+  var themes = ['Chill Sunday','Melody Monday','Tune-up Tuesday','Workout Wednesday','Theory Thursday','Fun Friday','Scale Saturday'];   // getDay(): 0 = Sunday
   return themes[new Date().getDay()];
 }
 function dailyPlayed() {
   const d = loadScores();
-  return d._dailyDate === new Date().toISOString().slice(0,10);
+  return d._dailyDate === localDay(0);
 }
 
 // ═══════════════════════════════════
@@ -2666,7 +2879,7 @@ function checkAchievements() {
 // Records a correct answer: awards XP, bumps an optional counter, checks achievements
 // Remember when practice sessions happen (local time), for time-of-day achievements
 function localDay(offsetDays) {
-  const d = new Date(Date.now() - (offsetDays || 0) * 86400000);
+  const d = new Date(); d.setDate(d.getDate() - (offsetDays || 0));
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function logPracticeSession(data) {
@@ -2702,12 +2915,13 @@ function markGamePlayed(key) {
 }
 
 // Called when a round of questions finishes — round + perfect + daily XP bonuses
-function finishRound(game) {
+function finishRound(game, score, total) {
+  if (score == null) { score = S.score; total = S.total; }
   addXP(25);
-  if (S.score === S.total) addXP(50);
+  if (score === total) addXP(50);
   if (S.isDaily) addXP(40);
   const data = loadScores();
-  if (S.score === S.total && S.total === 10) data._perfectCount = (data._perfectCount || 0) + 1;
+  if (score === total && total >= 10) data._perfectCount = (data._perfectCount || 0) + 1;
   data._gamesPlayed = data._gamesPlayed || {};
   data._gamesPlayed[game] = true;
   try { localStorage.setItem('pms_scores', JSON.stringify(data)); } catch(e) {}
@@ -2737,8 +2951,8 @@ const PIANO_BLACK = [
 const ALL_GAME_KEYS = ['ear','note','interval','chord','piano','scales','metronome','rhythm','theory','sightread','songs','exercises'];
 
 const ACHIEVEMENTS = [
-  { id: 'first_note', name: 'First Note', desc: 'Get your first correct answer', icon: '🌟', check: d => (d._played || 0) >= 1 },
-  { id: 'perfect_10', name: 'Perfect 10', desc: 'Score 10/10 in any game', icon: '💯', check: d => (d._perfectCount || 0) >= 1 },
+  { id: 'first_note', name: 'First Note', desc: 'Finish your first game', icon: '🌟', check: d => (d._played || 0) >= 1 },
+  { id: 'perfect_10', name: 'Perfect 10', desc: 'Get every answer right in a game of 10 or more', icon: '💯', check: d => (d._perfectCount || 0) >= 1 },
   { id: 'streak_3', name: 'On Fire', desc: '3 day streak', icon: '🔥', check: d => (d._streak || 0) >= 3 },
   { id: 'streak_7', name: 'Week Warrior', desc: '7 day streak', icon: '⚡', check: d => (d._streak || 0) >= 7 },
   { id: 'level_5', name: 'Rising Star', desc: 'Reach level 5', icon: '⭐', check: d => (d._level || 1) >= 5 },
@@ -2829,7 +3043,7 @@ const THEORY_LESSONS = [
     steps: [
       { title: 'What is an Interval?', text: "An <strong>interval</strong> is the distance between two notes. It tells you how far apart they are." },
       { title: 'How to Count', text: "Count BOTH notes! From C to C = <strong>1st</strong> (unison). C to D = <strong>2nd</strong>. C to E = <strong>3rd</strong>. Count every letter: C-D-E, that's 3." },
-      { title: 'Small Intervals', text: "<strong>2nd</strong> = right next door (C to D). Sounds tight.<br><strong>3rd</strong> = skip one note (C to E). Sounds sweet.<br><strong>4th</strong> = (C to F). Think of the Star Wars opening!" },
+      { title: 'Small Intervals', text: "<strong>2nd</strong> = right next door (C to D). Sounds tight.<br><strong>3rd</strong> = skip one note (C to E). Sounds sweet.<br><strong>4th</strong> = (C to F). Think of the start of “Here Comes the Bride”!" },
       { title: 'Big Intervals', text: "<strong>5th</strong> = (C to G). Strong and open, like a power chord!<br><strong>Octave</strong> = same note, higher up (C to C). Sounds like the same note, just higher!" },
       { title: 'Why Intervals Matter', text: "Every melody is just a chain of intervals! When you can read intervals, you see the jump between notes instead of naming every single note. That helps you sight-read." },
     ],
@@ -2872,12 +3086,12 @@ const THEORY_LESSONS = [
       { title: 'Building Chords', text: "In C Major, the C chord is <strong>C-E-G</strong> (1st, 3rd, 5th notes). The F chord is <strong>F-A-C</strong>. The G chord is <strong>G-B-D</strong>." },
       { title: 'Roman Numerals', text: "Musicians number chords with <strong>Roman numerals</strong> based on which scale note they start on.<br><br>I = 1st note, IV = 4th note, V = 5th note.<br>In C Major: I=C, IV=F, V=G." },
       { title: 'The Famous I-IV-V', text: "The chord pattern <strong>I - IV - V - I</strong> is used in thousands of songs! In C Major that's <strong>C → F → G → C</strong>. Try playing it — it sounds like real music!" },
-      { title: 'Pop Songs', text: "Most pop songs use just <strong>4 chords</strong>: I, IV, V, and vi (that's the minor chord on the 6th note). In C Major: <strong>C, F, G, Am</strong>. Seriously — that's most of the radio!" },
+      { title: 'Pop Songs', text: "Lots of pop songs use just <strong>4 chords</strong>: I, IV, V, and vi (that's the minor chord on the 6th note). In C Major: <strong>C, F, G, Am</strong>. Listen for them on the radio!" },
     ],
     quiz: [
       { q: 'What is a chord?', choices: ['One note','3+ notes together','A rhythm','A scale'], answer: '3+ notes together' },
       { q: 'In C Major, what chord is IV?', choices: ['F','G','D','A'], answer: 'F' },
-      { q: 'How many chords do most pop songs use?', choices: ['2','4','8','12'], answer: '4' },
+      { q: 'How many different chords are in the pop progression I – V – vi – IV?', choices: ['2','4','8','12'], answer: '4' },
       { q: 'What does I-IV-V mean?', choices: ['Chords on scale degrees','Fingering','Time signature','Note names'], answer: 'Chords on scale degrees' },
     ] },
 ];
@@ -3162,6 +3376,10 @@ function playNote(n) {
 
 // Question audio ("Hear the note/chord"): a new play stops the old one, so fast clicks never pile up
 let questionVoices = [];
+function stopQuestionSound() {
+  try { const now = getAudioCtx().currentTime; questionVoices.forEach(v => v.release(now)); } catch(e) {}
+  questionVoices = [];
+}
 function qPlay(fn) {
   const ctx = getAudioCtx(), now = ctx.currentTime;
   questionVoices.forEach(v => v.release(now));
@@ -3438,7 +3656,7 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
   ctx.fillStyle = sc.text;
   ctx.font = '700 15px Quicksand';
   ctx.textAlign = 'center';
-  ctx.fillText(root.name + ' ' + S.scaleType, W / 2, 16);
+  ctx.fillText(scaleRootLabel(S.scaleRoot, S.scaleType) + ' ' + S.scaleType, W / 2, 16);
 
   // Notes — scale sizes for many notes
   const totalNotes = staffNotes.length;
@@ -3483,7 +3701,7 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
       ctx.fillStyle = color;
       ctx.font = totalNotes > 10 ? '700 12px Quicksand' : '700 15px Quicksand';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(note.acc === 'sharp' ? '#' : '♭', x - accOff, y);
+      ctx.fillText({ sharp: '♯', flat: '♭', double_sharp: '𝄪', double_flat: '𝄫' }[note.acc] || '', x - accOff, y);
     }
 
     // Note name below staff
@@ -3534,7 +3752,7 @@ function confetti() {
 const S = {
   page: 'welcome',
   homeTab: 'practice',
-  name: '',
+  name: (function() { try { return localStorage.getItem('pms_name') || ''; } catch(e) { return ''; } })(),
   score: 0,
   roundNum: 0,
   total: 10,
@@ -3627,9 +3845,8 @@ function getMixerChordNotes(degreeIdx, keySemi) {
 function getMixerChordName(degreeIdx) {
   var key = MIXER_KEYS[S.mixerKey];
   var deg = MIXER_DEGREES[degreeIdx];
-  var noteNames = ['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
-  var rootIdx = (S.mixerKey + deg.offset) % 12;
-  return noteNames[rootIdx] + (deg.type === 'min' ? 'm' : deg.type === 'dim' ? '°' : '');
+  // spelled from the key, so D major's iii is F♯m (not G♭m)
+  return spelledName(spellFrom(key.name, degreeIdx, deg.offset)) + (deg.type === 'min' ? 'm' : deg.type === 'dim' ? '°' : '');
 }
 
 var mixerPlayTimer = null;
@@ -3886,7 +4103,7 @@ function pianoUp(n) {
 }
 
 function startGame(game, level, rounds, clef) {
-  S.score = 0; S.roundNum = 0;
+  S.score = 0; S.roundNum = 0; S.resultScored = false;
   S.roundMisses = []; S.roundGame = {ear:'Ear Training', note:'Note Reading', interval:'Intervals', chord:'Chords'}[game] || game;
   S.total = rounds || 10;
   S.level = level;
@@ -4124,13 +4341,13 @@ async function apMakeCode() {
   S.ap.busy = true; S.ap.msg = ''; render('applause');
   try {
     const old = localStorage.getItem('pms_friend_code');
-    if (old) { try { await db.collection('codes').doc(old).delete(); } catch(e) {} }
     let made = '';
     for (let i = 0; i < 5 && !made; i++) {
       const c = apRandomCode();
       try { await db.collection('codes').doc(c).set({ uid: currentUser.uid }); made = c; }
       catch(e) { if (e.code !== 'permission-denied' || i === 4) throw e; } // taken code = try another
     }
+    if (old) { try { await db.collection('codes').doc(old).delete(); } catch(e) {} }   // only after the new one exists
     localStorage.setItem('pms_friend_code', made); cloudSave();
     S.ap.msg = old ? 'New code made. Old friends can no longer find you or clap for you until you share the new one.' : '';
   } catch(e) { S.ap.msg = apErr(e); }
@@ -4258,6 +4475,9 @@ function renderSidebar(page) {
 }
 
 function render(page) {
+  const nm = cleanName(S.name);
+  if (nm !== S.name) S.name = nm;
+  try { if (nm && localStorage.getItem('pms_name') !== nm) localStorage.setItem('pms_name', nm); } catch(e) {}
   if (page !== 'scale_explorer' && S.scalePracticing) stopScalePractice();
   if (page !== 'hanon' && S.hanonPracticing) stopHanonPractice();
   if (page !== 'hanon' && S.hanonPlaying) stopHanonPlay();
@@ -4266,6 +4486,8 @@ function render(page) {
   if (page !== 'rhythm_play') clearRhythmTimers();
   if (page !== 'boss_play' && typeof brClear === 'function') brClear();
   if (page !== 'sightread_play' && page !== 'song_play' && S.sightReadPlaying) stopSightReading();
+  if (page !== 'metronome' && S.metroRunning) stopMetro();
+  if (page !== S.page) { stopQuestionSound(); melodyGen++; }   // leaving a page: silence its tune
   S.page = page;
   document.body.classList.toggle('on-home', page === 'home');
   document.body.classList.toggle('no-anim', page === 'ta_play' && S.taTries > 0);
@@ -4358,7 +4580,7 @@ function render(page) {
   else if (page === 'home') {
     const homeData = loadScores();
     // A streak only counts if you played today or yesterday (dates match how the app saves them)
-    var todayK = new Date().toISOString().slice(0, 10), yestK = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    var todayK = localDay(0), yestK = localDay(1);
     var playedToday = homeData._lastDay === todayK, aliveStreak = playedToday || homeData._lastDay === yestK;
     var streak = aliveStreak ? (homeData._streak || 0) : 0;
     var streakMsg = playedToday ? `✅ Practice done today! Your streak: <strong>${streak} day${streak === 1 ? '' : 's'}</strong> 🔥`
@@ -4366,7 +4588,7 @@ function render(page) {
       : (homeData._streak || 0) > 1 ? `Your streak ended. Play one game to start a new one 🌱`
       : `Play one game a day to grow a streak 🔥`;
     var played = homeData._played || 0;
-    var lvl = parseInt(localStorage.getItem('pms_level') || '1', 10);
+    var lvl = getXP().level;   // XP and level live inside pms_scores
 
     var tabNames = {practice:'🎮 Practice', tools:'🎵 Tools', learn:'📚 Learn', me:'🏆 Me'};
     var curTab = tabNames[S.homeTab] ? S.homeTab : 'practice';
@@ -4426,7 +4648,7 @@ function render(page) {
       ];
     } else if (S.homeTab === 'me') {
       // Profile section
-      var xpMe = parseInt(localStorage.getItem('pms_xp') || '0', 10);
+      var xpMe = getXP().xp;
       var meData = loadScores();
       var joinDate = '';
       if (currentUser && currentUser.metadata) {
@@ -4457,6 +4679,7 @@ function render(page) {
       items.push({go:"render('applause')",icon:'👏',name:'Applause' + (apNew ? ' · ' + apNew + ' new' : ''),desc:currentUser ? 'Add friends with a code and send each other a clap. Only an icon is sent — no names, no messages' : 'Sign in to send claps to friends'});
       if (showPebbles()) items.push({go:"startFromHome('wardrobe')",icon:'👗',name:'Pebbles Wardrobe',desc:'Six outfits for your dino — Classic, Cool, Party, Pirate, Space, and Winter'});
       items.push({go:"render('install')",icon:'📲',name:'Get the App',desc:'Put PianoMind on your phone, tablet or computer — then it opens even without internet'});
+      items.push({go:"fbOpen()",icon:'💬',name:'Send Feedback',desc:'Found a bug or have an idea? Tell us. No name or email is sent'});
       items.push({go:"startFromHome('settings')",icon:'⚙️',name:'Settings',desc:'Switch between Cartoon, Smooth, and Neon modes — change themes, toggle Pebbles, and more'});
     } else {
       items = [
@@ -4466,11 +4689,12 @@ function render(page) {
         {go:"startFromHome('chord')",icon:'🎸',name:'Chords',desc:'Hear a chord and identify it — Major, Minor, Diminished, Augmented, and 7ths at higher levels'},
         {go:"startFromHome('melody')",icon:'🎶',name:'Melody Echo',desc:'The app plays a short melody, then you tap it back in order on the piano — tests your musical memory'},
         {go:"render('mystery_level')",icon:'🕵️',name:'Mystery Melody',desc:'A tune plays twice. One note changes the second time. Can you spot which one?'},
-        {go:"render('boss_home')",icon:'⚔️',name:'Boss Battle',desc:'Chords, tunes and intervals on the staff. Right answers hit the boss. Wrong answers cost a heart. Beat all 3 bosses!'},
+        {go:"render('boss_home')",icon:'⚔️',name:'Boss Battle',desc:'Chords, tunes and intervals on the staff. Right answers hit the boss. Wrong answers cost a heart. Beat all 4 bosses!'},
         {go:"render('ta_setup')",icon:'⏱️',name:'Time Attack',desc:'60 seconds on the clock — how many notes or intervals can you name? Beat your best score'},
         {go:"startFromHome('daily')",icon:'⭐',name:'Daily Challenge',desc:'One random game every day — play it, grow a flower in your garden, and keep your streak going'},
       ];
     }
+    if (curTab === 'practice') h += learnPathHtml();
     h += `<div class="home-list">`;
     items.forEach(function(t) {
       h += `<div class="home-item" onclick="${t.go}">`;
@@ -4523,7 +4747,7 @@ function render(page) {
     } else {
       h += `<div class="play-btn" onclick="S.earReplayed=true;qPlay(earPlayWithRef)">Hear C, then the mystery note</div>`;
     }
-    h += `<div style="text-align:center;margin-top:0.3rem"><button class="btn btn-lilac" style="padding:0.35rem 0.9rem;font-size:0.85rem" onclick="qPlay(()=>playNote(${EAR_REF_N}))">🔊 Hear C again</button></div>`;
+    h += `<div style="text-align:center;margin-top:0.3rem"><button class="btn btn-lilac" style="padding:0.35rem 0.9rem;font-size:0.85rem" onclick="qPlay(()=>playNote(earRefN(S.earTargetN)))">🔊 Hear C again</button></div>`;
     h += `<p class="caption" style="text-align:center">First you hear <strong>C</strong>. Then the mystery note. Is it higher than C? How far? Count up the keys from C.</p>`;
 
     if (!fb || fb === 'retry') {
@@ -4728,6 +4952,7 @@ function render(page) {
     h += progressBar(r, total);
     h += `<canvas id="intCanvas" width="400" height="260"></canvas>`;
     h += `<div style="text-align:center">${buildPiano(S.intKeys)}</div>`;
+    if (S.intKeys && S.intKeys.length >= 2) h += `<div style="text-align:center;margin:0.3rem 0"><button class="btn btn-lilac" style="padding:0.35rem 0.9rem;font-size:0.85rem" onclick="qPlay(()=>playTones(${Math.min(...S.intKeys)},${Math.max(...S.intKeys)},0.7))">🔊 Hear it (optional)</button></div>`;
     if (!fb || fb === 'retry') {
       h += pebbles(fb === 'retry' ? 'thinking' : 'asking', 120);
       h += `<div class="card">`;
@@ -5262,9 +5487,27 @@ function render(page) {
     h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='tools';render('home')">⬅ Back</button>`;
   }
 
+  // ── FEEDBACK ──
+  else if (page === 'feedback') {
+    if (!S.fb) S.fb = { kind: 'idea', draft: '', msg: '', busy: false, sent: false, from: '' };
+    const f = S.fb;
+    h += `<h1>💬 Send feedback</h1>`;
+    if (f.sent) {
+      h += `<div class="card"><p class="speech">✅ Sent! Thank you. Amaya reads every message.</p><button class="btn btn-blue btn-wide" onclick="S.fb.sent=false;render('feedback')">Send another</button></div>`;
+    } else {
+      h += `<div class="card"><p class="speech">Found a bug? Have an idea? Tell us here.</p><p class="caption">What is it about?</p><div class="fb-kinds">`;
+      FB_KINDS.forEach(([k, label]) => { h += `<button class="fb-kind${f.kind === k ? ' on' : ''}" onclick="S.fb.draft=(document.getElementById('fbText')||{}).value||S.fb.draft;S.fb.kind='${k}';render('feedback')">${label}</button>`; });
+      h += `</div><textarea id="fbText" class="ap-input fb-text" maxlength="1000" rows="5" placeholder="Type here…" oninput="S.fb.draft=this.value">${escAttr(f.draft)}</textarea>`;
+      h += `<p class="caption">🔒 Please don't write your name, email, school or anything private. We don't save who sent it.</p>`;
+      if (f.msg) h += `<div class="alert alert-error">${f.msg}</div>`;
+      h += `<button class="btn btn-mint btn-wide" ${f.busy ? 'disabled' : ''} onclick="fbSend()">${f.busy ? 'Sending…' : 'Send'}</button></div>`;
+    }
+    h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='me';render('home')">⬅ Back</button>`;
+  }
+
   // ── PRIVACY ──
   else if (page === 'privacy') {
-    h += `<h1>🔒 Privacy</h1><div class="card pv"><p class="pv-date">Last updated: 3 October 2026</p><h2 class="pv-h">The short version</h2><p class="pv-p">PianoMind Studios is a free piano practice app. There are no ads. We do not sell your data. We do not track you around the internet.</p><p class="pv-p">You can play as a <strong>guest</strong>. Then nothing leaves your device.</p><h2 class="pv-h">What we save if you make an account</h2><p class="pv-p"><strong>Your email address</strong>, so you can sign in. If you sign in with Google, Google tells us your email and name.</p><p class="pv-p"><strong>The name you type</strong> in the app.</p><p class="pv-p"><strong>Your practice progress:</strong> scores, XP, levels, streaks, trophies, and settings like your theme and piano sound.</p><p class="pv-p"><strong>Your profile picture</strong>, if you upload one. It is made small before saving. Only you see it.</p><p class="pv-p"><strong>Applause</strong> (only if you use it): your 6-letter friend code, the nicknames you give friends, and the claps you get. A clap is only an icon. No names or messages are ever sent.</p><h2 class="pv-h">Where it is kept</h2><p class="pv-p">On your device, so the app works offline.</p><p class="pv-p">In <strong>Google Firebase</strong>, a service run by Google that stores accounts and data for apps. Safety rules let each person read and change only their own data.</p><h2 class="pv-h">Other services the app talks to</h2><p class="pv-p"><strong>Google Fonts</strong> (the letters you see) and <strong>Firebase</strong> code are loaded from Google. Like any website, Google can see your device's internet address when this happens.</p><p class="pv-p"><strong>GitHub Pages</strong> hosts the app's files.</p><h2 class="pv-h">Who can see your data</h2><p class="pv-p">Only you, when signed in. The app's owner can see the list of accounts in Firebase to keep the app running. We never share it with anyone else.</p><h2 class="pv-h">How to delete everything</h2><p class="pv-p">In the app: <strong>Me → Settings → Delete my account</strong>. This deletes your account, your progress, your friend code and your claps.</p><p class="pv-p">Or open this link and sign in: <a href="https://vanjdroid.github.io/pianomind-studios/piano_mind.html#delete">vanjdroid.github.io/pianomind-studios/piano_mind.html#delete</a></p><p class="pv-p">Guests: <strong>Settings → Delete everything on this device</strong>.</p><p class="pv-p">We keep your data until you delete it.</p><h2 class="pv-h">Kids</h2><p class="pv-p">This app is made for children. Kids, please ask a parent or carer before you make an account. Guest mode needs no account at all.</p></div>`;
+    h += `<h1>🔒 Privacy</h1><div class="card pv"><p class="pv-date">Last updated: 11 October 2026</p><h2 class="pv-h">The short version</h2><p class="pv-p">PianoMind Studios is a free piano practice app. There are no ads. We do not sell your data. We do not track you around the internet.</p><p class="pv-p">You can play as a <strong>guest</strong>. Then nothing leaves your device, unless you choose to send feedback.</p><h2 class="pv-h">What we save if you make an account</h2><p class="pv-p"><strong>Your email address</strong>, so you can sign in. If you sign in with Google, Google tells us your email and name.</p><p class="pv-p"><strong>The name you type</strong> in the app.</p><p class="pv-p"><strong>Your practice progress:</strong> scores, XP, levels, streaks, trophies, and settings like your theme and piano sound.</p><p class="pv-p"><strong>Your profile picture</strong>, if you upload one. It is made small before saving. Only you see it.</p><p class="pv-p"><strong>Applause</strong> (only if you use it): your 6-letter friend code, the nicknames you give friends, and the claps you get. A clap is only an icon. No names or messages are ever sent.</p><h2 class="pv-h">Feedback</h2><p class="pv-p">If you tap <strong>Send Feedback</strong>, we save what you type, the kind of note (bug, idea and so on), the last game you played, and the time.</p><p class="pv-p">We do <strong>not</strong> save your name, email or account with it. So please don't type anything private.</p><p class="pv-p">Only the app's owner can read feedback. Because it has no name on it, we can't find one person's message to delete it later.</p><h2 class="pv-h">Where it is kept</h2><p class="pv-p">On your device, so the app works offline.</p><p class="pv-p">In <strong>Google Firebase</strong>, a service run by Google that stores accounts and data for apps. Safety rules let each person read and change only their own data.</p><h2 class="pv-h">Other services the app talks to</h2><p class="pv-p"><strong>Google Fonts</strong> (the letters you see) and <strong>Firebase</strong> code are loaded from Google. Like any website, Google can see your device's internet address when this happens.</p><p class="pv-p"><strong>GitHub Pages</strong> hosts the app's files.</p><h2 class="pv-h">Who can see your data</h2><p class="pv-p">Only you, when signed in. The app's owner can see the list of accounts in Firebase to keep the app running. We never share it with anyone else.</p><h2 class="pv-h">How to delete everything</h2><p class="pv-p">In the app: <strong>Me → Settings → Delete my account</strong>. This deletes your account, your progress, your friend code and your claps.</p><p class="pv-p">Or open this link and sign in: <a href="https://vanjdroid.github.io/pianomind-studios/piano_mind.html#delete">vanjdroid.github.io/pianomind-studios/piano_mind.html#delete</a></p><p class="pv-p">Guests: <strong>Settings → Delete everything on this device</strong>.</p><p class="pv-p">We keep your data until you delete it.</p><h2 class="pv-h">Kids</h2><p class="pv-p">This app is made for children. Kids, please ask a parent or carer before you make an account. Guest mode needs no account at all.</p></div>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="if(location.hash)history.replaceState(null,'',location.pathname);render(currentUser||isGuest()?'settings':'login')">⬅ Back</button>`;
   }
 
@@ -5344,7 +5587,7 @@ function render(page) {
       h += `<div><div class="ta-mode-name">${TA_MODES[m].name}</div><div class="ta-mode-desc">${TA_MODES[m].desc}</div></div>`;
       h += `<div class="ta-mode-best">${best[m] ? '🏆 ' + best[m] : 'New'}</div></div>`;
     });
-    h += `<p class="caption" style="text-align:center">On a computer, you can press the C–B keys in Note Reading · Easy.</p>`;
+    h += `<p class="caption" style="text-align:center">On a computer: press the C–B keys in Notes · Easy, or the number keys 1, 2, 3… in the other modes.</p>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">⬅ Back</button>`;
   }
 
@@ -5356,9 +5599,10 @@ function render(page) {
     h += `<div class="progress-wrap"><div id="taBar" class="progress-fill" style="width:${(S.taEnd - Date.now()) / (TA_SECONDS * 1000) * 100}%;transition:width 0.1s linear"></div></div>`;
     h += `<div class="ta-stage ${S.taFlash ? 'ta-flash-' + S.taFlash : ''}"><canvas id="taCanvas" width="400" height="260"></canvas></div>`;
     h += `<div class="choice-grid ta-choices${S.taMode === 'notes_easy' ? ' ta-seven' : ''}">`;
-    S.taChoices.forEach(c => {
+    S.taChoices.forEach((c, i) => {
       const label = S.taMode === 'intervals' ? c : prettyNote(c);
-      h += `<button class="btn btn-lilac" onclick="taAnswer('${c}')">${label}</button>`;
+      const keyTag = S.taMode === 'notes_easy' || i > 8 ? '' : `<span class="ta-key">${i + 1}</span>`;
+      h += `<button class="btn btn-lilac" onclick="taAnswer('${c}')">${keyTag}${label}</button>`;
     });
     h += `</div>`;
     h += `<button class="btn btn-coral" style="margin-top:0.6rem" onclick="stopTimeAttack();render('ta_setup')">Stop</button>`;
@@ -5371,7 +5615,7 @@ function render(page) {
     h += `<div class="score-big">${S.taScore}</div>`;
     h += `<p style="text-align:center;margin-top:-0.4rem">correct in ${TA_SECONDS} seconds · ${acc}% accuracy</p>`;
     if (S.taNewBest) { h += `<div class="alert alert-success">🏆 <strong>New best!</strong> ${S.taPrevBest ? 'Your old best was ' + S.taPrevBest + '.' : 'Your first score in this mode.'}</div>`; setTimeout(confetti, 300); }
-    else h += `<div class="alert alert-warning">Your best is <strong>${S.taPrevBest}</strong>. ${S.taPrevBest - S.taScore} more to beat it!</div>`;
+    else h += `<div class="alert alert-warning">Your best is <strong>${S.taPrevBest}</strong>. ${S.taPrevBest - S.taScore + 1} more to beat it!</div>`;
     h += `<div class="card"><div class="why-title">${S.taMisses.length ? '🔍 What you missed' : '🎯 No mistakes!'}</div>`;
     if (S.taMisses.length) {
       h += `<div class="ta-miss ta-miss-head"><span>Right answer</span><span>You said</span></div>`;
@@ -5559,10 +5803,10 @@ function render(page) {
         h += `<div style="display:flex;gap:0.3rem">`;
         var pouchNoteNum = (function(nn) {
           var base = {C:-9,D:-7,E:-5,F:-4,G:-2,A:0,B:2};
-          var letter = nn.charAt(0).toUpperCase();
+          nn = String(nn).split('/')[0];
+          var letter = nn.charAt(0).toUpperCase(), rest = nn.slice(1).toLowerCase();
           var num = base[letter] || 0;
-          if (nn.indexOf('#') > -1) num++;
-          if (nn.toLowerCase().indexOf('b') > -1 && nn.length > 1) num--;
+          for (var c of rest) { if (c === '#' || c === '♯') num++; else if (c === 'x' || c === '𝄪') num += 2; else if (c === 'b' || c === '♭') num--; }
           return num;
         })(note.name);
         h += `<button class="btn btn-blue" style="padding:0.3rem 0.6rem;font-size:0.8rem" onclick="playNote(${pouchNoteNum})">🔊</button>`;
@@ -5583,12 +5827,12 @@ function render(page) {
     h += `<div class="card">`;
     h += `<p class="speech"><strong>Pebbles says:</strong> 'Listen to the melody, then play it back!'</p>`;
     h += `<div class="btn-row">
-            <button class="btn btn-lilac" onclick="S.melodyLevel='beginner';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🌱 Beginner</button>
-            <button class="btn btn-blue" onclick="S.melodyLevel='easy';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">😊 Easy</button>
+            <button class="btn btn-lilac" onclick="S.melodyLevel='beginner';S.melodyTotal=5;S.isDaily=false;S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🌱 Beginner</button>
+            <button class="btn btn-blue" onclick="S.melodyLevel='easy';S.melodyTotal=5;S.isDaily=false;S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">😊 Easy</button>
           </div>`;
     h += `<div class="btn-row">
-            <button class="btn btn-mint" onclick="S.melodyLevel='medium';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🤔 Medium</button>
-            <button class="btn btn-coral" onclick="S.melodyLevel='hard';S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🔥 Hard</button>
+            <button class="btn btn-mint" onclick="S.melodyLevel='medium';S.melodyTotal=5;S.isDaily=false;S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🤔 Medium</button>
+            <button class="btn btn-coral" onclick="S.melodyLevel='hard';S.melodyTotal=5;S.isDaily=false;S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🔥 Hard</button>
           </div>`;
     h += `<p class="caption">Beginner = 2 notes, C-D-E · Easy = 3 notes · Medium = 4 notes · Hard = 5 notes with sharps</p>`;
     h += `</div>`;
@@ -5649,7 +5893,8 @@ function render(page) {
     if (!S.resultScored) {
       S.resultScored = true;
       saveScore('melody', S.melodyLevel, S.melodyScore, S.melodyTotal);
-      finishRound('melody');
+      if (S.isDaily) saveDailyScore(S.melodyScore, S.melodyTotal);
+      finishRound('melody', S.melodyScore, S.melodyTotal);
       if (S.melodyScore === S.melodyTotal) setTimeout(confetti, 300);
     }
     h += `<div class="btn-row">
@@ -5686,7 +5931,7 @@ function render(page) {
     h += `<p style="font-weight:700;font-size:0.9rem;margin:0.3rem 0">Root Note</p>`;
     h += `<div style="display:flex;flex-wrap:wrap;gap:0.3rem">`;
     SCALE_ROOTS.forEach((r,i) => {
-      h += `<div class="round-opt${i===S.scaleRoot?' active':''}" style="flex:0 0 auto;padding:0.4rem 0.6rem;font-size:0.85rem" onclick="S.scaleRoot=${i};stopScalePractice();render('scale_explorer')">${r.name}</div>`;
+      h += `<div class="round-opt${i===S.scaleRoot?' active':''}" style="flex:0 0 auto;padding:0.4rem 0.6rem;font-size:0.85rem" onclick="S.scaleRoot=${i};stopScalePractice();render('scale_explorer')">${spelledName(parseNoteName(r.name))}</div>`;
     });
     h += `</div>`;
     h += `<p style="font-weight:700;font-size:0.9rem;margin:0.5rem 0 0.2rem">Scale Type</p>`;
@@ -5696,7 +5941,7 @@ function render(page) {
     });
     h += `</div>`;
     h += `<div style="text-align:center;margin:0.8rem 0">`;
-    h += `<div style="font-size:1.4rem;font-weight:700;color:#0f2744">${root.name} ${S.scaleType}</div>`;
+    h += `<div style="font-size:1.4rem;font-weight:700;color:#0f2744">${scaleRootLabel(S.scaleRoot, S.scaleType)} ${S.scaleType}</div>`;
     h += `<div style="font-size:1.05rem;font-weight:600;color:#2c5f8a;margin:0.3rem 0">${noteNames.join(' — ')}</div>`;
     h += `<div style="font-size:0.8rem;color:#6b7fa3">${STEP_LABELS[S.scaleType] || ''}</div>`;
     h += `</div>`;
@@ -5999,11 +6244,11 @@ function render(page) {
       h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.5rem" onclick="rhythmStartTapping()">👆 I'm Ready — Tap it!</button>`;
     } else if (phase === 'tap') {
       h += `<p id="rhythmCue" class="speech" style="text-align:center;font-weight:700">Get ready...</p>`;
-      h += `<p id="rhythmTapCount" class="caption" style="text-align:center">0 / ${S.rhythmPattern.length} taps</p>`;
+      h += `<p id="rhythmTapCount" class="caption" style="text-align:center">0 / ${S.rhythmPattern.filter(t => t !== 'rest').length} taps</p>`;
       h += `<button class="btn btn-coral btn-wide" style="font-size:1.6rem;padding:1.6rem;border-radius:30px" onmousedown="rhythmTap()" ontouchstart="event.preventDefault();rhythmTap()">👆 TAP</button>`;
     } else if (phase === 'result') {
       const results = S.rhythmResults || [];
-      const ratingIcon = { perfect:'💯', good:'👍', ok:'🙂', miss:'❌' };
+      const ratingIcon = { perfect:'💯', good:'👍', ok:'🙂', miss:'❌', rest:'·' };
       h += `<div class="score-big">${S.rhythmScore} / ${S.rhythmTotal}</div>`;
       h += `<div style="display:flex;justify-content:center;gap:0.4rem;flex-wrap:wrap;margin:0.5rem 0">`;
       results.forEach(r => { h += `<span style="font-size:1.4rem" title="${r.rating}">${ratingIcon[r.rating]}</span>`; });
@@ -6173,8 +6418,7 @@ function render(page) {
       <p class="speech"><strong>Pebbles says:</strong> 'Pick a grade and test yourself, ${S.name}!'</p></div>`;
     for (let g = 1; g <= 6; g++) {
       const exs = GRADE_EXERCISES.filter(e => e.g === g);
-      const doneKey = '_gradeExDone_' + g;
-      const doneCount = exs.filter(e => localStorage.getItem(doneKey + '_' + e.n)).length;
+      const doneCount = exs.filter(e => gxDone(g, e.n)).length;
       h += `<button class="btn ${g<=2?'btn-blue':g<=4?'btn-mint':'btn-coral'}" style="width:100%;margin:0.15rem 0;text-align:left;padding:0.5rem 0.8rem" onclick="S.exGrade=${g};render('exercise_grade')">
         📝 Grade ${g} <span style="opacity:0.6;font-size:0.8rem">(${doneCount}/${exs.length} done)</span></button>`;
     }
@@ -6189,8 +6433,7 @@ function render(page) {
     h += `<h1>📝 Grade ${g} Exercises</h1>`;
     h += `<div class="card">`;
     exs.forEach(ex => {
-      const doneKey = '_gradeExDone_' + g + '_' + ex.n;
-      const done = localStorage.getItem(doneKey);
+      const done = gxDone(g, ex.n);
       h += `<button class="btn btn-blue" style="width:100%;margin:0.15rem 0;text-align:left;padding:0.5rem 0.8rem" onclick="startExercise(${g},${ex.n})">
         ${ex.icon} Ex ${ex.n}: ${ex.t} ${done ? '✅' : ''}</button>`;
     });
@@ -6218,7 +6461,7 @@ function render(page) {
         h += `<div class="alert alert-warning"><strong>Pebbles says:</strong> '${pick(P.MEH)}'</div>`;
       }
       if (score === total) {
-        localStorage.setItem('_gradeExDone_' + ex.g + '_' + ex.n, '1');
+        gxMark(ex.g, ex.n);
       }
       h += `<div class="btn-row">
               <button class="btn btn-mint" onclick="startExercise(${ex.g},${ex.n})">🔄 Retry</button>
@@ -6400,7 +6643,7 @@ function render(page) {
     }
   }
   if (page === 'chord_play' && !S.chordFeedback) {
-    setTimeout(() => qPlay(() => playChord(S.chordNotes)), 400);
+    setTimeout(() => { if (S.page === 'chord_play' && !S.chordFeedback) qPlay(() => playChord(S.chordNotes)); }, 400);
   }
 
   // Safety-net achievement check — catches any progress made during this render (e.g. level/streak changes)
@@ -6543,9 +6786,12 @@ function copyTaReport() {
 }
 // Keyboard: press C–B during Note Reading · Easy
 document.addEventListener('keydown', function(e) {
-  if (S.page !== 'ta_play' || S.taMode !== 'notes_easy' || !S.taTimer) return;
+  if (S.page !== 'ta_play' || !S.taTimer || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
-  if ('cdefgab'.includes(k) && k.length === 1) { e.preventDefault(); taAnswer(k); }
+  if (S.taMode === 'notes_easy') { if ('cdefgab'.includes(k) && k.length === 1) { e.preventDefault(); taAnswer(k); } return; }
+  // Notes · Hard and Intervals: number keys press the 1st, 2nd, 3rd… answer button
+  const i = '123456789'.indexOf(k);
+  if (k.length === 1 && i >= 0 && S.taChoices && S.taChoices[i] != null) { e.preventDefault(); taAnswer(S.taChoices[i]); }
 });
 
 // Remember what the player struggled with this round (for the teacher report)
@@ -6592,7 +6838,7 @@ function startSongPlay(songId) {
   S.songPlayPage = true;
   markGamePlayed('songs');
   render('song_play');
-  setTimeout(() => startSightReading(), 200);
+  setTimeout(() => { if (S.page === 'song_play') startSightReading(); }, 200);
 }
 
 // ── Exercises ──
@@ -6758,6 +7004,7 @@ function earAnswer(answer) {
 
 // ── Scale playback ──
 function playScale() {
+  markGamePlayed('scales');   // counts for Explorer even without a microphone
   const root = SCALE_ROOTS[S.scaleRoot];
   const intervals = SCALE_TYPES[S.scaleType];
   const ctx = getAudioCtx(); ctx.resume();
@@ -6773,6 +7020,21 @@ function playScale() {
   });
 }
 
+// ── Microphone helper ──
+// Asks once at a time. If the player left the page while the browser was asking, the mic is switched off again.
+let micAsking = false;
+function askMic(pages) {
+  if (micAsking) return Promise.reject('busy');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject('nomic');
+  micAsking = true;
+  return navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    micAsking = false;
+    if (!pages.includes(S.page)) { stream.getTracks().forEach(t => t.stop()); throw 'left'; }
+    return stream;
+  }, err => { micAsking = false; throw err; });
+}
+function micQuietError(err) { return err === 'busy' || err === 'left'; }
+
 // ── Scale Practice (microphone pitch detection) ──
 let micStream = null, micAnalyser = null, micSource = null;
 let stablePc = -1, stableCount = 0, lastDetectTime = 0;
@@ -6780,7 +7042,8 @@ let stablePc = -1, stableCount = 0, lastDetectTime = 0;
 function startScalePractice() {
   const ctx = getAudioCtx();
   ctx.resume();
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+  askMic(['scale_explorer']).then(function(stream) {
+    if (micStream) micStream.getTracks().forEach(function(t) { t.stop(); });
     micStream = stream;
     micSource = ctx.createMediaStreamSource(stream);
     micAnalyser = ctx.createAnalyser();
@@ -6793,9 +7056,10 @@ function startScalePractice() {
     markGamePlayed('scales');
     render('scale_explorer');
     pitchLoop();
-  }).catch(function() {
+  }).catch(function(err) {
+    if (micQuietError(err)) return;
     S.scalePracticing = false;
-    render('scale_explorer');
+    if (S.page === 'scale_explorer') render('scale_explorer');
   });
 }
 
@@ -6983,7 +7247,8 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
 function startHanonPractice() {
   var ctx = getAudioCtx();
   ctx.resume();
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+  askMic(['hanon']).then(function(stream) {
+    if (micStream) micStream.getTracks().forEach(function(t) { t.stop(); });
     micStream = stream;
     micSource = ctx.createMediaStreamSource(stream);
     micAnalyser = ctx.createAnalyser();
@@ -6996,9 +7261,10 @@ function startHanonPractice() {
     stablePc = -1; stableCount = 0;
     render('hanon');
     hanonPitchLoop();
-  }).catch(function() {
+  }).catch(function(err) {
+    if (micQuietError(err)) return;
     S.hanonPracticing = false;
-    render('hanon');
+    if (S.page === 'hanon') render('hanon');
   });
 }
 
@@ -7405,7 +7671,7 @@ function rhythmStartTapping() {
     rhythmTimers.push(id);
   }
   const goId = setTimeout(() => {
-    S.rhythmStartTime = performance.now();
+    S.rhythmStartTime = performance.now() + audioDelayMs();
     const cue = $('rhythmCue');
     if (cue) cue.textContent = 'GO! Tap the rhythm!';
   }, 4 * msPerBeat);
@@ -7438,7 +7704,7 @@ function finishRhythmRound() {
   // Filter out rest notes — rests are auto-correct (player shouldn't tap)
   let tapIdx = 0;
   const results = onsets.map((onset, i) => {
-    if (S.rhythmPattern[i] === 'rest') return { hit: true, rating: 'perfect' };
+    if (S.rhythmPattern[i] === 'rest') return { rest: true, hit: false, rating: 'rest' };
     if (S.rhythmTaps[tapIdx] == null) return { hit: false, rating: 'miss' };
     const err = Math.abs(S.rhythmTaps[tapIdx] - onset);
     tapIdx++;
@@ -7449,12 +7715,12 @@ function finishRhythmRound() {
     return { hit: rating !== 'miss', rating: rating, err: err };
   });
   S.rhythmResults = results;
-  const hitCount = results.filter(r => r.hit).length;
+  const notes = results.filter(r => !r.rest), hitCount = notes.filter(r => r.hit).length;
   S.rhythmScore = hitCount;
-  S.rhythmTotal = results.length;
-  const xpEarned = hitCount * 10 + 25 + (hitCount === results.length ? 50 : 0);
+  S.rhythmTotal = notes.length;
+  const xpEarned = hitCount * 10 + 25 + (hitCount === notes.length ? 50 : 0);
   addXP(xpEarned);
-  saveScore('rhythm', S.rhythmLevel, hitCount, results.length);
+  saveScore('rhythm', S.rhythmLevel, hitCount, notes.length);
   checkAchievements();
   S.rhythmPhase = 'result';
   render('rhythm_play');
@@ -7603,9 +7869,10 @@ function setSfx(on) {
 function startDaily() {
   const nameIn = $('nameIn');
   if (nameIn) S.name = nameIn.value.trim() || 'Player';
-  S.isDaily = true;
+  S.isDaily = true; S.resultScored = false;
   const game = getDailyGame();
-  startGame(game, '2', 10);
+  if (game === 'melody') { S.melodyLevel = 'medium'; S.melodyTotal = 5; S.melodyScore = 0; S.melodyRound = 0; markGamePlayed('melody'); newMelodyRound(); render('melody_play'); }
+  else startGame(game, '2', 10);
 }
 
 // ═══════════════════════════════════
@@ -7620,7 +7887,8 @@ function parseSong(str){
     if(!m)return null;
     let n=SNOTE[m[1]]+(parseInt(m[3])-4)*12-9;
     if(m[2]==='#')n++;if(m[2]==='b')n--;
-    return{n,dur:SDUR[m[4]||'q'],name:m[1]+m[2]+m[3],hit:false,missed:false,h:noteNumToHeight(n)};
+    const h={C:-1,D:-0.5,E:0,F:0.5,G:1,A:1.5,B:2}[m[1]]+(parseInt(m[3])-4)*3.5;
+    return{n,dur:SDUR[m[4]||'q'],name:m[1]+(m[2]==='#'?'♯':m[2]==='b'?'♭':'')+m[3],acc:m[2]==='#'?'sharp':m[2]==='b'?'flat':'natural',hit:false,missed:false,h};
   }).filter(Boolean);
 }
 
@@ -7738,7 +8006,7 @@ const GRADE_EXERCISES=[
 {q:'B to C is a?',c:['Tone','Semitone','Augmented 2nd','Minor 3rd'],a:'Semitone'},
 ]},
 {g:1,n:7,t:'Bars and Barlines',icon:'📐',qs:[
-{q:'What marks the end of a piece?',c:['Single barline','Double barline','Repeat sign','Fermata'],a:'Double barline'},
+{q:'What marks the end of a piece?',c:['Single barline','Final double barline (thin + thick)','Repeat sign','Fermata'],a:'Final double barline (thin + thick)'},
 {q:'How many beats in one bar of 3/4?',c:['2','3','4','6'],a:'3'},
 {q:'A barline divides music into?',c:['Phrases','Bars','Movements','Sections'],a:'Bars'},
 {q:'In 4/4, how many half notes fit in a bar?',c:['1','2','3','4'],a:'2'},
@@ -7991,19 +8259,23 @@ function generateSightReadNotes(levelKey) {
   const pool = lvl.accidentals ? [...whiteOnly, ...PIANO_BLACK.filter(k => k.n >= lvl.range[0] && k.n <= lvl.range[1])] : whiteOnly;
   for (let i = 0; i < lvl.noteCount; i++) {
     const note = pick(pool);
-    notes.push({ n: note.n, name: note.name, h: noteNumToHeight(note.n), hit: false, missed: false });
+    notes.push({ n: note.n, name: note.name.replace('#', '♯'), acc: note.name.length > 1 ? 'sharp' : 'natural', h: noteNumToHeight(note.n), hit: false, missed: false });
   }
   return notes;
 }
 
 let sightReadMicStream = null, sightReadAnalyser = null, sightReadSource = null;
 let sightReadRaf = null, sightReadStablePc = -1, sightReadStableCount = 0;
+// After a hit, the same note must be played again (a gap, or a fresh louder attack) before it counts again
+let srHeldPc = -1, srQuietest = 1;
 let sightReadScrollStart = 0;
 
 function startSightReading() {
+  if (!S.songPlayPage) markGamePlayed('sightread');   // counts for Explorer even without a microphone
   const ctx = getAudioCtx();
   ctx.resume();
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+  askMic(['sightread_level', 'sightread_play', 'song_play']).then(function(stream) {
+    if (sightReadMicStream) sightReadMicStream.getTracks().forEach(t => t.stop());
     sightReadMicStream = stream;
     sightReadSource = ctx.createMediaStreamSource(stream);
     sightReadAnalyser = ctx.createAnalyser();
@@ -8013,13 +8285,14 @@ function startSightReading() {
     S.sightReadIdx = 0;
     S.sightReadScore = 0;
     S.sightReadDone = false;
-    sightReadStablePc = -1; sightReadStableCount = 0;
+    sightReadStablePc = -1; sightReadStableCount = 0; srHeldPc = -1;
     sightReadScrollStart = performance.now();
     markGamePlayed('sightread');
     if (S.songPlayPage) render('song_play');
     else render('sightread_play');
     sightReadLoop();
-  }).catch(function() {
+  }).catch(function(err) {
+    if (micQuietError(err)) return;
     alert('Microphone access is needed for sight-reading!');
   });
 }
@@ -8039,14 +8312,20 @@ function sightReadLoop() {
   const buf = new Float32Array(sightReadAnalyser.fftSize);
   sightReadAnalyser.getFloatTimeDomainData(buf);
   const freq = autoCorrelate(buf, getAudioCtx().sampleRate);
+  let rms = 0; for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i]; rms = Math.sqrt(rms / buf.length);
+  if (srHeldPc >= 0) {
+    srQuietest = Math.min(srQuietest, rms);
+    if (freq <= 60 || rms > srQuietest * 1.8) { srHeldPc = -1; }   // silence, or a new attack: free again
+  }
 
   if (freq > 60 && freq < 1500 && S.sightReadIdx < S.sightReadNotes.length) {
     const noteNum = Math.round(12 * Math.log2(freq / 440));
     const pc = ((noteNum + 9) % 12 + 12) % 12;
+    if (pc !== srHeldPc && srHeldPc >= 0) srHeldPc = -1;
     if (pc === sightReadStablePc) sightReadStableCount++;
     else { sightReadStablePc = pc; sightReadStableCount = 1; }
 
-    if (sightReadStableCount === 3) {
+    if (sightReadStableCount === 3 && pc !== srHeldPc) {
       const target = S.sightReadNotes[S.sightReadIdx];
       const targetPc = ((target.n + 9) % 12 + 12) % 12;
       if (pc === targetPc) {
@@ -8054,6 +8333,7 @@ function sightReadLoop() {
         S.sightReadScore++;
         S.sightReadIdx++;
         sightReadStablePc = -1; sightReadStableCount = 0;
+        srHeldPc = pc; srQuietest = rms;
         sfxCorrect();
         if (S.sightReadIdx >= S.sightReadNotes.length) {
           finishSightReading();
@@ -8138,6 +8418,10 @@ function drawSightReadStaff() {
 
       ctx.fillStyle = color;
       ctx.beginPath(); ctx.ellipse(x, y, 8, 6, -0.15, 0, Math.PI * 2); ctx.fill();
+      if (note.acc === 'sharp' || note.acc === 'flat') {   // draw the sharp or flat sign in front of the note
+        ctx.font = '700 14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(note.acc === 'sharp' ? '♯' : '♭', x - 15, y); ctx.textBaseline = 'alphabetic';
+      }
       ctx.fillStyle = color;
       ctx.font = '600 9px Quicksand';
       ctx.textAlign = 'center';

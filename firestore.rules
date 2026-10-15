@@ -37,6 +37,20 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/codes/$(request.resource.data.code)).data.uid == toUid;
     }
 
+    // Feedback. Anyone can send one short note. Nobody can read, change or delete it from the app.
+    // The owner reads it in the Firebase console. No name, email or account id is stored.
+    match /feedback/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['kind', 'text', 'page', 'at'])
+        && request.resource.data.keys().hasAll(['kind', 'text', 'at'])
+        && request.resource.data.kind in ['bug', 'idea', 'like', 'other']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 3
+        && request.resource.data.text.size() <= 1000
+        && (!('page' in request.resource.data) || (request.resource.data.page is string && request.resource.data.page.size() <= 40))
+        && request.resource.data.at == request.time;
+      allow read, update, delete: if false;
+    }
+
     // Everything else is closed.
   }
 }
