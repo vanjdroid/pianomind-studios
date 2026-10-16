@@ -8459,8 +8459,9 @@ function sightReadLoop() {
   let rms = 0; for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i]; rms = Math.sqrt(rms / buf.length);
   if (srHeldPc >= 0) {
     srQuietest = Math.min(srQuietest, rms);
-    if (freq <= 60 || rms > srQuietest * 1.8) { srHeldPc = -1; }   // silence, or a new attack: free again
+    if (freq <= 60 || rms > srQuietest * 1.8) { srHeldPc = -1; sightReadStablePc = -1; sightReadStableCount = 0; }   // silence, or a new attack: free again
   }
+  if (freq <= 60) { sightReadStablePc = -1; sightReadStableCount = 0; }   // silence: start counting fresh for the next note
 
   if (freq > 60 && freq < 1500 && S.sightReadIdx < S.sightReadNotes.length) {
     const noteNum = Math.round(12 * Math.log2(freq / 440));
