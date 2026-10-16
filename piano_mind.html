@@ -1154,6 +1154,17 @@ body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; 
 .lp-go { font-size:0.8rem; font-weight:700; color:#7a55d6; white-space:nowrap; }
 .lp-hide { margin-top:0.6rem; background:none; border:none; color:#7a55d6; text-decoration:underline; cursor:pointer; font-size:0.85rem; padding:0.2rem; }
 .lp-mini { grid-column:1 / -1; justify-self:start; display:inline-block; margin:0 0 0.8rem; padding:0.35rem 0.8rem; border-radius:999px; background:rgba(255,255,255,0.82); font-size:0.85rem; color:#7a55d6; cursor:pointer; }
+.pf-card { background:rgba(255,255,255,0.82); border:2px solid #b2ebd8; color:#2d2346; border-radius:18px; padding:0.9rem 1rem; margin:0 0 1rem; grid-column:1 / -1; }
+.pf-head { display:flex; justify-content:space-between; align-items:center; gap:0.5rem; }
+.pf-picks { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:0.4rem; margin-top:0.5rem; }
+.pf-pick { display:flex; align-items:center; gap:0.6rem; padding:0.55rem 0.7rem; border-radius:12px; background:rgba(178,235,216,0.25); cursor:pointer; }
+.pf-pick:hover { background:rgba(178,235,216,0.5); }
+.pf-pick > div { flex:1; min-width:0; }
+.pf-ic { font-size:1.4rem; }
+.pf-opts { display:grid; gap:0.45rem; margin-top:0.5rem; }
+.pf-opt { text-align:left; padding:0.75rem 0.9rem; border-radius:14px; border:2px solid rgba(124,111,239,0.3); background:rgba(255,255,255,0.85); font-family:inherit; font-size:1rem; font-weight:600; color:#2d2346; cursor:pointer; }
+.pf-opt.on { border-color:#5b4fd6; background:#e7defc; }
+body.theme-dark .pf-card, body.mode-neon .pf-card { color:#2d2346; }
 .fb-kinds { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.6rem; }
 .fb-kind { font-family:inherit; color:#2d2346; padding:0.45rem 0.75rem; border-radius:999px; border:1px solid #c9d3e6; background:#fff; cursor:pointer; font-size:0.9rem; }
 .fb-kind.on { background:#e7defc; border-color:#a98be8; font-weight:700; }
@@ -1549,6 +1560,93 @@ function fbSend() {
       : 'Could not send it. Check your internet and try again.');
   });
   setTimeout(() => finish(false, 'This is taking too long. Check your internet and try again.'), 12000);
+}
+
+// ═══════════════════════════════════
+//  MY MUSIC PROFILE: a short quiz so the app fits each player
+//  (asks about level, goals and time — not "learning styles", which research doesn't support)
+// ═══════════════════════════════════
+const PROFILE_QS = [
+  { id: 'years', q: 'How long have you played piano?', opts: [['0', '🌱 Just starting'], ['1', 'Less than a year'], ['2', '1 to 3 years'], ['3', 'More than 3 years']] },
+  { id: 'read', q: 'Can you read notes on the staff?', opts: [['0', 'Not yet'], ['1', 'Treble clef only'], ['2', 'Treble and bass clef'], ['3', 'Easily, even ledger lines']] },
+  { id: 'exam', q: 'Are you working towards a music exam?', opts: [['no', 'No'], ['1', 'Yes, Grade 1 or 2'], ['2', 'Yes, Grade 3 to 5'], ['3', 'Yes, Grade 6 to 8']] },
+  { id: 'focus', q: 'What do you want to get better at?', multi: true, hint: 'Pick as many as you like.',
+    opts: [['read', '🎼 Reading notes'], ['theory', '🎶 Intervals & chords'], ['ear', '👂 Hearing music'], ['rhythm', '🥁 Rhythm'], ['memory', '🧠 Remembering tunes']] },
+  { id: 'mins', q: 'How long can you practise most days?', opts: [['5', '5 minutes'], ['10', '10 minutes'], ['15', '15 minutes'], ['20', '20 minutes or more']] },
+  { id: 'fun', q: 'What do you enjoy most?', opts: [['games', '⚔️ Games and bosses'], ['scores', '🏆 Beating my best score'], ['why', '💡 Learning why things work'], ['calm', '🌿 Calm, steady practice']] },
+];
+function profileData() { try { return JSON.parse(localStorage.getItem('pms_profile') || 'null'); } catch(e) { return null; } }
+// 0 = beginner … 3 = advanced, from experience, reading and exam grade
+function profileTier(pr) {
+  const t = Math.round((+pr.years + +pr.read) / 2);
+  return Math.min(3, Math.max(t, pr.exam === 'no' ? 0 : +pr.exam));
+}
+const TIER_NAMES = ['Beginner', 'Getting going', 'Confident', 'Advanced'];
+// Which game and level suits each goal at each tier
+const FOCUS_GAMES = {
+  read:   t => ({ g: 'note', lv: ['0', '1t', '2', '3'][t], n: 10, name: 'Note Reading', icon: '🎼' }),
+  theory: t => ({ g: t === 0 ? 'interval' : 'chord', lv: ['0', '1', '2', '3'][t], n: 10, name: t === 0 ? 'Intervals' : 'Chords', icon: t === 0 ? '🎶' : '🎸' }),
+  ear:    t => ({ g: 'ear', lv: ['0', '1', '2', '3'][t], n: 10, name: 'Ear Training', icon: '👂' }),
+  rhythm: t => ({ g: 'rhythm', lv: ['easy', 'medium', 'hard', 'syncopation'][t], n: 10, name: 'Rhythm Training', icon: '🥁' }),
+  memory: t => ({ g: 'melody', lv: ['beginner', 'easy', 'medium', 'hard'][t], n: 5, name: 'Melody Echo', icon: '🎵' }),
+};
+const LEVEL_WORDS = { '0': 'Beginner', '1': 'Easy', '1t': 'Easy', '2': 'Medium', '3': 'Hard', beginner: 'Beginner', easy: 'Easy', medium: 'Medium', hard: 'Hard', syncopation: 'Syncopation' };
+function profilePicks(pr) {
+  const t = profileTier(pr);
+  let focus = (pr.focus || []).filter(f => FOCUS_GAMES[f]);
+  if (!focus.length) focus = ['read', 'theory', 'ear'];
+  const picks = focus.map(f => FOCUS_GAMES[f](t));
+  if (pr.fun === 'games') picks.push({ g: 'boss', name: 'Boss Battle', icon: '⚔️' });
+  if (pr.fun === 'scores') picks.push({ g: 'ta', lv: t >= 2 ? 'notes_hard' : 'notes_easy', name: 'Time Attack', icon: '⏱️' });
+  if (pr.fun === 'why') picks.push({ g: 'theory', name: 'Music Theory lessons', icon: '📖' });
+  return picks.slice(0, 4);
+}
+function launchPick(i) {
+  const pr = profileData(); if (!pr) return;
+  const k = profilePicks(pr)[i]; if (!k) return;
+  S.resultScored = false; S.isDaily = false;
+  if (k.g === 'boss') render('boss_home');
+  else if (k.g === 'theory') startFromHome('theory');
+  else launchTeacherGame({ g: k.g, lv: k.lv, n: k.n || 10 }, true);
+}
+function profileStart() { S.pq = { step: 0, a: {} }; render('profile'); }
+function profileAnswer(id, val) {
+  const q = PROFILE_QS[S.pq.step];
+  if (q.multi) {
+    const cur = S.pq.a[id] || [];
+    S.pq.a[id] = cur.includes(val) ? cur.filter(x => x !== val) : cur.concat(val);
+    render('profile'); return;
+  }
+  S.pq.a[id] = val; profileNext();
+}
+function profileNext() {
+  if (S.pq.step < PROFILE_QS.length - 1) { S.pq.step++; render('profile'); return; }
+  const a = S.pq.a, pr = { years: a.years || '0', read: a.read || '0', exam: a.exam || 'no', focus: a.focus || [], mins: a.mins || '10', fun: a.fun || 'games', at: localDay(0) };
+  try {
+    localStorage.setItem('pms_profile', JSON.stringify(pr));
+    localStorage.setItem('pms_goal', pr.mins);   // the daily goal follows the answer
+    if (profileTier(pr) >= 2) localStorage.setItem('pms_path_hidden', 'yes');   // the beginner path isn't needed
+    else localStorage.removeItem('pms_path_hidden');
+  } catch(e) {}
+  try { localStorage.setItem('pms_tutorial_done', 'yes'); } catch(e) {}
+  cloudSave();
+  S.pq.done = true; render('profile');
+}
+function profileCardHtml(where) {
+  const pr = profileData();
+  if (!pr) {
+    let dismissed = false; try { dismissed = localStorage.getItem('pms_profile_skip') === 'yes'; } catch(e) {}
+    if (where === 'practice' && dismissed) return '';
+    return `<div class="pf-card"><div class="pf-head"><strong>🎯 Make the app fit you</strong>${where === 'practice' ? `<button class="lp-hide" onclick="try{localStorage.setItem('pms_profile_skip','yes')}catch(e){};render('home')">Not now</button>` : ''}</div>
+      <p class="caption" style="margin:0.25rem 0 0.6rem">Answer 6 quick questions about your piano playing. The app will pick games and levels for you.</p>
+      <button class="btn btn-mint btn-wide" onclick="profileStart()">Take the 1-minute quiz</button></div>`;
+  }
+  const t = profileTier(pr), picks = profilePicks(pr);
+  let x = `<div class="pf-card"><div class="pf-head"><strong>⭐ Picked for you</strong><span class="caption">${TIER_NAMES[t]} · ${pr.mins} min a day</span></div><div class="pf-picks">`;
+  picks.forEach((k, i) => { x += `<div class="pf-pick" onclick="launchPick(${i})"><span class="pf-ic">${k.icon}</span><div><div class="lp-name">${k.name}</div><div class="lp-desc">${k.lv && LEVEL_WORDS[k.lv] ? LEVEL_WORDS[k.lv] : k.g === 'boss' ? '4 bosses to beat' : 'Step-by-step lessons'}</div></div><span class="lp-go">▶</span></div>`; });
+  x += `</div>`;
+  if (where === 'me') x += `<button class="lp-hide" onclick="profileStart()">Retake the quiz</button>`;
+  return x + `</div>`;
 }
 
 // ═══════════════════════════════════
@@ -4585,24 +4683,19 @@ function render(page) {
     h += `<div class="welcome-wrap">`;
     h += `<div class="welcome-card">`;
     h += `<div class="welcome-logo" style="margin-bottom:0.4rem">${appLogo(84)}</div>`;
-    h += `<div class="welcome-title">Piano Mind<br>Studios</div>`;
+    h += `<div class="welcome-title">PianoMind<br>Studios</div>`;
     if (S.deletedMsg) h += `<div class="alert alert-success">${S.deletedMsg}</div>`;
     if (location.hash === '#delete') h += `<div class="alert alert-error">Sign in to delete your account.</div>`;
-    h += `<div class="welcome-sub" style="margin-bottom:1rem">Sign in to save your progress</div>`;
-
+    h += `<div class="welcome-sub" style="margin-bottom:1rem">Piano practice games. Free, no ads.</div>`;
+    // Playing comes first: no account needed
+    h += `<button class="btn btn-mint btn-wide" style="font-size:1.15rem;padding:0.95rem" onclick="startGuest()">▶ Play now, no account needed</button>`;
+    h += `<p style="font-size:0.72rem;color:#526488;margin:0.35rem 0 0">Your progress stays on this device.</p>`;
+    h += `<div style="font-size:0.8rem;color:#526488;margin:1rem 0 0.5rem">— or sign in to save your progress to the cloud —</div>`;
     h += `<button class="btn btn-blue btn-wide" style="margin-bottom:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.5rem" onclick="signInGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" width="20" style="vertical-align:middle"> Sign in with Google</button>`;
-
-    h += `<div style="font-size:0.8rem;color:#526488;margin:0.5rem 0">— or use email —</div>`;
-
     h += `<div style="margin:0.4rem 0"><input id="loginEmail" type="email" placeholder="Email" aria-label="Email" autocomplete="email" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
     h += `<div style="margin:0.4rem 0"><input id="loginPass" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
-
-    h += `<button class="btn btn-mint btn-wide" style="margin-top:0.4rem" onclick="var e=$('loginEmail'),p=$('loginPass');if(e&&p&&e.value&&p.value)signInEmail(e.value,p.value);else alert('Enter email and password')">Sign in / Sign up</button>`;
-
-    h += `<p style="font-size:0.7rem;color:#526488;margin-top:0.8rem">New? Just type your email and password — we'll create your account automatically.</p>`;
-    h += `<div style="font-size:0.8rem;color:#526488;margin:0.9rem 0 0.4rem">— or —</div>`;
-    h += `<button class="btn btn-lilac btn-wide" onclick="startGuest()">Try without an account →</button>`;
-    h += `<p style="font-size:0.7rem;color:#526488;margin-top:0.4rem">Your progress stays on this device. You can sign in later to save it to the cloud.</p>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="var e=$('loginEmail'),p=$('loginPass');if(e&&p&&e.value&&p.value)signInEmail(e.value,p.value);else alert('Enter email and password')">Sign in / Sign up with email</button>`;
+    h += `<p style="font-size:0.7rem;color:#526488;margin-top:0.6rem">New? Type an email and a password (6+ letters) and we'll make your account. Kids: ask a parent first. <a href="#" onclick="render('privacy');return false">Privacy</a></p>`;
     h += `</div>`;
     h += `</div>`;
   }
@@ -4613,10 +4706,10 @@ function render(page) {
     h += `<div class="welcome-card">`;
     h += `<div class="welcome-logo">${appLogo(150)}</div>`;
     h += `<div class="welcome-notes">🎵 🎹 🎶</div>`;
-    h += `<div class="welcome-title">Piano Mind<br>Studios</div>`;
+    h += `<div class="welcome-title">PianoMind<br>Studios</div>`;
     h += `<div class="welcome-sub">Your music practice buddy!</div>`;
     h += `</div>`;
-    h += `<button class="welcome-play" onclick="if(!localStorage.getItem('pms_tutorial_done')){render('tutorial')}else{render('home')}">▶ Play</button>`;
+    h += `<button class="welcome-play" onclick="if(!localStorage.getItem('pms_tutorial_done')){S.firstRun=true;profileStart()}else{render('home')}">▶ Play</button>`;
     h += `</div>`;
   }
 
@@ -4687,7 +4780,7 @@ function render(page) {
     h += `<div class="home-hero-top">`;
     h += avatarHtml(60, true);
     h += `<div style="flex:1;min-width:0">`;
-    h += `<div class="home-hello">Welcome back, <span style="color:var(--accent)">${S.name || 'Student'}</span>!</div>`;
+    h += `<div class="home-hello">${played ? 'Welcome back' : 'Welcome'}${S.name ? `, <span style="color:var(--accent)">${S.name}</span>` : ''}!</div>`;
     h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
     h += `</div></div>`;
     h += `<input id="nameIn" class="home-name" type="text" value="${S.name}" placeholder="Your name..." aria-label="Your name" maxlength="24">`;
@@ -4758,6 +4851,7 @@ function render(page) {
       h += `<div><div style="font-size:1.1rem;font-weight:700">${streak}</div><div style="font-size:0.65rem;color:#526488">Streak</div></div>`;
       h += `</div></div>`;
       checkAchievements();
+      h += profileCardHtml('me');
       h += trophyCabinetHtml();
       items = [
         {go:"startFromHome('stats')",icon:'📊',name:'My Progress',desc:'Line and bar charts showing your improvement over the last 7 days, plus best scores for every game'},
@@ -4783,7 +4877,7 @@ function render(page) {
         {go:"startFromHome('daily')",icon:'⭐',name:'Daily Challenge',desc:'One random game every day — play it, grow a flower in your garden, and keep your streak going'},
       ];
     }
-    if (curTab === 'practice') h += learnPathHtml();
+    if (curTab === 'practice') { h += profileCardHtml('practice'); h += learnPathHtml(); }
     h += `<div class="home-list">`;
     items.forEach(function(t) {
       h += `<div class="home-item" onclick="${t.go}">`;
@@ -5573,6 +5667,34 @@ function render(page) {
     h += `<div class="btn-row"><button class="btn btn-blue" onclick="copyTeachLink()">📋 Copy link</button><button class="btn btn-mint" onclick="launchTeacherGame({g:S.tg,lv:S.tl,n:S.tn})">▶ Try it</button></div>`;
     h += `<p class="caption">Students don't need an account. They play as a guest, and their scores stay on their own device. At the end they can tap "Copy report" to send you their score.</p></div>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='tools';render('home')">⬅ Back</button>`;
+  }
+
+  // ── MY MUSIC PROFILE QUIZ ──
+  else if (page === 'profile') {
+    if (!S.pq) S.pq = { step: 0, a: {} };
+    if (S.pq.done) {
+      const pr = profileData(), t = profileTier(pr);
+      h += `<h1>🎯 Your plan</h1><div class="card"><p class="speech">You're at the <strong>${TIER_NAMES[t]}</strong> stage. Your daily goal is now <strong>${pr.mins} minutes</strong>.</p>`;
+      h += `<p class="caption">These games are on your Practice tab now. You can retake the quiz any time from the Me tab.</p></div>`;
+      h += profileCardHtml('result');
+      h += `<button class="btn btn-mint btn-wide" onclick="S.pq=null;S.firstRun=false;S.homeTab='practice';render('home')">Go to Practice ▶</button>`;
+      if (S.firstRun) h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="S.pq=null;S.firstRun=false;S.tutorialStep=0;render('tutorial')">Take a quick tour of the app first</button>`;
+    } else {
+      const q = PROFILE_QS[S.pq.step], n = PROFILE_QS.length;
+      h += `<h1>🎯 About you</h1>${progressBar(S.pq.step, n)}<div class="card"><p class="caption">Question ${S.pq.step + 1} of ${n}</p><p class="speech" style="font-size:1.1rem"><strong>${q.q}</strong></p>`;
+      if (q.hint) h += `<p class="caption">${q.hint}</p>`;
+      h += `<div class="pf-opts">`;
+      q.opts.forEach(([v, label]) => {
+        const on = q.multi ? (S.pq.a[q.id] || []).includes(v) : S.pq.a[q.id] === v;
+        h += `<button class="pf-opt${on ? ' on' : ''}" aria-pressed="${on}" onclick="profileAnswer('${q.id}','${v}')">${label}</button>`;
+      });
+      h += `</div>`;
+      if (q.multi) h += `<button class="btn btn-mint btn-wide" style="margin-top:0.6rem" onclick="profileNext()">${(S.pq.a[q.id] || []).length ? 'Next' : 'Skip'} ▶</button>`;
+      h += `</div><div class="btn-row">`;
+      if (S.pq.step > 0) h += `<button class="btn btn-lilac" onclick="S.pq.step--;render('profile')">⬅ Back</button>`;
+      h += `<button class="btn btn-lilac" onclick="S.pq=null;S.firstRun=false;try{localStorage.setItem('pms_tutorial_done','yes')}catch(e){};render('home')">${S.firstRun ? 'Skip for now' : 'Cancel'}</button></div>`;
+      h += `<p class="caption" style="text-align:center">🔒 Your answers stay on this device (and in your account if you're signed in).</p>`;
+    }
   }
 
   // ── FEEDBACK ──
@@ -8676,7 +8798,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 
 // ── Start ──
 applyMode();
-document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div class="welcome-title" style="font-size:1.6rem">Piano Mind Studios</div><div style="font-size:0.9rem;color:#526488;margin-top:0.3rem">Loading your music...</div></div></div>';
+document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div class="welcome-title" style="font-size:1.6rem">PianoMind Studios</div><div style="font-size:0.9rem;color:#526488;margin-top:0.3rem">Loading your music...</div></div></div>';
 </script>
 </body>
 </html>
