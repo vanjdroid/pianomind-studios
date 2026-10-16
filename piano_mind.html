@@ -1165,6 +1165,29 @@ body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; 
 .pf-opt { text-align:left; padding:0.75rem 0.9rem; border-radius:14px; border:2px solid rgba(124,111,239,0.3); background:rgba(255,255,255,0.85); font-family:inherit; font-size:1rem; font-weight:600; color:#2d2346; cursor:pointer; }
 .pf-opt.on { border-color:#5b4fd6; background:#e7defc; }
 body.theme-dark .pf-card, body.mode-neon .pf-card { color:#2d2346; }
+body.theme-dark .pf-card .caption, body.mode-neon .pf-card .caption, body.theme-dark .lp .caption, body.mode-neon .lp .caption { color:#526488; }
+body.theme-dark .pf-card .lp-hide, body.mode-neon .pf-card .lp-hide { color:#5b4fd6; }
+.news-pop { position:fixed; inset:0; background:rgba(15,39,68,0.45); display:flex; align-items:center; justify-content:center; z-index:1002; padding:16px; }
+.news-card { background:#fff; color:#2d2346; border-radius:20px; padding:1.3rem; max-width:380px; width:100%; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
+.news-title { margin:0.2rem 0 0.8rem; font-size:1.3rem; }
+.news-card .btn { color:#2c3e50 !important; } .news-card .btn-lilac { background:#c1c3ea !important; } .news-card .btn-mint { background:#b2ebd8 !important; }
+body.mode-neon .news-card .btn { background:#fff !important; border-color:#5b4fd6 !important; text-shadow:none; }
+.news-item { display:flex; gap:0.7rem; text-align:left; margin-bottom:0.7rem; font-size:0.92rem; line-height:1.35; }
+.news-item span { font-size:1.4rem; }
+.wk-stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:0.4rem; margin-bottom:0.8rem; }
+.wk-stats div { background:var(--card-bg, rgba(255,255,255,0.35)); border-radius:14px; padding:0.6rem 0.3rem; text-align:center; }
+.wk-stats b { display:block; font-size:1.3rem; }
+.wk-stats span { font-size:0.7rem; color:#526488; }
+body.theme-dark .wk-stats span, body.mode-neon .wk-stats span { color:#c3cbe6; }
+.wk-bars { display:flex; align-items:flex-end; gap:0.35rem; height:120px; padding-top:1rem; }
+.wk-bar { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; }
+.wk-fill { width:100%; background:rgba(124,111,239,0.45); border-radius:6px 6px 2px 2px; }
+.wk-fill.hit { background:#4CAF50; }
+.wk-bar span { font-size:0.68rem; margin-top:0.25rem; }
+.wk-bar em { position:absolute; top:-0.9rem; font-size:0.65rem; font-style:normal; opacity:0.75; }
+.wk-chips { display:flex; flex-wrap:wrap; gap:0.35rem; margin:0.3rem 0 0.4rem; }
+.wk-chip { background:rgba(124,111,239,0.14); border-radius:999px; padding:0.25rem 0.65rem; font-size:0.82rem; font-weight:600; }
+.wk-chip.warn { background:rgba(247,176,166,0.45); }
 .fb-kinds { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.6rem; }
 .fb-kind { font-family:inherit; color:#2d2346; padding:0.45rem 0.75rem; border-radius:999px; border:1px solid #c9d3e6; background:#fff; cursor:pointer; font-size:0.9rem; }
 .fb-kind.on { background:#e7defc; border-color:#a98be8; font-weight:700; }
@@ -1647,6 +1670,93 @@ function profileCardHtml(where) {
   x += `</div>`;
   if (where === 'me') x += `<button class="lp-hide" onclick="profileStart()">Retake the quiz</button>`;
   return x + `</div>`;
+}
+
+// ═══════════════════════════════════
+//  WHAT'S NEW: shown once to players who used the app before an update
+// ═══════════════════════════════════
+const NEWS_ID = 'quiz-weekly-1';
+function maybeShowNews() {
+  let seen = '', played = 0;
+  try { seen = localStorage.getItem('pms_news_seen') || ''; played = loadScores()._played || 0; } catch(e) {}
+  if (seen === NEWS_ID) return;
+  // brand-new players get the quiz anyway, so they don't need the news
+  if (!played) { try { localStorage.setItem('pms_news_seen', NEWS_ID); } catch(e) {} return; }
+  if (document.querySelector('.news-pop')) return;
+  const el = document.createElement('div');
+  el.className = 'news-pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'newsTitle');
+  el.innerHTML = `<div class="news-card"><div style="font-size:2rem">✨</div><h2 id="newsTitle" class="news-title">What's new</h2>
+    <div class="news-item"><span>🎯</span><div><strong>Make the app fit you.</strong> Answer 6 quick questions and get games picked for your level.</div></div>
+    <div class="news-item"><span>📋</span><div><strong>Weekly report.</strong> See your week in one place, and send it to your teacher or a parent.</div></div>
+    <div class="news-item"><span>⏱️</span><div><strong>Daily goal.</strong> Your practice minutes now count up on the home screen.</div></div>
+    <button class="btn btn-mint btn-wide" onclick="newsClose();profileStart()">Take the quiz</button>
+    <button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="newsClose()">Maybe later</button></div>`;
+  document.body.appendChild(el);
+  const first = el.querySelector('button'); if (first) first.focus();
+}
+function newsClose() {
+  try { localStorage.setItem('pms_news_seen', NEWS_ID); } catch(e) {}
+  const el = document.querySelector('.news-pop'); if (el) el.remove();
+}
+
+// ═══════════════════════════════════
+//  WEEKLY REPORT: the last 7 days in one place, ready to send to a teacher or parent
+// ═══════════════════════════════════
+const GAME_LABELS = { ear: 'Ear Training', note: 'Note Reading', interval: 'Intervals', chord: 'Chords', melody: 'Melody Echo', rhythm: 'Rhythm',
+  mystery: 'Mystery Melody', boss: 'Boss Battle', sightread: 'Sight Reading', daily: 'Daily Challenge', theory: 'Theory', exercises: 'Grade Exercises', hanon: 'Hanon' };
+function weeklyData() {
+  const days = getLast7Days(), daily = loadDaily(), prac = practiceData(), sc = loadScores();
+  const games = {}, firstHalf = [], secondHalf = [];
+  let activeDays = 0, totalGames = 0, mins = 0;
+  days.forEach((d, i) => {
+    const day = daily[d], m = Math.floor((prac[d] || 0) / 60);
+    mins += m;
+    let n = 0;
+    if (day) {
+      Object.keys(day.games || {}).forEach(g => { games[g] = (games[g] || 0) + day.games[g]; n += day.games[g]; });
+      (day.scores || []).forEach(v => (i < 4 ? firstHalf : secondHalf).push(v));
+    }
+    totalGames += n;
+    if (n || m) activeDays++;
+  });
+  const avg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null;
+  const all = firstHalf.concat(secondHalf);
+  // personal bests set this week
+  const weekStart = days[0], bests = [];
+  Object.keys(sc).forEach(k => {
+    const r = sc[k];
+    if (k.startsWith('_') || !r || typeof r !== 'object' || !r.date || r.date < weekStart) return;
+    const [g, ...rest] = k.split('_'), lv = rest.join('_');
+    const lvName = g === 'boss' && BOSSES[+lv] ? BOSSES[+lv].name : (LEVEL_WORDS[lv] || lv.replace(/_/g, ' '));
+    bests.push({ name: (GAME_LABELS[g] || g) + ' · ' + lvName, score: r.best + '/' + r.total });
+  });
+  const tricky = Object.entries(loadPouch()).sort((a, b) => b[1].count - a[1].count).slice(0, 5).map(([k, v]) => ({ note: prettyNote(k.split('/')[0]), count: v.count }));
+  return { days, activeDays, totalGames, mins, games, avg: avg(all), early: avg(firstHalf), late: avg(secondHalf), bests, tricky,
+    streak: (sc._lastDay === localDay(0) || sc._lastDay === localDay(1)) ? (sc._streak || 0) : 0, goal: practiceGoal(), daily, prac };
+}
+function weeklyText() {
+  const w = weeklyData(), name = S.name || 'Student';
+  const nice = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  let t = `PianoMind Studios — weekly report for ${name}\n${nice(w.days[0])} to ${nice(w.days[6])}\n\n`;
+  t += `Practised on ${w.activeDays} of 7 days · ${w.mins} minutes · ${w.totalGames} games\n`;
+  t += `Streak: ${w.streak} day${w.streak === 1 ? '' : 's'}\n`;
+  if (w.avg !== null) t += `Average score: ${w.avg}%` + (w.early !== null && w.late !== null ? ` (start of week ${w.early}%, end of week ${w.late}%)` : '') + `\n`;
+  const g = Object.entries(w.games).sort((a, b) => b[1] - a[1]);
+  if (g.length) t += `\nGames played:\n` + g.map(([k, n]) => `- ${GAME_LABELS[k] || k}: ${n}`).join('\n') + `\n`;
+  if (w.bests.length) t += `\nNew best scores:\n` + w.bests.map(b => `- ${b.name}: ${b.score}`).join('\n') + `\n`;
+  if (w.tricky.length) t += `\nTricky notes to practise: ` + w.tricky.map(x => x.note).join(', ') + `\n`;
+  return t;
+}
+function copyWeekly() {
+  const text = weeklyText();
+  const done = () => { const b = $('wkCopy'); if (b) b.textContent = '✅ Copied! Paste it in a message'; };
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => prompt('Copy this:', text));
+  else prompt('Copy this:', text);
+}
+function shareWeekly() {
+  const text = weeklyText();
+  if (navigator.share) navigator.share({ title: 'My PianoMind week', text: text }).catch(() => {});
+  else copyWeekly();
 }
 
 // ═══════════════════════════════════
@@ -4861,6 +4971,7 @@ function render(page) {
       const apNew = currentUser && !apOff() ? apNewCount() : 0;
       items.push({go:"render('applause')",icon:'👏',name:'Applause' + (apNew ? ' · ' + apNew + ' new' : ''),desc:currentUser ? 'Add friends with a code and send each other a clap. Only an icon is sent — no names, no messages' : 'Sign in to send claps to friends'});
       if (showPebbles()) items.push({go:"startFromHome('wardrobe')",icon:'👗',name:'Pebbles Wardrobe',desc:'Six outfits for your dino — Classic, Cool, Party, Pirate, Space, and Winter'});
+      items.splice(1, 0, {go:"render('weekly')",icon:'📋',name:'My Week',desc:'Your last 7 days: minutes, games, best scores and tricky notes. Copy it to send to your teacher'});
       items.push({go:"render('install')",icon:'📲',name:'Get the App',desc:'Put PianoMind on your phone, tablet or computer — then it opens even without internet'});
       items.push({go:"fbOpen()",icon:'💬',name:'Send Feedback',desc:'Found a bug or have an idea? Tell us. No name or email is sent'});
       items.push({go:"startFromHome('settings')",icon:'⚙️',name:'Settings',desc:'Switch between Cartoon, Smooth, and Neon modes — change themes, toggle Pebbles, and more'});
@@ -5667,6 +5778,35 @@ function render(page) {
     h += `<div class="btn-row"><button class="btn btn-blue" onclick="copyTeachLink()">📋 Copy link</button><button class="btn btn-mint" onclick="launchTeacherGame({g:S.tg,lv:S.tl,n:S.tn})">▶ Try it</button></div>`;
     h += `<p class="caption">Students don't need an account. They play as a guest, and their scores stay on their own device. At the end they can tap "Copy report" to send you their score.</p></div>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='tools';render('home')">⬅ Back</button>`;
+  }
+
+  // ── WEEKLY REPORT ──
+  else if (page === 'weekly') {
+    const w = weeklyData();
+    h += `<h1>📋 My week</h1>`;
+    h += `<div class="wk-stats"><div><b>${w.activeDays}/7</b><span>days practised</span></div><div><b>${w.mins}</b><span>minutes</span></div><div><b>${w.totalGames}</b><span>games</span></div><div><b>${w.streak}🔥</b><span>day streak</span></div></div>`;
+    // one bar per day: minutes against the daily goal
+    h += `<div class="card"><div class="section-label" style="margin-top:0">Minutes each day (goal: ${w.goal})</div><div class="wk-bars">`;
+    const maxM = Math.max(w.goal, ...w.days.map(d => Math.floor((w.prac[d] || 0) / 60)));
+    w.days.forEach(d => {
+      const m = Math.floor((w.prac[d] || 0) / 60), dt = new Date(d + 'T12:00:00');
+      const label = dt.toLocaleDateString('en-GB', { weekday: 'short' });
+      h += `<div class="wk-bar" title="${d}: ${m} min"><div class="wk-fill${m >= w.goal ? ' hit' : ''}" style="height:${Math.max(4, Math.round(m / maxM * 100))}%"></div><span>${label}</span><em>${m}</em></div>`;
+    });
+    h += `</div></div>`;
+    h += `<div class="card">`;
+    if (w.avg !== null) {
+      const trend = w.early !== null && w.late !== null ? (w.late > w.early + 2 ? ` 📈 Up from ${w.early}% to ${w.late}%` : w.late < w.early - 2 ? ` Start of week ${w.early}%, end ${w.late}%` : ' Steady all week') : '';
+      h += `<p class="speech"><strong>Average score: ${w.avg}%</strong><br><span class="caption">${trend}</span></p>`;
+    } else h += `<p class="speech">No scored games this week yet. Play one and it shows up here!</p>`;
+    const g = Object.entries(w.games).sort((a, b) => b[1] - a[1]);
+    if (g.length) h += `<div class="section-label">Games played</div><div class="wk-chips">` + g.map(([k, n]) => `<span class="wk-chip">${GAME_LABELS[k] || k} · ${n}</span>`).join('') + `</div>`;
+    if (w.bests.length) h += `<div class="section-label">New best scores 🏆</div><ul class="pv-list">` + w.bests.map(b => `<li>${b.name}: <strong>${b.score}</strong></li>`).join('') + `</ul>`;
+    if (w.tricky.length) h += `<div class="section-label">Tricky notes</div><div class="wk-chips">` + w.tricky.map(x => `<span class="wk-chip warn">${x.note} ×${x.count}</span>`).join('') + `</div><p class="caption"><a href="#" onclick="render('pouch');return false">Practise them in Tricky Notes →</a></p>`;
+    h += `</div>`;
+    h += `<div class="btn-row"><button id="wkCopy" class="btn btn-mint" onclick="copyWeekly()">📋 Copy report</button>${navigator.share ? `<button class="btn btn-blue" onclick="shareWeekly()">📤 Share</button>` : ''}</div>`;
+    h += `<p class="caption" style="text-align:center">Send it to your teacher or a parent. Only what you see here is copied. Nothing is sent by the app.</p>`;
+    h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='me';render('home')">⬅ Back</button>`;
   }
 
   // ── MY MUSIC PROFILE QUIZ ──
@@ -6860,6 +7000,7 @@ function render(page) {
   // Safety-net achievement check — catches any progress made during this render (e.g. level/streak changes)
   checkAchievements();
   a11yEnhance(page);
+  if (page === 'home') setTimeout(maybeShowNews, 600);
 }
 
 // ── Accessibility: make clickable boxes work with a keyboard and screen readers ──
