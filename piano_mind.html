@@ -284,7 +284,7 @@ h1 {
 /* ── Caption ── */
 .caption {
   font-size: 0.82rem;
-  color: #6b7fa3;
+  color: #526488;
   margin: 0.4rem 0;
 }
 
@@ -429,7 +429,7 @@ canvas {
 .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin:0.6rem 0; }
 .stat-card { background:rgba(255,255,255,0.4); border-radius:16px; padding:0.8rem; text-align:center; }
 .stat-num { font-size:1.8rem; font-weight:700; color:#0f2744; }
-.stat-label { font-size:0.78rem; color:#6b7fa3; font-weight:600; }
+.stat-label { font-size:0.78rem; color:#526488; font-weight:600; }
 /* Wardrobe */
 .outfit-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin:0.6rem 0; }
 .outfit-card { background:rgba(255,255,255,0.3); border-radius:16px; padding:0.6rem; text-align:center;
@@ -461,16 +461,16 @@ canvas {
 .xp-card { padding: 0.9rem 1rem; }
 .xp-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; }
 .xp-level { font-weight:700; color:#0f2744; font-size:1.05rem; }
-.xp-amount { font-size:0.78rem; color:#6b7fa3; font-weight:600; }
-.xp-total { text-align:center; font-size:0.78rem; color:#6b7fa3; font-weight:600; margin-top:0.3rem; }
+.xp-amount { font-size:0.78rem; color:#526488; font-weight:600; }
+.xp-total { text-align:center; font-size:0.78rem; color:#526488; font-weight:600; margin-top:0.3rem; }
 
 /* ── Section labels (home tabs, settings) ── */
-.section-label { font-size:0.75rem; font-weight:700; color:#6b7fa3; text-transform:uppercase; letter-spacing:1.5px; margin:0.8rem 0 0.2rem 0.3rem; }
+.section-label { font-size:0.75rem; font-weight:700; color:#526488; text-transform:uppercase; letter-spacing:1.5px; margin:0.8rem 0 0.2rem 0.3rem; }
 
 /* ── Home page tabs ── */
 .home-tabs { display:flex; gap:0; margin:0.6rem 0 0; border-bottom:2px solid rgba(0,0,0,0.08); }
-.home-tab { flex:1; text-align:center; padding:0.6rem 0.3rem; font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s; color:#6b7fa3; border-bottom:3px solid transparent; margin-bottom:-2px; }
-.home-tab.active { color:#0f2744; border-bottom-color:#7c6fef; }
+.home-tab { flex:1; text-align:center; padding:0.6rem 0.3rem; font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s; color:#526488; border-bottom:3px solid transparent; margin-bottom:-2px; }
+.home-tab.active { color:#0f2744; border-bottom-color:#5b4fd6; }
 
 /* ── Pulse for active-streak button ── */
 @keyframes pulseBtn {
@@ -486,7 +486,7 @@ canvas {
 .ach-card.locked { opacity:0.5; filter:grayscale(0.8); }
 .ach-icon { font-size:1.6rem; }
 .ach-name { font-size:0.7rem; font-weight:700; margin-top:0.2rem; }
-.ach-desc { font-size:0.6rem; color:#6b7fa3; }
+.ach-desc { font-size:0.6rem; color:#526488; }
 
 /* ── Rhythm training ── */
 .rhythm-staff { display:flex; justify-content:center; align-items:flex-end; gap:0.7rem; flex-wrap:wrap; min-height:70px; margin:0.6rem 0; }
@@ -504,6 +504,42 @@ h1 {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+
+
+/* ── Accessibility ── */
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+:focus-visible { outline:3px solid #5b4fd6; outline-offset:2px; }
+body.theme-dark :focus-visible, body.mode-neon :focus-visible { outline-color:#ffffff; }
+.btn-row { flex-wrap:wrap; }
+.lp-hide { min-height:28px; padding:0.3rem 0.5rem; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+}
+
+/* ═══ Dark looks (Galaxy theme + Neon style): make every bit of text readable ═══ */
+body.theme-dark h1, body.mode-neon h1 { background: linear-gradient(135deg, #f4efff, var(--accent)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+body.theme-dark .speech strong, body.theme-dark .score-big, body.theme-dark .note-display, body.theme-dark .stat-num,
+body.theme-dark .home-tab.active, body.theme-dark .rhythm-note, body.theme-dark .pv-h, body.theme-dark .ap-code, body.theme-dark .welcome-title,
+body.mode-neon .score-big, body.mode-neon .note-display, body.mode-neon .stat-num, body.mode-neon .xp-level, body.mode-neon .home-tab.active,
+body.mode-neon .rhythm-note, body.mode-neon .pv-h, body.mode-neon .ap-code, body.mode-neon .welcome-title { color:#f4efff; }
+body.theme-dark .caption, body.theme-dark .stat-label, body.theme-dark .xp-amount, body.theme-dark .xp-total, body.theme-dark .section-label,
+body.theme-dark .home-tab, body.theme-dark .ach-desc, body.theme-dark .home-sub, body.theme-dark .home-stat-l, body.theme-dark .home-item-desc,
+body.theme-dark .side-logo span, body.theme-dark .side-link, body.theme-dark .side-level, body.theme-dark .ta-mode-desc, body.theme-dark .ta-label,
+body.theme-dark .ta-miss-head, body.theme-dark .inst-desc, body.theme-dark .tc-title span, body.theme-dark .tc-plaque-l, body.theme-dark .tc-locked .tc-name,
+body.theme-dark .tc-soon, body.theme-dark .pv-date, body.theme-dark .mm-why span, body.theme-dark .ap-del, body.theme-dark .vibe-clear,
+body.mode-neon .caption, body.mode-neon .stat-label, body.mode-neon .xp-amount, body.mode-neon .xp-total, body.mode-neon .home-tab,
+body.mode-neon .home-sub, body.mode-neon .home-stat-l, body.mode-neon .home-item-desc, body.mode-neon .ta-mode-desc, body.mode-neon .ta-label,
+body.mode-neon .inst-desc, body.mode-neon .tc-plaque-l, body.mode-neon .pv-date { color:#c3cbe6; }
+/* inline colours written straight into the page */
+body.theme-dark #app [style*="color:#0f2744"], body.mode-neon #app [style*="color:#0f2744"],
+body.theme-dark #app [style*="color:#2c5f8a"], body.mode-neon #app [style*="color:#2c5f8a"] { color:#f4efff !important; }
+body.theme-dark #app [style*="color:#526488"], body.mode-neon #app [style*="color:#526488"] { color:#c3cbe6 !important; }
+body.theme-dark .btn-mint, body.theme-dark .btn-coral, body.theme-dark .btn-pink { color:#2c3e50; }
+body.theme-dark .streak-banner { background:rgba(255,255,255,0.12); color:#f4efff; }
+body.theme-dark #app a, body.mode-neon #app a { color:#cfc3ff; }
+/* things that keep their own light background stay dark-on-light */
+body.theme-dark .lp, body.theme-dark .lp-mini, body.mode-neon .lp, body.mode-neon .lp-mini { color:#2d2346; }
 
 /* ── Card hover glow + staggered entrance ── */
 .card { transition: all 0.3s ease; animation: slideUp 0.4s ease backwards; }
@@ -545,7 +581,7 @@ h1 {
    ═══════════════════════════════ */
 body.mode-smooth {
   background-color: #f0f0f0;
-  background-image: url('bg_smooth.png');
+  background-image: url('bg_smooth.jpg');
   color: #333;
 }
 body.mode-smooth h1 { color: #444; }
@@ -791,13 +827,13 @@ body.on-home .home-sheet > * { max-width:860px; margin-left:auto !important; mar
 .home-hero-top { display:flex; align-items:center; gap:0.8rem; }
 .home-hero .pebbles { margin:0; }
 .home-hello { font-size:1.2rem; font-weight:700; }
-.home-sub { font-size:0.78rem; color:#6b7fa3; }
+.home-sub { font-size:0.78rem; color:#526488; }
 .home-name { margin-top:0.5rem; font-family:inherit; font-size:0.85rem; padding:0.35rem 0.6rem; border:1px solid rgba(0,0,0,0.08); border-radius:8px; width:100%; background:rgba(255,255,255,0.4); color:inherit; }
 .home-stats { display:flex; border-bottom:1px solid rgba(0,0,0,0.06); }
 .home-stat { flex:1; padding:0.5rem; text-align:center; border-right:1px solid rgba(0,0,0,0.06); }
 .home-stat:last-child { border-right:none; }
 .home-stat-v { font-size:1.1rem; font-weight:700; }
-.home-stat-l { font-size:0.65rem; color:#6b7fa3; }
+.home-stat-l { font-size:0.65rem; color:#526488; }
 .home-xp { padding:0.4rem 0.8rem; border-bottom:1px solid rgba(0,0,0,0.06); }
 .home-sheet .home-tabs { margin:0; border-bottom:2px solid rgba(0,0,0,0.06); }
 .home-section-title { display:none; }
@@ -807,7 +843,7 @@ body.on-home .home-sheet > * { max-width:860px; margin-left:auto !important; mar
 .home-item:hover { background:rgba(255,255,255,0.25); }
 .home-item-icon { font-size:1.5rem; line-height:1; }
 .home-item-name { font-weight:700; font-size:0.95rem; }
-.home-item-desc { font-size:0.78rem; color:#6b7fa3; line-height:1.4; margin-top:0.1rem; }
+.home-item-desc { font-size:0.78rem; color:#526488; line-height:1.4; margin-top:0.1rem; }
 @media (max-width: 600px) {
   body.on-home .card.home-sheet { border-radius:20px 20px 0 0; }
 }
@@ -830,16 +866,16 @@ body.on-home .home-sheet > * { max-width:860px; margin-left:auto !important; mar
     box-shadow:4px 0 24px rgba(0,0,0,0.05);
   }
   .side-logo { display:flex; align-items:center; gap:0.6rem; padding:0 0.4rem 1.2rem; cursor:pointer; font-weight:700; font-size:1.15rem; line-height:1.1; color:var(--accent); }
-  .side-logo span { font-size:0.85rem; color:#6b7fa3; letter-spacing:2px; text-transform:uppercase; }
+  .side-logo span { font-size:0.85rem; color:#526488; letter-spacing:2px; text-transform:uppercase; }
   .side-logo .pebbles { margin:0; }
-  .side-link { display:flex; align-items:center; gap:0.7rem; padding:0.7rem 0.9rem; border-radius:14px; cursor:pointer; font-weight:700; font-size:0.95rem; color:#6b7fa3; transition:background 0.15s, color 0.15s; }
+  .side-link { display:flex; align-items:center; gap:0.7rem; padding:0.7rem 0.9rem; border-radius:14px; cursor:pointer; font-weight:700; font-size:0.95rem; color:#526488; transition:background 0.15s, color 0.15s; }
   .side-link:hover { background:rgba(255,255,255,0.45); color:inherit; }
   .side-link.active { background:color-mix(in srgb, var(--accent) 16%, transparent); color:var(--accent); }
   .side-icon { width:1.4rem; text-align:center; font-size:1.1rem; }
   .side-sep { height:1px; background:rgba(0,0,0,0.07); margin:0.6rem 0.4rem; }
   .side-foot { margin-top:auto; padding:0.9rem; border-radius:16px; background:rgba(255,255,255,0.35); }
   .side-user { font-weight:700; font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .side-level { font-size:0.75rem; color:#6b7fa3; font-weight:600; }
+  .side-level { font-size:0.75rem; color:#526488; font-weight:600; }
 
   /* Main area fills the rest of the screen */
   body.with-shell #app, body.on-home.with-shell #app {
@@ -963,10 +999,10 @@ body.no-anim .page, body.no-anim .card { animation:none !important; }
 .ta-mode { cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:1rem; }
 .ta-mode:hover { transform:translateY(-2px); }
 .ta-mode-name { font-weight:700; font-size:1.05rem; }
-.ta-mode-desc { font-size:0.85rem; color:#6b7fa3; }
+.ta-mode-desc { font-size:0.85rem; color:#526488; }
 .ta-mode-best { font-weight:700; white-space:nowrap; }
 .ta-top { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:0.4rem; }
-.ta-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#6b7fa3; }
+.ta-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#526488; }
 .ta-clock, .ta-score { font-size:2.6rem; font-weight:700; line-height:1; }
 .ta-clock.ta-low { color:#e5484d; animation: taPulse 0.5s ease-in-out infinite alternate; }
 @keyframes taPulse { to { transform:scale(1.08); } }
@@ -977,7 +1013,7 @@ body.no-anim .page, body.no-anim .card { animation:none !important; }
 .ta-choices.ta-seven { grid-template-columns:repeat(7, 1fr); }
 .ta-choices .btn { font-size:1.15rem; }
 .ta-miss { display:grid; grid-template-columns:1fr 1fr; padding:0.4rem 0.2rem; border-bottom:1px solid rgba(0,0,0,0.06); }
-.ta-miss-head { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#6b7fa3; }
+.ta-miss-head { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#526488; }
 @media (max-width: 600px) { .ta-choices.ta-seven { grid-template-columns:repeat(4, 1fr); } }
 
 /* ── Instrument picker ── */
@@ -987,11 +1023,11 @@ body.no-anim .page, body.no-anim .card { animation:none !important; }
 .inst-card.active { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); }
 .inst-icon { font-size:1.8rem; }
 .inst-name { font-weight:700; font-size:0.9rem; margin-top:0.2rem; }
-.inst-desc { font-size:0.72rem; color:#6b7fa3; line-height:1.3; }
+.inst-desc { font-size:0.72rem; color:#526488; line-height:1.3; }
 body.mode-neon .inst-card { background:#111; }
 body.mode-neon .inst-card.active { border-color:#00c8ff; background:rgba(0,200,255,0.1); }
 body.mode-smooth .inst-card { background:#fff; border-color:#e3e3e3; }
-body.mode-smooth .inst-card.active { border-color:#7c6fef; }
+body.mode-smooth .inst-card.active { border-color:#5b4fd6; }
 
 /* ── Profile picture ── */
 .user-avatar { display:block; border-radius:50%; object-fit:cover; flex-shrink:0; box-shadow:0 3px 12px rgba(20,18,60,0.2); }
@@ -1010,11 +1046,11 @@ body.mode-neon .av-pick.active, body.mode-neon .av-color.active { border-color:#
 /* ── Trophy Cabinet ── */
 .trophy-cabinet { padding:0.9rem 1rem; border-bottom:1px solid rgba(0,0,0,0.06); }
 .tc-title { font-weight:700; font-size:1.05rem; display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; }
-.tc-title span { font-size:0.8rem; color:#6b7fa3; }
+.tc-title span { font-size:0.8rem; color:#526488; }
 .tc-plaques { display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:0.5rem; margin-bottom:0.8rem; }
 .tc-plaque { text-align:center; padding:0.5rem 0.3rem; border-radius:12px; background:rgba(255,255,255,0.4); }
 .tc-plaque-v { font-weight:700; font-size:1.05rem; }
-.tc-plaque-l { font-size:0.65rem; color:#6b7fa3; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+.tc-plaque-l { font-size:0.65rem; color:#526488; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
 .tc-shelf { display:grid; grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); gap:0.9rem 0.5rem; padding:0.6rem 0.4rem 0.9rem;
   background:linear-gradient(to bottom, transparent calc(100% - 10px), rgba(140,95,60,0.45) calc(100% - 10px));
   border-radius:0 0 8px 8px; }
@@ -1022,12 +1058,12 @@ body.mode-neon .av-pick.active, body.mode-neon .av-color.active { border-color:#
 .tc-icon { font-size:2rem; line-height:1.2; filter:drop-shadow(0 3px 4px rgba(0,0,0,0.15)); }
 .tc-name { font-size:0.68rem; font-weight:700; line-height:1.25; margin-top:0.15rem; }
 .tc-locked .tc-icon { opacity:0.35; filter:grayscale(1); }
-.tc-locked .tc-name { color:#6b7fa3; font-weight:600; }
-.tc-soon { font-size:0.75rem; color:#6b7fa3; margin-top:0.6rem; text-align:center; }
+.tc-locked .tc-name { color:#526488; font-weight:600; }
+.tc-soon { font-size:0.75rem; color:#526488; margin-top:0.6rem; text-align:center; }
 .level-card { background:var(--card-bg, rgba(255,255,255,0.55)); border:1px solid rgba(255,255,255,0.7); border-radius:16px; padding:0.8rem 1rem; margin-bottom:0.6rem; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
 .level-card:active { transform:scale(0.98); }
 body.mode-neon .level-card { background:#0e0e0e; border-color:rgba(0,200,255,0.3); }
-.pv-date { font-size:0.8rem; color:#6b7fa3; margin:0 0 0.4rem; }
+.pv-date { font-size:0.8rem; color:#526488; margin:0 0 0.4rem; }
 .pv-h { font-size:1.02rem; margin:0.9rem 0 0.3rem; color:#0f2744; }
 .pv-p, .pv-list li { font-size:0.92rem; line-height:1.55; margin:0.3rem 0; }
 .pv a { word-break:break-all; }
@@ -1037,10 +1073,13 @@ body.mode-neon .pv-h { color:#fff; }
 .nk-key { min-width:2.6rem; height:2.9rem; padding:0 0.4rem; border-radius:12px; border:2px solid rgba(124,111,239,0.45); background:rgba(255,255,255,0.88); color:#0f2744; font-size:1.3rem; font-weight:800; cursor:pointer; touch-action:manipulation; }
 .nk-key:active { transform:scale(0.93); background:#e5e0ff; }
 .nk-sign { font-family:'Noto Music','Segoe UI Symbol',serif; font-weight:400; font-size:1.75rem; line-height:1; }
-.nk-back { border-color:rgba(0,0,0,0.15); color:#6b7fa3; }
+.nk-back { border-color:rgba(0,0,0,0.15); color:#526488; }
 body.mode-neon .nk-key { background:#111; color:#fff; border-color:rgba(0,200,255,0.5); }
 .streak-banner { margin-top:0.6rem; padding:0.5rem 0.8rem; border-radius:12px; font-size:0.88rem; background:rgba(255,255,255,0.6); color:#0f2744; }
 .streak-banner.warn { background:#fff3cd; }
+.goal-bar { margin-top:0.4rem; font-size:0.82rem; font-weight:600; }
+.goal-track { height:6px; border-radius:6px; background:rgba(0,0,0,0.08); margin-top:0.25rem; overflow:hidden; }
+.goal-track div { height:100%; background:var(--accent, #7c6fef); border-radius:6px; }
 .streak-banner.done { background:#d9f5e5; }
 body.mode-neon .streak-banner { background:#111; color:#fff; }
 .br-tap { font-size:1.6rem; padding:1.5rem; border-radius:30px; margin-top:0.4rem; touch-action:manipulation; }
@@ -1055,7 +1094,7 @@ body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; 
 .mm-right { background:#7ed9a6; border-color:#3aa86b; }
 .mm-wrong { background:#f4a6a6; border-color:#d05050; }
 .mm-why { display:flex; flex-wrap:wrap; gap:0.35rem; align-items:center; margin:0.25rem 0; font-size:1rem; }
-.mm-why span { font-size:0.75rem; color:#6b7fa3; width:4.2rem; }
+.mm-why span { font-size:0.75rem; color:#526488; width:4.2rem; }
 .mm-hl { background:#ffe08a; border-radius:6px; padding:0 0.25rem; }
 .boss-bar { position:relative; height:22px; border-radius:11px; background:rgba(0,0,0,0.12); overflow:hidden; margin:0.4rem 0; }
 .boss-hp { height:100%; background:linear-gradient(90deg,#ff6b6b,#ffb347); transition:width 0.4s; }
@@ -1073,7 +1112,7 @@ body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; 
 .mw-step { position:relative; animation:mwStep 0.5s ease-in-out infinite; }
 .mw-dino { width:140px; display:block; }
 .mw-shadow { width:90px; height:12px; margin:-6px auto 0; border-radius:50%; background:rgba(0,0,0,0.18); }
-.mw-n { position:absolute; font-size:1.6rem; color:#7c6fef; opacity:0; animation:mwNote 1s ease-out infinite; }
+.mw-n { position:absolute; font-size:1.6rem; color:#5b4fd6; opacity:0; animation:mwNote 1s ease-out infinite; }
 .mw-n1 { left:150px; top:30px; } .mw-n2 { left:170px; top:70px; animation-delay:0.33s; } .mw-n3 { left:154px; top:110px; animation-delay:0.66s; }
 .mw-label { position:absolute; top:0; left:50%; transform:translateX(-50%); background:rgba(255,255,255,0.92); color:#0f2744; font-weight:800; padding:0.35rem 0.9rem; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,0.12); white-space:nowrap; }
 /* Pebbles faces right but slides left: that's the moonwalk */
@@ -1095,7 +1134,7 @@ body.mode-neon .tl-chip, body.mode-neon .tl-link { background:#111; color:#fff; 
 .ap-btns { display:flex; gap:0.25rem; flex-wrap:wrap; }
 .ap-send, .ap-del { border:none; background:rgba(255,255,255,0.7); border-radius:10px; font-size:1.2rem; width:2.3rem; height:2.3rem; cursor:pointer; }
 .ap-send:active { transform:scale(1.2); }
-.ap-del { font-size:0.9rem; color:#6b7fa3; }
+.ap-del { font-size:0.9rem; color:#526488; }
 .ta-key { display:none; font-size:0.7rem; opacity:0.6; margin-right:0.35rem; border:1px solid currentColor; border-radius:4px; padding:0 0.25rem; }
 @media (hover:hover) and (pointer:fine) { .ta-key { display:inline-block; } }
 /* Start here path */
@@ -1138,7 +1177,7 @@ body.mode-smooth .tc-plaque { background:#f4f4f8; }
 .vibe-opt { font-family:inherit; font-size:0.78rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:16px; cursor:pointer;
   border:1px solid rgba(0,0,0,0.1); background:rgba(255,255,255,0.6); color:inherit; }
 .vibe-opt.active { border-color:var(--accent); color:var(--accent); }
-.vibe-clear { color:#6b7fa3; }
+.vibe-clear { color:#526488; }
 body.mode-neon .vibe-chip { background:rgba(0,200,255,0.12); color:#00c8ff; }
 body.mode-neon .vibe-opt { background:#141414; border-color:rgba(0,200,255,0.25); }
 
@@ -1147,14 +1186,15 @@ body.mode-neon .vibe-opt { background:#141414; border-color:rgba(0,200,255,0.25)
 .hw-opt { cursor:pointer; text-align:center; padding:0.7rem 0.4rem; border-radius:14px; font-weight:700; font-size:0.85rem; background:rgba(255,255,255,0.35); border:2px solid transparent; }
 .hw-opt.active { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); }
 body.mode-neon .hw-opt { background:#111; } body.mode-neon .hw-opt.active { border-color:#00c8ff; }
-body.mode-smooth .hw-opt { background:#fff; border-color:#e3e3e3; } body.mode-smooth .hw-opt.active { border-color:#7c6fef; }
+body.mode-smooth .hw-opt { background:#fff; border-color:#e3e3e3; } body.mode-smooth .hw-opt.active { border-color:#5b4fd6; }
 </style>
 </head>
 <body>
 <div id="homeLink" onclick="if(typeof S!=='undefined'&&S.page!=='welcome'&&S.page!=='home'){render('home')}" style="position:fixed;top:0;left:0;right:0;height:10rem;cursor:pointer;z-index:10"></div>
 <div id="titlebar"></div>
-<nav id="sidebar"></nav>
-<div id="app"></div>
+<nav id="sidebar" aria-label="Main menu"></nav>
+<main id="app"></main>
+<div id="sr-live" class="sr-only" aria-live="polite" role="status"></div>
 
 <script>
 // ═══════════════════════════════════
@@ -1170,6 +1210,17 @@ const firebaseConfig = {
   appId: "1:317731727582:web:bc6391c6565bb391923a4f"
 };
 
+// If Firebase's code couldn't load (offline first visit, or a school network blocks it),
+// keep the app working as a guest instead of showing a blank screen.
+if (typeof firebase === 'undefined') {
+  const noNet = () => Promise.reject({ code: 'unavailable', message: 'Signing in needs the internet. You can still play as a guest.' });
+  const ref = { get: noNet, set: noNet, add: noNet, delete: noNet, update: noNet };
+  ref.doc = () => ref; ref.collection = () => ref;
+  const authStub = { currentUser: null, onAuthStateChanged: cb => setTimeout(() => cb(null), 0), signInWithPopup: noNet,
+    signInWithEmailAndPassword: noNet, createUserWithEmailAndPassword: noNet, signOut: () => Promise.resolve(), sendPasswordResetEmail: noNet };
+  window.firebase = { initializeApp() {}, auth: Object.assign(() => authStub, { GoogleAuthProvider: function() {}, EmailAuthProvider: { credential() {} } }),
+    firestore: Object.assign(() => ({ collection: () => ref }), { FieldValue: { serverTimestamp: () => new Date(), delete: () => null } }) };
+}
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -1199,6 +1250,13 @@ function gxMark(g, n) { const d = gxData(); d[g + '_' + n] = 1; try { localStora
 // ── Cloud save ──
 // Keys that belong to this device, not to a person. They are never sent to the cloud.
 const DEVICE_ONLY_KEYS = ['pms_guest', 'pms_owner', 'pms_fb_last'];
+function saveNowButton(btn) {
+  if (!navigator.onLine || !cloudReady) { alert("You're offline. Your progress is safe on this device and will save to the cloud when you're back online."); return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  db.collection('users').doc(currentUser.uid).get()   // a quick check that the cloud can be reached
+    .then(() => cloudSave(true)).then(() => { btn.textContent = '✅ Saved'; })
+    .catch(() => { btn.textContent = 'Could not save. Try again'; btn.disabled = false; });
+}
 function cloudKeys() {
   try { return Object.keys(localStorage).filter(k => k.startsWith('pms_') && !DEVICE_ONLY_KEYS.includes(k)); } catch(e) { return []; }
 }
@@ -1274,6 +1332,7 @@ function cloudLoad(callback) {
         try { localStorage.setItem(key, val); } catch(e) {}
       });
       if (data.name && S && !S.name) S.name = cleanName(data.name);
+      try { currentOutfit = localStorage.getItem('pms_outfit') || 'default'; } catch(e) {}
     }
     try { localStorage.setItem('pms_owner', uid); } catch(e) {}
     cloudReady = true;
@@ -1390,7 +1449,7 @@ auth.onAuthStateChanged(function(user) {
     S.deletedMsg = '';
     try { localStorage.removeItem('pms_guest'); } catch(e) {}
     // Show loading while fetching cloud data
-    document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Welcome back!</div><div style="font-size:0.85rem;color:#6b7fa3;margin-top:0.3rem">Loading your progress...</div></div></div>';
+    document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Welcome back!</div><div style="font-size:0.85rem;color:#526488;margin-top:0.3rem">Loading your progress...</div></div></div>';
     cloudLoad(function() {
       applyMode();
       if (TEACH_REQ && !S.teachDone) { S.teachDone = true; launchTeacherGame(TEACH_REQ); }
@@ -1991,10 +2050,10 @@ try { currentOutfit = localStorage.getItem('pms_outfit') || 'default'; } catch(e
 // App color themes (Settings page)
 const APP_THEMES = {
   default: { name: 'Sky Blue', bg: '#a2cafb', accent: '#7c6fef', card: 'rgba(255,255,255,0.35)', img: 'background.png?v=2' },
-  sunset:  { name: 'Sunset',   bg: '#f8b4b4', accent: '#e85d75', card: 'rgba(255,255,255,0.35)', img: 'bg_sunset.png' },
-  forest:  { name: 'Forest',   bg: '#b2ebd8', accent: '#2d9d78', card: 'rgba(255,255,255,0.35)', img: 'bg_forest.png' },
-  galaxy:  { name: 'Galaxy',   bg: '#2d1b69', accent: '#a78bfa', card: 'rgba(255,255,255,0.12)', img: 'bg_galaxy.png' },
-  candy:   { name: 'Candy',    bg: '#fbc2eb', accent: '#e056a0', card: 'rgba(255,255,255,0.35)', img: 'bg_candy.png' },
+  sunset:  { name: 'Sunset',   bg: '#f8b4b4', accent: '#e85d75', card: 'rgba(255,255,255,0.35)', img: 'bg_sunset.jpg' },
+  forest:  { name: 'Forest',   bg: '#b2ebd8', accent: '#2d9d78', card: 'rgba(255,255,255,0.35)', img: 'bg_forest.jpg' },
+  galaxy:  { name: 'Galaxy',   bg: '#2d1b69', accent: '#a78bfa', card: 'rgba(255,255,255,0.12)', img: 'bg_galaxy.jpg' },
+  candy:   { name: 'Candy',    bg: '#fbc2eb', accent: '#e056a0', card: 'rgba(255,255,255,0.35)', img: 'bg_candy.jpg' },
 };
 
 // Scale Explorer data
@@ -2847,6 +2906,13 @@ function pulseClass(gameKey, data) {
 function getUnlockedAchievements() {
   try { return JSON.parse(localStorage.getItem('pms_achievements') || '[]'); } catch(e) { return []; }
 }
+function showToast(text) {
+  const el = document.createElement('div');
+  el.className = 'achievement-toast'; el.setAttribute('role', 'status');
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 450); }, 3200);
+}
 function showAchievementToast(a) {
   sfxAchievement();
   const el = document.createElement('div');
@@ -2882,6 +2948,20 @@ function localDay(offsetDays) {
   const d = new Date(); d.setDate(d.getDate() - (offsetDays || 0));
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
+// ── Daily goal: count minutes spent in a game or tool while the app is on screen ──
+const PRACTICE_PAGES = /_play$|^(scale_explorer|hanon|piano_keys|metronome|theory_lesson|exercise|chord_mixer|boss_play)$/;
+function practiceData() { try { return JSON.parse(localStorage.getItem('pms_practice') || '{}'); } catch(e) { return {}; } }
+function practiceMinutesToday() { return Math.floor((practiceData()[localDay(0)] || 0) / 60); }
+function practiceGoal() { return parseInt(localStorage.getItem('pms_goal') || '10', 10) || 10; }
+setInterval(function() {
+  if (document.hidden || !S || !PRACTICE_PAGES.test(S.page)) return;
+  const d = practiceData(), k = localDay(0), before = Math.floor((d[k] || 0) / 60);
+  d[k] = (d[k] || 0) + 5;
+  Object.keys(d).forEach(x => { if (x < localDay(14)) delete d[x]; });   // keep two weeks
+  try { localStorage.setItem('pms_practice', JSON.stringify(d)); } catch(e) {}
+  if (before < practiceGoal() && Math.floor(d[k] / 60) >= practiceGoal()) showToast('🎯 You reached your daily goal!');
+}, 5000);
+
 function logPracticeSession(data) {
   const now = new Date(), mins = now.getHours() * 60 + now.getMinutes(), today = localDay(0);
   data._sessions = data._sessions || {};
@@ -3398,7 +3478,9 @@ function playChord(notes) {
 
 function sfxEnabled() { return localStorage.getItem('pms_sfx') !== 'off'; }
 
+function announce(text) { const el = document.getElementById('sr-live'); if (el) { el.textContent = ''; setTimeout(() => { el.textContent = text; }, 50); } }
 function sfxCorrect() {
+  announce('Correct!');
   if (!sfxEnabled()) return;
   // Quick rising two-note chime (C6 → E6) in the chosen instrument
   const ctx = getAudioCtx(), now = ctx.currentTime;
@@ -3406,6 +3488,7 @@ function sfxCorrect() {
 }
 
 function sfxWrong() {
+  announce('Not quite.');
   if (!sfxEnabled()) return;
   // Soft falling two-note "hmm" (E4 → C#4) in the chosen instrument
   const ctx = getAudioCtx(), now = ctx.currentTime;
@@ -3729,6 +3812,7 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
 // ═══════════════════════════════════
 
 function confetti() {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const colors = ['#c1c3ea','#f7b0a6','#b2ebd8','#e1bcd8','#a2cafb','#ffd700'];
   for (let i = 0; i < 60; i++) {
     const el = document.createElement('div');
@@ -4189,8 +4273,9 @@ function uploadAvatar(input) {
     const img = new Image();
     img.onload = function() {
       const SIZE = 192, c = document.createElement('canvas'); c.width = c.height = SIZE;
-      const side = Math.min(img.width, img.height);
-      c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, SIZE, SIZE);
+      const side = Math.min(img.width, img.height), g = c.getContext('2d');
+      g.fillStyle = '#ffffff'; g.fillRect(0, 0, SIZE, SIZE);   // see-through parts turn white, not black
+      g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, SIZE, SIZE);
       setAvatar(c.toDataURL('image/jpeg', 0.85));
     };
     img.onerror = function() { alert('That picture could not be opened. Try a JPG or PNG.'); };
@@ -4269,7 +4354,7 @@ function makeWorksheet() {
   const head = (title) => `<div class="hd"><div><div class="brand">PianoMind Studios</div><h1>${title}</h1><div class="meta">${T.name} · ${level}${type !== 'intervals' ? ' · ' + ({treble:'Treble clef',bass:'Bass clef',both:'Treble & bass clef'})[clef] : ' · Treble clef'}</div></div>
     <div class="fields"><div>Name: <span></span></div><div>Date: <span>${title === 'Answer Key' ? date : ''}</span></div><div>Score: <span class="sc">&nbsp;&nbsp;&nbsp;&nbsp;/ ${qs.length}</span></div></div></div>`;
   const grid = (withAnswers) => `<div class="grid">${qs.map((q, i) => `<div class="q"><div class="qn">${i + 1}${q.label ? ` <b>Draw: ${q.label}</b>` : ''}</div>${hwStaffSvg(q.clef, withAnswers ? q.keyNotes : q.notes, q.layout)}<div class="ans">${withAnswers ? q.answer : ''}</div></div>`).join('')}</div>`;
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PianoMind Homework — ${T.name}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PianoMind Homework — ${T.name}</title>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Noto+Music&display=swap" rel="stylesheet">
 <style>
 @page { size: A4; margin: 14mm; }
@@ -4496,6 +4581,7 @@ function render(page) {
 
   // ── LOGIN ──
   if (page === 'login') {
+    h += `<h1 class="sr-only">Sign in to PianoMind Studios</h1>`;
     h += `<div class="welcome-wrap">`;
     h += `<div class="welcome-card">`;
     h += `<div class="welcome-logo" style="margin-bottom:0.4rem">${appLogo(84)}</div>`;
@@ -4504,19 +4590,19 @@ function render(page) {
     if (location.hash === '#delete') h += `<div class="alert alert-error">Sign in to delete your account.</div>`;
     h += `<div class="welcome-sub" style="margin-bottom:1rem">Sign in to save your progress</div>`;
 
-    h += `<button class="btn btn-blue btn-wide" style="margin-bottom:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.5rem" onclick="signInGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" style="vertical-align:middle"> Sign in with Google</button>`;
+    h += `<button class="btn btn-blue btn-wide" style="margin-bottom:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.5rem" onclick="signInGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" width="20" style="vertical-align:middle"> Sign in with Google</button>`;
 
-    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin:0.5rem 0">— or use email —</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488;margin:0.5rem 0">— or use email —</div>`;
 
-    h += `<div style="margin:0.4rem 0"><input id="loginEmail" type="email" placeholder="Email" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
-    h += `<div style="margin:0.4rem 0"><input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
+    h += `<div style="margin:0.4rem 0"><input id="loginEmail" type="email" placeholder="Email" aria-label="Email" autocomplete="email" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
+    h += `<div style="margin:0.4rem 0"><input id="loginPass" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
 
     h += `<button class="btn btn-mint btn-wide" style="margin-top:0.4rem" onclick="var e=$('loginEmail'),p=$('loginPass');if(e&&p&&e.value&&p.value)signInEmail(e.value,p.value);else alert('Enter email and password')">Sign in / Sign up</button>`;
 
-    h += `<p style="font-size:0.7rem;color:#6b7fa3;margin-top:0.8rem">New? Just type your email and password — we'll create your account automatically.</p>`;
-    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin:0.9rem 0 0.4rem">— or —</div>`;
+    h += `<p style="font-size:0.7rem;color:#526488;margin-top:0.8rem">New? Just type your email and password — we'll create your account automatically.</p>`;
+    h += `<div style="font-size:0.8rem;color:#526488;margin:0.9rem 0 0.4rem">— or —</div>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="startGuest()">Try without an account →</button>`;
-    h += `<p style="font-size:0.7rem;color:#6b7fa3;margin-top:0.4rem">Your progress stays on this device. You can sign in later to save it to the cloud.</p>`;
+    h += `<p style="font-size:0.7rem;color:#526488;margin-top:0.4rem">Your progress stays on this device. You can sign in later to save it to the cloud.</p>`;
     h += `</div>`;
     h += `</div>`;
   }
@@ -4539,10 +4625,10 @@ function render(page) {
     var tStep = S.tutorialStep || 0;
     var tSteps = [
       { title: 'Welcome!', icon: '👋', text: 'This is PianoMind Studios — an app that helps you practise music skills like ear training, note reading, and more.' },
-      { title: 'Home Screen', icon: '🏠', text: 'The home screen has four tabs: Play (games and practice), Tools (scales, metronome, Hanon exercises), Learn (music theory and grade exercises), and Settings.' },
-      { title: 'Ear Training', icon: '🎵', text: 'The app plays a note. You listen and pick which note it is from a set of choices. Five levels — from one octave up to two-note melodies with sharps.' },
+      { title: 'Home Screen', icon: '🏠', text: 'The home screen has four tabs: Practice (the games), Tools (scales, metronome, Hanon), Learn (music theory and grade exercises), and Me (your progress, trophies and settings).' },
+      { title: 'Ear Training', icon: '🎵', text: 'You hear C first, then a mystery note. Compare the mystery note to C and pick its name. No perfect pitch needed. Six levels, from Beginner (C, D, E) up to Master.' },
       { title: 'Note Reading', icon: '🎼', text: 'A note appears on the staff. You type its name. You can practise treble clef, bass clef, or both. Sharps and flats included at higher levels.' },
-      { title: 'Intervals & Chords', icon: '🎹', text: 'Learn to read the distance between two notes on the staff (intervals) and the sound of different chord types — major, minor, diminished, and more.' },
+      { title: 'Intervals & Chords', icon: '🎹', text: 'Read the distance between two notes on the staff (intervals), and name chords on the staff: major, minor, diminished and more. You can tap to hear them if you like.' },
       { title: 'Scale Explorer', icon: '🎶', text: 'See and hear scales drawn on the staff. You can play along with your instrument using the microphone — the app listens and tracks your notes.' },
       { title: 'Hanon Exercises', icon: '🎹', text: 'All 20 Hanon Book 1 exercises. Hear each bar, step through the full exercise, and practise along with the microphone at any speed.' },
       { title: 'XP & Achievements', icon: '⭐', text: 'Every game earns XP. Level up and unlock achievements. Check your stats on the home screen.' },
@@ -4558,7 +4644,7 @@ function render(page) {
     h += `<div style="font-size:3rem;margin-bottom:0.4rem">${step.icon}</div>`;
     h += `<div style="font-size:1.3rem;font-weight:700;color:#0f2744;margin-bottom:0.5rem">${step.title}</div>`;
     h += `<p style="font-size:1.05rem;line-height:1.7;color:#2c3e50">${step.text}</p>`;
-    h += `<div style="margin-top:1rem;font-size:0.85rem;color:#6b7fa3;font-weight:600">Step ${tStep + 1} of ${tSteps.length}</div>`;
+    h += `<div style="margin-top:1rem;font-size:0.85rem;color:#526488;font-weight:600">Step ${tStep + 1} of ${tSteps.length}</div>`;
     h += `<div class="progress-wrap" style="margin:0.5rem 0"><div class="progress-fill" style="width:${((tStep + 1) / tSteps.length * 100).toFixed(0)}%"></div></div>`;
     h += `</div>`;
 
@@ -4578,6 +4664,7 @@ function render(page) {
 
   // ── HOME ──
   else if (page === 'home') {
+    h += `<h1 class="sr-only">PianoMind Studios home</h1>`;
     const homeData = loadScores();
     // A streak only counts if you played today or yesterday (dates match how the app saves them)
     var todayK = localDay(0), yestK = localDay(1);
@@ -4603,8 +4690,10 @@ function render(page) {
     h += `<div class="home-hello">Welcome back, <span style="color:var(--accent)">${S.name || 'Student'}</span>!</div>`;
     h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
     h += `</div></div>`;
-    h += `<input id="nameIn" class="home-name" type="text" value="${S.name}" placeholder="Your name...">`;
+    h += `<input id="nameIn" class="home-name" type="text" value="${S.name}" placeholder="Your name..." aria-label="Your name" maxlength="24">`;
     h += `<div class="streak-banner${playedToday ? ' done' : streak > 0 ? ' warn' : ''}">${streakMsg}</div>`;
+    { const g = practiceGoal(), m = practiceMinutesToday();
+      h += `<div class="goal-bar" title="Daily goal: change it in Settings"><span>${m >= g ? '🎯 Daily goal done!' : '⏱️ Today: ' + m + ' of ' + g + ' min'}</span><div class="goal-track"><div style="width:${Math.min(100, Math.round(m / g * 100))}%"></div></div></div>`; }
     h += `</div>`;
 
     // Stats
@@ -4659,14 +4748,14 @@ function render(page) {
       h += `<div style="margin-bottom:0.3rem;display:flex;justify-content:center">${avatarHtml(84, true)}</div><div style="font-size:0.72rem"><a href="#" onclick="render('avatar');return false">Change picture</a></div>`;
       h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
       h += vibeHtml();
-      if (currentUser) h += `<div style="font-size:0.72rem;color:#6b7fa3">${currentUser.email || ''}</div>`;
-      else h += `<div style="font-size:0.72rem;color:#6b7fa3">Guest · saved on this device only · <a href="#" onclick="render('login');return false">Sign in</a></div>`;
-      if (joinDate) h += `<div style="font-size:0.72rem;color:#6b7fa3">Joined ${joinDate}</div>`;
+      if (currentUser) h += `<div style="font-size:0.72rem;color:#526488">${currentUser.email || ''}</div>`;
+      else h += `<div style="font-size:0.72rem;color:#526488">Guest · saved on this device only · <a href="#" onclick="render('login');return false">Sign in</a></div>`;
+      if (joinDate) h += `<div style="font-size:0.72rem;color:#526488">Joined ${joinDate}</div>`;
       h += `<div style="display:flex;justify-content:center;gap:1rem;margin-top:0.5rem">`;
-      h += `<div><div style="font-size:1.1rem;font-weight:700">${lvl}</div><div style="font-size:0.65rem;color:#6b7fa3">Level</div></div>`;
-      h += `<div><div style="font-size:1.1rem;font-weight:700">${xpMe}</div><div style="font-size:0.65rem;color:#6b7fa3">XP</div></div>`;
-      h += `<div><div style="font-size:1.1rem;font-weight:700">${played}</div><div style="font-size:0.65rem;color:#6b7fa3">Games</div></div>`;
-      h += `<div><div style="font-size:1.1rem;font-weight:700">${streak}</div><div style="font-size:0.65rem;color:#6b7fa3">Streak</div></div>`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${lvl}</div><div style="font-size:0.65rem;color:#526488">Level</div></div>`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${xpMe}</div><div style="font-size:0.65rem;color:#526488">XP</div></div>`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${played}</div><div style="font-size:0.65rem;color:#526488">Games</div></div>`;
+      h += `<div><div style="font-size:1.1rem;font-weight:700">${streak}</div><div style="font-size:0.65rem;color:#526488">Streak</div></div>`;
       h += `</div></div>`;
       checkAchievements();
       h += trophyCabinetHtml();
@@ -4865,7 +4954,7 @@ function render(page) {
       const touch = window.matchMedia('(pointer: coarse)').matches;
       const letters = S.level === '0' ? ['C', 'D', 'E'] : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
       const signs = S.level === '3' || S.level === '5' ? ['♯', '♭', '𝄪', '𝄫'] : (S.level === '2' || S.level === '4') ? ['♯', '♭'] : [];
-      h += `<div class="input-wrap"><label>Your answer:</label>
+      h += `<div class="input-wrap"><label for="noteAns">Your answer:</label>
             <input id="noteAns" type="text" inputmode="none" ${touch ? 'readonly' : ''} placeholder="Tap a letter below" autocomplete="off"
                    onkeydown="if(event.key==='Enter')checkNote()"></div>`;
       h += `<div class="nk-pad"><div class="nk-row">`;
@@ -5139,7 +5228,7 @@ function render(page) {
       lvs.forEach(([lv,ln]) => {
         const best = data[g.k + '_' + lv];
         h += `<div class="stat-card" style="flex:1;padding:0.5rem">`;
-        h += `<div style="font-size:0.7rem;color:#6b7fa3">${ln}</div>`;
+        h += `<div style="font-size:0.7rem;color:#526488">${ln}</div>`;
         h += `<div style="font-size:1.1rem;font-weight:700">${best ? best.best + '/' + best.total : '—'}</div>`;
         h += `</div>`;
       });
@@ -5165,13 +5254,12 @@ function render(page) {
       if (o.id === 'default') {
         h += `<img src="pebbles_happy.png" width="60" alt="${o.name}" onerror="this.style.display='none'">`;
       } else {
-        h += `<img src="pebbles_happy_${o.id}.png" width="60" alt="${o.name}" onerror="this.src='pebbles_happy.png'">`;
+        h += `<img src="pebbles_happy_${o.id}.png" width="60" alt="${o.name}" onerror="this.onerror=null;this.src='pebbles_happy.png'">`;
       }
       h += `<div class="outfit-name">${o.name}</div>`;
       h += `</div>`;
     });
     h += `</div></div>`;
-    h += `<p class="caption" style="text-align:center">Add outfits: save images as pebbles_happy_NAME.png, pebbles_asking_NAME.png, pebbles_thinking_NAME.png</p>`;
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('home')">Home</button>`;
   }
 
@@ -5278,7 +5366,7 @@ function render(page) {
     // Tutorial
     h += `<div class="card">`;
     h += `<p class="section-label">Tutorial</p>`;
-    h += `<button class="btn btn-blue btn-wide" onclick="localStorage.removeItem('pms_tutorial_done');render('tutorial')">Replay Tutorial</button>`;
+    h += `<button class="btn btn-blue btn-wide" onclick="S.tutorialStep=0;render('tutorial')">Replay Tutorial</button>`;
     h += `</div>`;
 
     h += `<button class="btn btn-blue btn-wide" style="margin-top:0.4rem" onclick="render('about')">All About PianoMind Studios</button>`;
@@ -5287,12 +5375,12 @@ function render(page) {
     h += `<div class="card">`;
     h += `<p class="section-label">Account</p>`;
     if (currentUser) {
-      h += `<p style="font-size:0.85rem;color:#6b7fa3;margin:0.3rem 0">Signed in as: <strong style="color:#0f2744">${currentUser.email || currentUser.displayName || 'Unknown'}</strong></p>`;
-      h += `<button class="btn btn-mint btn-wide" style="margin:0.3rem 0" onclick="cloudSave();alert('Progress saved!')">Save to cloud</button>`;
+      h += `<p style="font-size:0.85rem;color:#526488;margin:0.3rem 0">Signed in as: <strong style="color:#0f2744">${currentUser.email || currentUser.displayName || 'Unknown'}</strong></p>`;
+      h += `<button class="btn btn-mint btn-wide" style="margin:0.3rem 0" onclick="saveNowButton(this)">Save to cloud</button>`;
       h += `<button class="btn btn-coral btn-wide" onclick="if(confirm('Sign out?'))signOut()">Sign out</button>`;
       h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.3rem" onclick="S.delMsg='';render('delete_account')">🗑️ Delete my account</button>`;
     } else {
-      h += `<p style="font-size:0.85rem;color:#6b7fa3">Not signed in — progress is only saved on this device.</p>`;
+      h += `<p style="font-size:0.85rem;color:#526488">Not signed in — progress is only saved on this device.</p>`;
       h += `<button class="btn btn-blue btn-wide" onclick="render('login')">Sign in</button>`;
       h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.3rem" onclick="deleteGuestData()">🗑️ Delete everything on this device</button>`;
     }
@@ -5497,7 +5585,7 @@ function render(page) {
     } else {
       h += `<div class="card"><p class="speech">Found a bug? Have an idea? Tell us here.</p><p class="caption">What is it about?</p><div class="fb-kinds">`;
       FB_KINDS.forEach(([k, label]) => { h += `<button class="fb-kind${f.kind === k ? ' on' : ''}" onclick="S.fb.draft=(document.getElementById('fbText')||{}).value||S.fb.draft;S.fb.kind='${k}';render('feedback')">${label}</button>`; });
-      h += `</div><textarea id="fbText" class="ap-input fb-text" maxlength="1000" rows="5" placeholder="Type here…" oninput="S.fb.draft=this.value">${escAttr(f.draft)}</textarea>`;
+      h += `</div><textarea id="fbText" aria-label="Your feedback" class="ap-input fb-text" maxlength="1000" rows="5" placeholder="Type here…" oninput="S.fb.draft=this.value">${escAttr(f.draft)}</textarea>`;
       h += `<p class="caption">🔒 Please don't write your name, email, school or anything private. We don't save who sent it.</p>`;
       if (f.msg) h += `<div class="alert alert-error">${f.msg}</div>`;
       h += `<button class="btn btn-mint btn-wide" ${f.busy ? 'disabled' : ''} onclick="fbSend()">${f.busy ? 'Sending…' : 'Send'}</button></div>`;
@@ -5593,6 +5681,7 @@ function render(page) {
 
   // ── TIME ATTACK: PLAY ──
   else if (page === 'ta_play') {
+    h += `<h1 class="sr-only">Time Attack</h1>`;
     const left = Math.max(0, Math.ceil((S.taEnd - Date.now()) / 1000));
     h += `<div class="ta-top"><div><div class="ta-label">Time</div><div id="taClock" class="ta-clock${left < 10 ? ' ta-low' : ''}">${left}</div></div>`;
     h += `<div style="text-align:right"><div class="ta-label">Score</div><div class="ta-score">${S.taScore}</div></div></div>`;
@@ -5716,7 +5805,7 @@ function render(page) {
     h += `<div class="card">`;
     h += `<p class="section-label">Your Progression</p>`;
     if (S.mixerChords.length === 0) {
-      h += `<p style="text-align:center;color:#6b7fa3;font-size:0.9rem">Tap chords above to start building!</p>`;
+      h += `<p style="text-align:center;color:#526488;font-size:0.9rem">Tap chords above to start building!</p>`;
     } else {
       h += `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;margin:0.4rem 0">`;
       S.mixerChords.forEach(function(degIdx, i) {
@@ -5740,7 +5829,7 @@ function render(page) {
     h += `<p class="section-label">Try a Famous Progression</p>`;
     MIXER_PRESETS.forEach(function(preset) {
       h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">`;
-      h += `<div><span style="font-weight:700;font-size:0.9rem">${preset.name}</span><br><span style="font-size:0.75rem;color:#6b7fa3">${preset.label}</span></div>`;
+      h += `<div><span style="font-weight:700;font-size:0.9rem">${preset.name}</span><br><span style="font-size:0.75rem;color:#526488">${preset.label}</span></div>`;
       h += `<button class="btn btn-blue" style="padding:0.3rem 0.7rem;font-size:0.8rem" onclick="S.mixerChords=[${preset.chords}];stopMixerPlay();render('chord_mixer')">Load</button>`;
       h += `</div>`;
     });
@@ -5755,7 +5844,7 @@ function render(page) {
     const dTheme = getDailyTheme();
     const names = {ear:'Ear Training',note:'Note Reading',interval:'Intervals',chord:'Chords',melody:'Melody Echo'};
     h += `<h1>⭐ Daily Challenge</h1>`;
-    h += `<div style="text-align:center;font-size:1.1rem;font-weight:700;color:#7c6fef;margin:0.3rem 0">${dTheme}</div>`;
+    h += `<div style="text-align:center;font-size:1.1rem;font-weight:700;color:#5b4fd6;margin:0.3rem 0">${dTheme}</div>`;
 
     // Garden
     h += `<div class="card" style="padding:0.6rem">`;
@@ -5798,7 +5887,7 @@ function render(page) {
         h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">`;
         h += `<div>`;
         h += `<span style="font-weight:700;font-size:1.1rem">${note.name}</span>`;
-        h += `<span style="font-size:0.75rem;color:#6b7fa3;margin-left:0.4rem">${from} · missed ${note.count}×</span>`;
+        h += `<span style="font-size:0.75rem;color:#526488;margin-left:0.4rem">${from} · missed ${note.count}×</span>`;
         h += `</div>`;
         h += `<div style="display:flex;gap:0.3rem">`;
         var pouchNoteNum = (function(nn) {
@@ -5858,7 +5947,7 @@ function render(page) {
       h += `<div style="font-size:1.2rem;font-weight:700;margin:0.4rem 0">`;
       S.melodyNotes.forEach(function(n, i) {
         if (i < S.melodyPlayerNotes.length) h += `<span style="color:#4CAF50">✓ </span>`;
-        else if (i === S.melodyPlayerNotes.length) h += `<span style="color:#7c6fef">? </span>`;
+        else if (i === S.melodyPlayerNotes.length) h += `<span style="color:#5b4fd6">? </span>`;
         else h += `<span style="color:#ccc">· </span>`;
       });
       h += `</div>`;
@@ -5943,7 +6032,7 @@ function render(page) {
     h += `<div style="text-align:center;margin:0.8rem 0">`;
     h += `<div style="font-size:1.4rem;font-weight:700;color:#0f2744">${scaleRootLabel(S.scaleRoot, S.scaleType)} ${S.scaleType}</div>`;
     h += `<div style="font-size:1.05rem;font-weight:600;color:#2c5f8a;margin:0.3rem 0">${noteNames.join(' — ')}</div>`;
-    h += `<div style="font-size:0.8rem;color:#6b7fa3">${STEP_LABELS[S.scaleType] || ''}</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488">${STEP_LABELS[S.scaleType] || ''}</div>`;
     h += `</div>`;
     h += `<div class="play-btn" onclick="playScale()">Hear the scale</div>`;
     h += `</div>`;
@@ -5967,7 +6056,7 @@ function render(page) {
       }
     } else {
       h += `<div style="text-align:center;margin:0.6rem 0">`;
-      h += `<div style="font-size:0.8rem;color:#6b7fa3;margin-bottom:0.3rem">Listening for notes...</div>`;
+      h += `<div style="font-size:0.8rem;color:#526488;margin-bottom:0.3rem">Listening for notes...</div>`;
       h += `<button class="btn btn-coral" onclick="stopScalePractice();render('scale_explorer')">Stop</button>`;
       h += `</div>`;
     }
@@ -6051,8 +6140,8 @@ function render(page) {
     // Exercise info — fingering + pattern + progress
     var exProg = hanonProg['ex' + hEx.num] || {};
     h += `<div class="card" style="text-align:center">`;
-    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin:0.2rem 0">RH: ${hEx.rh.join(' \u2013 ')}  \u00b7  LH: ${hEx.lh.join(' \u2013 ')}</div>`;
-    h += `<div style="font-size:0.8rem;color:#6b7fa3">Notes: ${hBarNotes.map(function(n){return n.name}).join(' \u2013 ')}</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488;margin:0.2rem 0">RH: ${hEx.rh.join(' \u2013 ')}  \u00b7  LH: ${hEx.lh.join(' \u2013 ')}</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488">Notes: ${hBarNotes.map(function(n){return n.name}).join(' \u2013 ')}</div>`;
     if (exProg.bestBpm) h += `<div style="font-size:0.8rem;color:#4CAF50;font-weight:700;margin-top:0.2rem">Best: ${exProg.bestBpm} BPM ✓</div>`;
     h += `</div>`;
 
@@ -6106,7 +6195,7 @@ function render(page) {
       }
     } else {
       h += `<div style="text-align:center;margin:0.4rem 0">`;
-      h += `<div style="font-size:0.8rem;color:#6b7fa3;margin-bottom:0.3rem">Listening for notes...</div>`;
+      h += `<div style="font-size:0.8rem;color:#526488;margin-bottom:0.3rem">Listening for notes...</div>`;
       h += `<button class="btn btn-coral" onclick="stopHanonPractice();render('hanon')">\u23F9 Stop</button>`;
       h += `</div>`;
     }
@@ -6150,7 +6239,7 @@ function render(page) {
     // BPM display
     h += `<div style="font-size:3.5rem;font-weight:700;color:#0f2744;margin:0.1rem 0">${S.metroBpm}</div>`;
     h += `<div style="font-size:1rem;color:var(--accent);font-weight:700;font-style:italic;margin:-0.2rem 0 0.2rem">${getTempoMarking(S.metroBpm)}</div>`;
-    h += `<div style="font-size:0.8rem;color:#6b7fa3;font-weight:600">BPM</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488;font-weight:600">BPM</div>`;
 
     // BPM controls
     h += `<div style="display:flex;justify-content:center;gap:0.4rem;margin:0.6rem 0">`;
@@ -6163,14 +6252,14 @@ function render(page) {
     // Time signature button
     const tsBeats = parseInt(S.metroTimeSig);
     h += `<button class="btn btn-blue" style="margin:0.5rem 0;font-size:1.1rem;padding:0.5rem 1.4rem" onclick="render('time_sig_picker')">🎵 ${S.metroTimeSig}</button>`;
-    h += `<div style="font-size:0.8rem;color:#6b7fa3;margin-bottom:0.5rem">Tap to change time signature</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488;margin-bottom:0.5rem">Tap to change time signature</div>`;
 
     // Beat dots
     h += `<div style="display:flex;justify-content:center;gap:0.4rem;margin:0.8rem 0;flex-wrap:wrap">`;
     for (let b = 1; b <= tsBeats; b++) {
       const on = S.metroRunning && S.metroBeat === b;
       const acc = b === 1;
-      h += `<div id="beat${b}" style="width:36px;height:36px;border-radius:50%;background:${on?(acc?'var(--accent)':'#c1c3ea'):'rgba(255,255,255,0.3)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:${on?'#fff':'#6b7fa3'};transition:all 0.08s;${on?'transform:scale(1.2)':''}">${b}</div>`;
+      h += `<div id="beat${b}" style="width:36px;height:36px;border-radius:50%;background:${on?(acc?'var(--accent)':'#c1c3ea'):'rgba(255,255,255,0.3)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:${on?'#fff':'#526488'};transition:all 0.08s;${on?'transform:scale(1.2)':''}">${b}</div>`;
     }
     h += `</div>`;
 
@@ -6193,7 +6282,7 @@ function render(page) {
     ];
     groups.forEach(g => {
       h += `<div class="card" style="margin-bottom:0.6rem">`;
-      h += `<p style="font-weight:700;font-size:0.85rem;color:#6b7fa3;margin:0 0 0.4rem">${g.label}</p>`;
+      h += `<p style="font-weight:700;font-size:0.85rem;color:#526488;margin:0 0 0.4rem">${g.label}</p>`;
       h += `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;justify-content:center">`;
       g.sigs.forEach(ts => {
         const active = S.metroTimeSig === ts;
@@ -6287,7 +6376,7 @@ function render(page) {
               <span style="font-size:1.6rem">${l.icon}</span>
               <span style="font-weight:700;color:#0f2744">${l.title}</span>
             </div>`;
-      h += passed ? `<span style="font-size:1.3rem">✅</span>` : `<span style="font-size:0.8rem;color:#6b7fa3;font-weight:700">Start →</span>`;
+      h += passed ? `<span style="font-size:1.3rem">✅</span>` : `<span style="font-size:0.8rem;color:#526488;font-weight:700">Start →</span>`;
       h += `</div>`;
     });
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
@@ -6301,7 +6390,7 @@ function render(page) {
       const step = lesson.steps[S.theoryStep];
       const total = lesson.steps.length;
       h += `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem">`;
-      h += `<div style="font-size:0.75rem;font-weight:700;color:#6b7fa3">Step ${S.theoryStep + 1} of ${total}</div>`;
+      h += `<div style="font-size:0.75rem;font-weight:700;color:#526488">Step ${S.theoryStep + 1} of ${total}</div>`;
       h += `<div style="flex:1;height:6px;background:rgba(255,255,255,0.3);border-radius:6px;overflow:hidden">`;
       h += `<div style="height:100%;width:${((S.theoryStep + 1) / total) * 100}%;background:var(--accent, #7c6fef);border-radius:6px;transition:width 0.3s"></div>`;
       h += `</div></div>`;
@@ -6648,7 +6737,55 @@ function render(page) {
 
   // Safety-net achievement check — catches any progress made during this render (e.g. level/streak changes)
   checkAchievements();
+  a11yEnhance(page);
 }
+
+// ── Accessibility: make clickable boxes work with a keyboard and screen readers ──
+const CANVAS_LABELS = {
+  staffCanvas: 'Music staff with one note to name', intCanvas: 'Music staff with two notes. Name the interval between them',
+  chordCanvas: 'Music staff with a chord to name', bossCanvas: 'Music staff for the boss question', taCanvas: 'Music staff for the Time Attack question',
+  hanonStaffCanvas: 'Music staff showing the Hanon exercise', sightReadCanvas: 'Music staff with notes to play',
+};
+function a11yEnhance(page) {
+  document.querySelectorAll('#app [onclick], #sidebar [onclick]').forEach(el => {
+    if (/^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL)$/.test(el.tagName)) return;
+    if (!el.hasAttribute('tabindex')) el.tabIndex = 0;
+    if (!el.getAttribute('role')) el.setAttribute('role', 'button');
+    if (el.classList.contains('active')) el.setAttribute(el.matches('.home-tab, .side-link') ? 'aria-current' : 'aria-pressed', el.matches('.home-tab, .side-link') ? 'page' : 'true');
+  });
+  document.querySelectorAll('#app .p-white, #app .p-black').forEach(el => {
+    const m = (el.getAttribute('onmousedown') || '').match(/pianoDown\((-?\d+),'([^']+)'/);
+    if (!m) return;
+    const n = +m[1];
+    el.tabIndex = 0; el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', m[2].split('/')[0].replace('#', ' sharp') + (Math.floor((n + 9) / 12) + 4));
+  });
+  document.querySelectorAll('#app canvas').forEach(c => {
+    if (c.id === 'scaleStaffCanvas') c.setAttribute('aria-label', scaleRootLabel(S.scaleRoot, S.scaleType) + ' ' + S.scaleType + ': ' + getScaleNoteNames(S.scaleRoot, S.scaleType).join(' '));
+    else if (!c.getAttribute('aria-label')) c.setAttribute('aria-label', CANVAS_LABELS[c.id] || 'Chart');
+    c.setAttribute('role', 'img');
+  });
+}
+document.addEventListener('keydown', function(e) {
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.getAttribute && t.getAttribute('role') === 'button' && !/^(BUTTON|A|INPUT|TEXTAREA)$/.test(t.tagName)) {
+    e.preventDefault();
+    if (t.classList.contains('p-white') || t.classList.contains('p-black')) { t.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); setTimeout(() => t.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })), 250); }
+    else t.click();
+    return;
+  }
+  // Play the on-screen piano from the computer keyboard: A W S E D F T G Y H U J K = C to C
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || '')) return;
+  if (!document.querySelector('#app .piano-wrap')) return;
+  const i = 'awsedftgyhujk'.indexOf((e.key || '').toLowerCase());
+  if (i < 0 || e.key.length !== 1) return;
+  const n = -9 + i, k = PIANO_WHITE.concat(PIANO_BLACK).find(x => x.n === n);
+  if (!k) return;
+  e.preventDefault();
+  pianoDown(n, k.flat ? k.name + '/' + k.flat : k.name);
+  const up = ev => { if ((ev.key || '').toLowerCase() === e.key.toLowerCase()) { pianoUp(n); document.removeEventListener('keyup', up); } };
+  document.addEventListener('keyup', up);
+});
 
 
 // ═══════════════════════════════════
@@ -7526,7 +7663,7 @@ function metroTick() {
     if (!el) continue;
     const on = b === S.metroBeat;
     el.style.background = on ? (b===1?'var(--accent)':'#c1c3ea') : 'rgba(255,255,255,0.3)';
-    el.style.color = on ? '#fff' : '#6b7fa3';
+    el.style.color = on ? '#fff' : '#526488';
     el.style.transform = on ? 'scale(1.2)' : 'scale(1)';
   }
 }
@@ -7782,11 +7919,10 @@ function getMode() {
 }
 
 function setMode(mode) {
+  const changed = getMode() !== mode;
   try { localStorage.setItem('pms_mode', mode); } catch(e) {}
-  if (mode === 'smooth' || mode === 'neon') {
-    localStorage.setItem('pms_pebbles', 'off');
-  } else {
-    localStorage.setItem('pms_pebbles', 'on');
+  if (changed) {   // only suggest a Pebbles setting when the style actually changes
+    try { localStorage.setItem('pms_pebbles', mode === 'cartoon' ? 'on' : 'off'); } catch(e) {}
   }
   applyMode();
   render('settings');
@@ -7799,9 +7935,10 @@ function applyMode() {
   var tc = document.querySelector('meta[name="theme-color"]');
   if (tc) tc.content = mode === 'neon' ? '#050505' : mode === 'smooth' ? '#f4f4f4' : (localStorage.getItem('pms_theme') === 'galaxy' ? '#1c1042' : '#dcebfd');
   document.body.classList.remove('mode-smooth', 'mode-neon');
+  if (mode !== 'cartoon') applyTheme();   // clears the last Cartoon theme's colours
   if (mode === 'smooth') {
     document.body.classList.add('mode-smooth');
-    document.body.style.backgroundImage = bgUrl('bg_smooth.png');
+    document.body.style.backgroundImage = bgUrl('bg_smooth.jpg');
     document.body.style.backgroundColor = '#f0f0f0';
     document.body.style.color = '#333';
   } else if (mode === 'neon') {
@@ -7817,8 +7954,8 @@ function applyMode() {
 // Phones held upright: use background pictures without the "PianoMind Studios" words,
 // so the words don't sit behind page titles.
 function bgUrl(img) {
-  const phone = { 'background.png?v=2': 'background_phone.png', 'bg_sunset.png': 'bg_sunset_phone.jpg', 'bg_forest.png': 'bg_forest_phone.jpg',
-    'bg_galaxy.png': 'bg_galaxy_phone.jpg', 'bg_candy.png': 'bg_candy_phone.jpg', 'bg_smooth.png': 'bg_smooth_phone.jpg',
+  const phone = { 'background.png?v=2': 'background_phone.png', 'bg_sunset.jpg': 'bg_sunset_phone.jpg', 'bg_forest.jpg': 'bg_forest_phone.jpg',
+    'bg_galaxy.jpg': 'bg_galaxy_phone.jpg', 'bg_candy.jpg': 'bg_candy_phone.jpg', 'bg_smooth.jpg': 'bg_smooth_phone.jpg',
     'bg_neon.png': '' };   // neon on phones: plain dark background
   const im = window.matchMedia('(max-width: 700px)').matches && img in phone ? phone[img] : img;
   return im ? `url('${im}')` : 'none';
@@ -7827,8 +7964,13 @@ try { window.matchMedia('(max-width: 700px)').addEventListener('change', () => a
 
 function applyTheme() {
   const id = localStorage.getItem('pms_theme') || 'default';
-  const t = APP_THEMES[id];
-  if (getMode() !== 'cartoon') return;
+  const t = APP_THEMES[id] || APP_THEMES.default;
+  if (getMode() !== 'cartoon') {
+    const old = document.getElementById('themeBtnStyle'); if (old) old.remove();
+    document.documentElement.style.removeProperty('--accent');
+    document.documentElement.style.removeProperty('--card-bg');
+    return;
+  }
   document.body.style.backgroundColor = t.bg;
   document.body.style.backgroundImage = bgUrl(t.img);
   document.documentElement.style.setProperty('--accent', t.accent);
@@ -7840,7 +7982,9 @@ function applyTheme() {
   if (id !== 'default') {
     const s = document.createElement('style');
     s.id = 'themeBtnStyle';
-    s.textContent = `.btn-lilac { background: ${t.accent}44; } .btn-blue { background: ${t.bg}; }`;
+    s.textContent = id === 'galaxy'
+      ? `.btn-lilac { background: ${t.accent}55; color: #fff; } .btn-blue { background: #4b3a9a; color: #fff; }`
+      : `.btn-lilac { background: ${t.accent}44; } .btn-blue { background: ${t.bg}; }`;
     document.head.appendChild(s);
   }
   if (id === 'galaxy') {
@@ -7852,7 +7996,7 @@ function applyTheme() {
 
 function setTheme(id) {
   try { localStorage.setItem('pms_theme', id); } catch(e) {}
-  applyTheme();
+  applyMode();   // updates the theme, the dark-text class and the status bar together
   render('settings');
 }
 
@@ -8507,7 +8651,7 @@ function finishSightReading() {
 // ── App install + offline ──
 var installPromptEvent = null;
 function isInstalledApp() {
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  return ['standalone', 'window-controls-overlay', 'fullscreen', 'minimal-ui'].some(m => window.matchMedia(`(display-mode: ${m})`).matches) || window.navigator.standalone === true;
 }
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
@@ -8531,7 +8675,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 
 // ── Start ──
 applyMode();
-document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div class="welcome-title" style="font-size:1.6rem">Piano Mind Studios</div><div style="font-size:0.9rem;color:#6b7fa3;margin-top:0.3rem">Loading your music...</div></div></div>';
+document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div class="welcome-title" style="font-size:1.6rem">Piano Mind Studios</div><div style="font-size:0.9rem;color:#526488;margin-top:0.3rem">Loading your music...</div></div></div>';
 </script>
 </body>
 </html>
