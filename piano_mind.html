@@ -507,6 +507,31 @@ h1 {
 
 
 
+
+.egg-count { text-align:center; font-size:0.9rem; margin:0.4rem 0 0.8rem; }
+.app-logo.egg-spin { animation:eggSpin 1.1s ease-in-out; }
+@keyframes eggSpin { 0% { transform:rotate(0); } 70% { transform:rotate(720deg) scale(1.15); } 100% { transform:rotate(720deg); } }
+.pebbles.egg-wiggle { animation:eggWiggle 0.4s ease-in-out; }
+@keyframes eggWiggle { 0%,100% { transform:rotate(0); } 25% { transform:rotate(-8deg); } 75% { transform:rotate(8deg); } }
+/* ── Loading screen ── */
+.ld { position:fixed; inset:0; z-index:1003; display:flex; background:linear-gradient(140deg, #2a2357 0%, #3b2f6b 55%, #5a3f7a 100%); color:#f4efff; overflow:hidden; }
+.ld-left { flex:1; display:flex; flex-direction:column; justify-content:center; padding:2rem clamp(1rem, 5vw, 4rem); min-width:0; }
+.ld-title { font-size:clamp(2rem, 7vw, 3.6rem); font-weight:700; line-height:1; letter-spacing:-0.5px; }
+.ld-title span { display:block; font-size:0.38em; letter-spacing:0.5em; color:#cfc3ff; margin-top:0.5rem; }
+.ld-splash { margin-top:1.6rem; color:#ffe14d; font-weight:700; font-size:clamp(1rem, 3.6vw, 1.5rem); line-height:1.3; text-shadow:3px 3px 0 #3f3800, 0 0 18px rgba(255,225,77,0.35);
+  transform:rotate(-6deg); transform-origin:left center; max-width:26rem; animation:ldPulse 0.9s ease-in-out infinite alternate; }
+.ld-splash.pop { animation:ldPop 0.35s ease-out, ldPulse 0.9s ease-in-out 0.35s infinite alternate; }
+.ld-msg { margin-top:2.2rem; display:flex; align-items:center; gap:0.6rem; font-size:0.95rem; color:#cfc3ff; }
+.ld-spin { width:22px; height:22px; border-width:3px; margin:0; flex:0 0 auto; }
+.ld-right { width:clamp(120px, 34vw, 300px); position:relative; overflow:hidden;
+  -webkit-mask-image:linear-gradient(transparent, #000 12%, #000 88%, transparent); mask-image:linear-gradient(transparent, #000 12%, #000 88%, transparent); }
+.ld-strip { position:absolute; inset:0; background:url('loading_icons.jpg') repeat-y center 0 / 100% auto; animation:ldScroll 9s linear infinite; }
+/* moves exactly one picture-height per loop, so the joins never show */
+@keyframes ldScroll { from { background-position:center 0; } to { background-position:center calc(-1 * var(--tile, 455px)); } }
+@keyframes ldPulse { from { transform:rotate(-6deg) scale(1); } to { transform:rotate(-6deg) scale(1.05); } }
+@keyframes ldPop { from { transform:rotate(-6deg) scale(0.6); opacity:0; } to { transform:rotate(-6deg) scale(1); opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .ld-strip, .ld-splash, .ld-splash.pop { animation:none !important; } }
+
 /* ── Accessibility ── */
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 :focus-visible { outline:3px solid #5b4fd6; outline-offset:2px; }
@@ -1171,7 +1196,10 @@ body.theme-dark .pf-card .lp-hide, body.mode-neon .pf-card .lp-hide { color:#5b4
 .news-card { background:#fff; color:#2d2346; border-radius:20px; padding:1.3rem; max-width:380px; width:100%; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
 .news-title { margin:0.2rem 0 0.8rem; font-size:1.3rem; }
 .news-card .btn { color:#2c3e50 !important; } .news-card .btn-lilac { background:#c1c3ea !important; } .news-card .btn-mint { background:#b2ebd8 !important; }
-body.mode-neon .news-card .btn { background:#fff !important; border-color:#5b4fd6 !important; text-shadow:none; }
+body .news-card .btn, body .secret-card .btn { color:#2c3e50 !important; text-shadow:none !important; }
+body .news-card .btn-lilac, body .secret-card .btn-lilac { background:#c1c3ea !important; }
+body.mode-neon .news-card .btn, body.mode-neon .secret-card .btn { background:#fff !important; border-color:#5b4fd6 !important; color:#2c3e50 !important; }
+body .secret-card .caption, body .news-card .caption { color:#526488 !important; }
 .news-item { display:flex; gap:0.7rem; text-align:left; margin-bottom:0.7rem; font-size:0.92rem; line-height:1.35; }
 .news-item span { font-size:1.4rem; }
 .wk-stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:0.4rem; margin-bottom:0.8rem; }
@@ -1360,6 +1388,7 @@ function cloudLoad(callback) {
           try {
             var c = JSON.parse(val), l = JSON.parse(local);
             if (key === 'pms_scores') val = JSON.stringify(mergeScores(c, l));
+            else if (key === 'pms_profile') val = ((l && l.at) || '') > ((c && c.at) || '') ? local : val;   // the newest quiz answers win as a whole
             else if (c && l && typeof c === 'object' && typeof l === 'object') val = JSON.stringify(mergeVal(c, l));
           } catch(e) {}   // plain text settings (theme, mode…): the cloud copy wins
         }
@@ -1406,7 +1435,7 @@ function signOut() {
   if (S.signingOut) return;
   if (currentUser && !cloudReady && !confirm("You're offline, so your latest progress isn't saved to your account yet. Sign out anyway?")) return;
   S.signingOut = true;
-  document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Saving and signing out…</div></div></div>';
+  loadingScreen('Saving and signing out…');
   const finish = () => {
     clearDeviceData(true);   // the next person on this device starts fresh
     auth.signOut().catch(function() {}).then(function() { location.reload(); });
@@ -1483,7 +1512,7 @@ auth.onAuthStateChanged(function(user) {
     S.deletedMsg = '';
     try { localStorage.removeItem('pms_guest'); } catch(e) {}
     // Show loading while fetching cloud data
-    document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div style="font-size:1rem;font-weight:600;color:#0f2744">Welcome back!</div><div style="font-size:0.85rem;color:#526488;margin-top:0.3rem">Loading your progress...</div></div></div>';
+    loadingScreen('Welcome back! Loading your progress…');
     cloudLoad(function() {
       applyMode();
       if (TEACH_REQ && !S.teachDone) { S.teachDone = true; launchTeacherGame(TEACH_REQ); }
@@ -1598,7 +1627,14 @@ const PROFILE_QS = [
   { id: 'mins', q: 'How long can you practise most days?', opts: [['5', '5 minutes'], ['10', '10 minutes'], ['15', '15 minutes'], ['20', '20 minutes or more']] },
   { id: 'fun', q: 'What do you enjoy most?', opts: [['games', '⚔️ Games and bosses'], ['scores', '🏆 Beating my best score'], ['why', '💡 Learning why things work'], ['calm', '🌿 Calm, steady practice']] },
 ];
-function profileData() { try { return JSON.parse(localStorage.getItem('pms_profile') || 'null'); } catch(e) { return null; } }
+function profileData() {
+  let p = null; try { p = JSON.parse(localStorage.getItem('pms_profile') || 'null'); } catch(e) { return null; }
+  if (!p || typeof p !== 'object') return null;
+  const pick = (v, ok, d) => ok.includes(String(v)) ? String(v) : d;
+  return { years: pick(p.years, ['0','1','2','3'], '0'), read: pick(p.read, ['0','1','2','3'], '0'), exam: pick(p.exam, ['no','1','2','3'], 'no'),
+    focus: Array.isArray(p.focus) ? p.focus.filter(f => FOCUS_GAMES[f]) : [], mins: pick(p.mins, ['5','10','15','20'], '10'),
+    fun: pick(p.fun, ['games','scores','why','calm'], 'games'), at: typeof p.at === 'string' ? p.at : '' };
+}
 // 0 = beginner … 3 = advanced, from experience, reading and exam grade
 function profileTier(pr) {
   const t = Math.round((+pr.years + +pr.read) / 2);
@@ -1648,8 +1684,8 @@ function profileNext() {
   try {
     localStorage.setItem('pms_profile', JSON.stringify(pr));
     localStorage.setItem('pms_goal', pr.mins);   // the daily goal follows the answer
-    if (profileTier(pr) >= 2) localStorage.setItem('pms_path_hidden', 'yes');   // the beginner path isn't needed
-    else localStorage.removeItem('pms_path_hidden');
+    if (profileTier(pr) >= 2) { if (localStorage.getItem('pms_path_hidden') !== 'yes') { localStorage.setItem('pms_path_hidden', 'yes'); localStorage.setItem('pms_path_auto', 'yes'); } }   // the beginner path isn't needed
+    else if (localStorage.getItem('pms_path_auto') === 'yes') { localStorage.removeItem('pms_path_hidden'); localStorage.removeItem('pms_path_auto'); }
   } catch(e) {}
   try { localStorage.setItem('pms_tutorial_done', 'yes'); } catch(e) {}
   cloudSave();
@@ -1665,7 +1701,7 @@ function profileCardHtml(where) {
       <button class="btn btn-mint btn-wide" onclick="profileStart()">Take the 1-minute quiz</button></div>`;
   }
   const t = profileTier(pr), picks = profilePicks(pr);
-  let x = `<div class="pf-card"><div class="pf-head"><strong>⭐ Picked for you</strong><span class="caption">${TIER_NAMES[t]} · ${pr.mins} min a day</span></div><div class="pf-picks">`;
+  let x = `<div class="pf-card"><div class="pf-head"><strong>⭐ Picked for you</strong><span class="caption">${TIER_NAMES[t]} · ${practiceGoal()} min a day</span></div><div class="pf-picks">`;
   picks.forEach((k, i) => { x += `<div class="pf-pick" onclick="launchPick(${i})"><span class="pf-ic">${k.icon}</span><div><div class="lp-name">${k.name}</div><div class="lp-desc">${k.lv && LEVEL_WORDS[k.lv] ? LEVEL_WORDS[k.lv] : k.g === 'boss' ? '4 bosses to beat' : 'Step-by-step lessons'}</div></div><span class="lp-go">▶</span></div>`; });
   x += `</div>`;
   if (where === 'me') x += `<button class="lp-hide" onclick="profileStart()">Retake the quiz</button>`;
@@ -1682,7 +1718,7 @@ function maybeShowNews() {
   if (seen === NEWS_ID) return;
   // brand-new players get the quiz anyway, so they don't need the news
   if (!played) { try { localStorage.setItem('pms_news_seen', NEWS_ID); } catch(e) {} return; }
-  if (document.querySelector('.news-pop')) return;
+  if (S.page !== 'home' || document.querySelector('.news-pop, .secret-pop, .ld')) return;
   const el = document.createElement('div');
   el.className = 'news-pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'newsTitle');
   el.innerHTML = `<div class="news-card"><div style="font-size:2rem">✨</div><h2 id="newsTitle" class="news-title">What's new</h2>
@@ -1691,13 +1727,39 @@ function maybeShowNews() {
     <div class="news-item"><span>⏱️</span><div><strong>Daily goal.</strong> Your practice minutes now count up on the home screen.</div></div>
     <button class="btn btn-mint btn-wide" onclick="newsClose();profileStart()">Take the quiz</button>
     <button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="newsClose()">Maybe later</button></div>`;
-  document.body.appendChild(el);
-  const first = el.querySelector('button'); if (first) first.focus();
+  popOpen(el);
 }
 function newsClose() {
   try { localStorage.setItem('pms_news_seen', NEWS_ID); } catch(e) {}
-  const el = document.querySelector('.news-pop'); if (el) el.remove();
+  closePops();
 }
+// ── Pop-ups: one at a time, Escape closes, Tab stays inside, focus returns afterwards ──
+let popReturnFocus = null;
+function popOpen(el) {
+  if (!document.querySelector('.secret-pop, .news-pop')) popReturnFocus = document.activeElement;
+  document.body.appendChild(el);
+  const b = el.querySelector('button'); if (b) b.focus();
+}
+function closePops(keepFocus) {
+  const open = document.querySelectorAll('.secret-pop, .news-pop');
+  if (!open.length) return;
+  if (!keepFocus) { const nw = document.querySelector('.news-pop'); if (nw) { try { localStorage.setItem('pms_news_seen', NEWS_ID); } catch(e) {} } }
+  open.forEach(e => e.remove());
+  if (!keepFocus && popReturnFocus && document.contains(popReturnFocus)) { try { popReturnFocus.focus(); } catch(e) {} }
+}
+function popIsOpen() { return !!document.querySelector('.secret-pop, .news-pop'); }
+// runs before the page's own key handlers (piano keys, Time Attack, secret codes)
+window.addEventListener('keydown', function(e) {
+  const pop = document.querySelector('.secret-pop, .news-pop'); if (!pop) return;
+  if (e.key === 'Escape') { e.preventDefault(); closePops(); e.stopImmediatePropagation(); return; }
+  if (e.key === 'Tab') {
+    const btns = [...pop.querySelectorAll('button')]; if (!btns.length) return;
+    const i = btns.indexOf(document.activeElement);
+    e.preventDefault(); btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+  }
+  if (!pop.contains(e.target)) e.stopImmediatePropagation();   // keep keys away from the game behind
+  else if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Tab') e.stopImmediatePropagation();
+}, true);
 
 // ═══════════════════════════════════
 //  WEEKLY REPORT: the last 7 days in one place, ready to send to a teacher or parent
@@ -1709,12 +1771,13 @@ function weeklyData() {
   const games = {}, firstHalf = [], secondHalf = [];
   let activeDays = 0, totalGames = 0, mins = 0;
   days.forEach((d, i) => {
-    const day = daily[d], m = Math.floor((prac[d] || 0) / 60);
+    const day = daily[d], m = Math.floor((+prac[d] || 0) / 60);
     mins += m;
     let n = 0;
-    if (day) {
-      Object.keys(day.games || {}).forEach(g => { games[g] = (games[g] || 0) + day.games[g]; n += day.games[g]; });
-      (day.scores || []).forEach(v => (i < 4 ? firstHalf : secondHalf).push(v));
+    if (day && typeof day === 'object') {
+      const gm = day.games && typeof day.games === 'object' ? day.games : {};
+      Object.keys(gm).forEach(g => { const c = +gm[g] || 0; games[g] = (games[g] || 0) + c; n += c; });
+      (Array.isArray(day.scores) ? day.scores : []).forEach(v => { if (typeof v === 'number' && isFinite(v)) (i < 4 ? firstHalf : secondHalf).push(v); });
     }
     totalGames += n;
     if (n || m) activeDays++;
@@ -1725,12 +1788,12 @@ function weeklyData() {
   const weekStart = days[0], bests = [];
   Object.keys(sc).forEach(k => {
     const r = sc[k];
-    if (k.startsWith('_') || !r || typeof r !== 'object' || !r.date || r.date < weekStart) return;
+    if (k.startsWith('_') || !r || typeof r !== 'object' || !r.date || r.date < weekStart || !(r.best > 0)) return;
     const [g, ...rest] = k.split('_'), lv = rest.join('_');
     const lvName = g === 'boss' && BOSSES[+lv] ? BOSSES[+lv].name : (LEVEL_WORDS[lv] || lv.replace(/_/g, ' '));
     bests.push({ name: (GAME_LABELS[g] || g) + ' · ' + lvName, score: r.best + '/' + r.total });
   });
-  const tricky = Object.entries(loadPouch()).sort((a, b) => b[1].count - a[1].count).slice(0, 5).map(([k, v]) => ({ note: prettyNote(k.split('/')[0]), count: v.count }));
+  const tricky = Object.entries(loadPouch()).filter(([k, v]) => v && typeof v === 'object' && (v.lastMissed || '') >= weekStart).sort((a, b) => (b[1].count || 0) - (a[1].count || 0)).slice(0, 5).map(([k, v]) => ({ note: prettyNote(k.split('/')[0]), count: v.count }));
   return { days, activeDays, totalGames, mins, games, avg: avg(all), early: avg(firstHalf), late: avg(secondHalf), bests, tricky,
     streak: (sc._lastDay === localDay(0) || sc._lastDay === localDay(1)) ? (sc._streak || 0) : 0, goal: practiceGoal(), daily, prac };
 }
@@ -1743,8 +1806,8 @@ function weeklyText() {
   if (w.avg !== null) t += `Average score: ${w.avg}%` + (w.early !== null && w.late !== null ? ` (start of week ${w.early}%, end of week ${w.late}%)` : '') + `\n`;
   const g = Object.entries(w.games).sort((a, b) => b[1] - a[1]);
   if (g.length) t += `\nGames played:\n` + g.map(([k, n]) => `- ${GAME_LABELS[k] || k}: ${n}`).join('\n') + `\n`;
-  if (w.bests.length) t += `\nNew best scores:\n` + w.bests.map(b => `- ${b.name}: ${b.score}`).join('\n') + `\n`;
-  if (w.tricky.length) t += `\nTricky notes to practise: ` + w.tricky.map(x => x.note).join(', ') + `\n`;
+  if (w.bests.length) t += `\nBest scores set this week:\n` + w.bests.map(b => `- ${b.name}: ${b.score}`).join('\n') + `\n`;
+  if (w.tricky.length) t += `\nTricky notes this week: ` + w.tricky.map(x => x.note).join(', ') + `\n`;
   return t;
 }
 function copyWeekly() {
@@ -1757,6 +1820,149 @@ function shareWeekly() {
   const text = weeklyText();
   if (navigator.share) navigator.share({ title: 'My PianoMind week', text: text }).catch(() => {});
   else copyWeekly();
+}
+
+// ═══════════════════════════════════
+//  MORE EASTER EGGS (12) + the secrets counter
+// ═══════════════════════════════════
+const SECRET_IDS = ['konami', 'face', 'cage', 'egg', 'cabbage', 'chromatic', 'woodpecker', 'dizzy', 'tickle', 'mozart', 'beethoven', 'doremi'];
+const SECRET_TOTAL = SECRET_IDS.length + 2;   // + B-A-C-H and the moonwalk
+function secretsFound() {
+  const d = loadScores();
+  return (d._secrets || []).filter(x => SECRET_IDS.includes(x)).length + (d._bach ? 1 : 0) + (d._moonwalk ? 1 : 0);
+}
+function foundSecret(id, icon, title, body) {
+  const d = loadScores(), list = d._secrets || [], isNew = !list.includes(id);
+  if (isNew) { d._secrets = list.concat(id); try { localStorage.setItem('pms_scores', JSON.stringify(d)); } catch(e) {} }
+  closePops(true);   // a new secret replaces any open pop-up, so nothing is missed
+  const el = document.createElement('div');
+  el.className = 'secret-pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+  el.innerHTML = `<div class="secret-card"><div style="font-size:2.2rem">${icon}</div><strong>${title}</strong><p>${body}</p>
+    <p class="caption">${isNew ? '🥚 Secret found! ' : ''}${secretsFound()} of ${SECRET_TOTAL} secrets found.</p>
+    <button class="btn btn-lilac" onclick="closePops()">Cool!</button></div>`;
+  popOpen(el);
+  if (isNew) { confetti(); checkAchievements(); cloudSave(); }
+}
+// Free piano: spell words with note names, play a chromatic run, or be a woodpecker
+const PIANO_WORDS = {
+  CABBAGE: ['cabbage', '🥬', 'C-A-B-B-A-G-E!', 'A whole 7-letter word made only of note names.'],
+  FACE:    ['face', '🙂', 'F-A-C-E!', 'F, A, C and E are the notes in the <b>spaces</b> of the treble clef, from bottom to top.'],
+  CAGE:    ['cage', '🤫', 'C-A-G-E!', 'John Cage wrote a piece called <i>4′33″</i>. The pianist sits at the piano and plays nothing for 4 minutes and 33 seconds. The music is the sounds in the room!'],
+  EGG:     ['egg', '🥚', 'E-G-G!', 'You found an egg… inside an easter egg.'],
+};
+const eggState = { letters: '', notes: [], taps: [], konami: [], logo: [], tickle: [] };
+function pianoEggs(n) {
+  const now = Date.now(), white = PIANO_WHITE.find(k => k.n === n);
+  eggState.letters = (eggState.letters + (white ? white.name : '#')).slice(-7);
+  for (const w of Object.keys(PIANO_WORDS)) if (eggState.letters.endsWith(w)) { eggState.letters = ''; const [id, ic, t, b] = PIANO_WORDS[w]; foundSecret(id, ic, t, b); return; }
+  eggState.notes = eggState.notes.concat(n).slice(-12);
+  const nn = eggState.notes;
+  if (nn.length === 12 && nn.every((x, i) => i === 0 || x - nn[i - 1] === 1)) {
+    eggState.notes = []; foundSecret('chromatic', '🌈', 'Chromatic champion!', 'You played all 12 different notes in a row, each one a half step higher. That\'s a <b>chromatic scale</b>.'); return;
+  }
+  eggState.taps = eggState.taps.filter(t => now - t.at < 4000 && t.n === n).concat({ n, at: now });
+  if (eggState.taps.length >= 10) { eggState.taps = []; foundSecret('woodpecker', '🐦', 'Woodpecker mode!', 'Tap-tap-tap-tap… 10 of the same note in a row. Your finger must be tired!'); }
+}
+// Note Reading: type a composer or "do re mi"
+const TYPED_EGGS = {
+  mozart: ['mozart', '🎻', 'Mozart!', 'Wolfgang Amadeus Mozart wrote his first little pieces when he was about 5 years old.'],
+  beethoven: ['beethoven', '🎼', 'Beethoven!', 'Beethoven kept writing music even after he lost his hearing. He wrote his famous Ninth Symphony when he was almost completely deaf.'],
+  doremi: ['doremi', '🎶', 'Do, Re, Mi!', 'About 1,000 years ago a monk called Guido of Arezzo named the notes after the first sound of each line of a hymn. "Do" used to be called "Ut"!'],
+};
+function typedEgg(word) { const e = TYPED_EGGS[word]; if (!e) return false; foundSecret(e[0], e[1], e[2], e[3]); return true; }
+// Anywhere: the famous game code, tapping the logo, tickling Pebbles
+const KONAMI = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+document.addEventListener('keydown', function(e) {
+  if (/^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || '') || S.page === 'ta_play') return;
+  eggState.konami = eggState.konami.concat((e.key || '').toLowerCase()).slice(-10);
+  if (eggState.konami.join() === KONAMI.join()) { eggState.konami = []; foundSecret('konami', '🎮', 'Up, up, down, down…', 'That\'s a famous video game cheat code! In music, practice is the only cheat code 😉'); }
+});
+document.addEventListener('click', function(e) {
+  const now = Date.now(), t = e.target;
+  if (t && t.classList && t.classList.contains('app-logo')) {
+    eggState.logo = eggState.logo.filter(x => now - x < 4000).concat(now);
+    if (eggState.logo.length >= 7) { eggState.logo = [];
+      // tapping a logo can redraw the page, so spin whichever logos are on screen a moment later
+      setTimeout(() => document.querySelectorAll('.app-logo').forEach(l => { l.classList.add('egg-spin'); setTimeout(() => l.classList.remove('egg-spin'), 1200); }), 30);
+      setTimeout(() => foundSecret('dizzy', '😵‍💫', 'Whee!', 'You tapped the clef so many times it got dizzy.'), 900); }
+  }
+  if (t && t.classList && t.classList.contains('pebbles')) {
+    eggState.tickle = eggState.tickle.filter(x => now - x < 3000).concat(now);
+    t.classList.remove('egg-wiggle'); void t.offsetWidth; t.classList.add('egg-wiggle');
+    if (eggState.tickle.length >= 5) { eggState.tickle = []; foundSecret('tickle', '🦖', 'Hehe! That tickles!', 'Pebbles is very ticklish. Please be gentle with the dinosaur.'); }
+  }
+}, true);
+
+// ═══════════════════════════════════
+//  LOADING SCREEN: scrolling icons on the right, a fun fact on the left (like Minecraft's splash text)
+// ═══════════════════════════════════
+function loadingFacts() {
+  const n = (v, fallback) => { try { return v(); } catch(e) { return fallback; } };
+  return [
+    `Pebbles has ${n(() => OUTFITS.length, 6)} outfits. Find them in the Wardrobe! 👗`,
+    `${n(() => BOSSES.length, 4)} bosses are waiting in Boss Battle ⚔️`,
+    `The Song Library has ${n(() => SONG_LIBRARY.length, 30)} songs to play 🎵`,
+    `Hanon has ${n(() => HANON_EXERCISES.length, 20)} finger exercises 🎹`,
+    `${n(() => ACHIEVEMENTS.length, 20)} trophies to unlock 🏆`,
+    'Ear Training plays C first, so you don\'t need perfect pitch 👂',
+    'Psst… there\'s a secret tune hidden on the free piano 🤫',
+    'Someone hid a dance move in Note Reading 🕺',
+    'Captain Off-Beat only fights with rhythm 🥁',
+    `Time Attack gives you ${n(() => TA_SECONDS, 60)} seconds. How many notes can you name? ⏱️`,
+    'In Mystery Melody, one note changes. Can you hear which? 🕵️',
+    'No ads. Just music 🎶',
+    'Made by a pianist, for pianists 🎹',
+    'Got one wrong? The "Why?" button shows how to work it out 💡',
+    'Play every day to grow your streak 🔥',
+    'Teachers can send a link that opens straight into a game 🧑‍🏫',
+    'Printable homework comes with an answer key 🖨️',
+    'Every C you hear in Ear Training is your anchor note ⚓',
+    'This text changes every few seconds! ✨',
+    `Pick from ${n(() => Object.keys(INSTRUMENTS).length, 8)} sounds in Settings, from harpsichord to music box 🎛️`,
+    `${n(() => Object.keys(APP_THEMES).length, 5)} colour themes, and 3 styles: Cartoon, Smooth and Neon 🎨`,
+    `Scale Explorer knows ${n(() => Object.keys(SCALE_TYPES).length * SCALE_ROOTS.length, 60)} scales 🎶`,
+    'Grumbleclef, Count Dischord, the Tritone Dragon… who comes next? ⚔️',
+    `${n(() => THEORY_LESSONS.length, 8)} theory lessons are waiting in the Learn tab 📖`,
+    `${n(() => GRADE_EXERCISES.length, 42)} grade exercises, from Grade 1 to Grade 6 📝`,
+    'The free piano has 25 keys: two whole octaves 🎹',
+    'Play the piano with your computer keys: A W S E D F T G… 💻',
+    `Rhythm Training has ${n(() => Object.keys(RHYTHM_LEVELS).length, 6)} levels, all the way up to Master 🥁`,
+    'The Chord Mixer has a Pachelbel button 🎛️',
+    'Applause only sends an icon, never a message 👏',
+    'The Daily Challenge grows a flower in your garden 🌸',
+    'Tricky Notes remembers every note you got wrong, so you can fix it 🎒',
+    'Stuck in Ear Training? Tap "Hear C again" and compare 👂',
+    `${n(() => SONG_LIBRARY[0].t, 'Ode to Joy')} is the first song in the Song Library 🎵`,
+    `Time Attack has ${n(() => Object.keys(TA_MODES).length, 3)} modes. Can you beat your best? ⏱️`,
+    'The 1-minute quiz picks games for your level 🎯',
+    'Send your weekly report to your teacher from the Me tab 📋',
+    `There are ${n(() => SECRET_TOTAL, 14)} secrets hidden in PianoMind. How many have you found? 🥚`,
+    'Try spelling words on the free piano using note names… 🤔',
+    'Pebbles is a dinosaur. A very musical dinosaur 🦖',
+    'Composers like secrets too. Try typing a famous one\'s name in Note Reading 🎻',
+  ];
+}
+let loadingTimer = null;
+function loadingScreen(msg) {
+  const facts = loadingFacts();
+  let i = Math.floor(Math.random() * facts.length);
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="ld"><div class="ld-left">
+      <div class="ld-title">PianoMind<span>STUDIOS</span></div>
+      <div class="ld-splash" id="ldSplash">${facts[i]}</div>
+      <div class="ld-msg" role="status"><span class="loading-spinner ld-spin" aria-hidden="true"></span>${msg}</div>
+    </div><div class="ld-right" aria-hidden="true"><div class="ld-strip"></div></div></div>`;
+  const strip = app.querySelector('.ld-strip');
+  if (strip) strip.style.setProperty('--tile', (strip.clientWidth * 455 / 300) + 'px');   // the picture is 300 × 455
+  clearInterval(loadingTimer);
+  loadingTimer = setInterval(() => {
+    const el = document.getElementById('ldSplash');
+    if (!el) { clearInterval(loadingTimer); return; }   // the app has moved on
+    const st = document.querySelector('.ld-strip'); if (st) st.style.setProperty('--tile', (st.clientWidth * 455 / 300) + 'px');   // phone turned? re-measure
+    let j; do { j = Math.floor(Math.random() * facts.length); } while (j === i && facts.length > 1);
+    i = j;
+    el.classList.remove('pop'); void el.offsetWidth; el.textContent = facts[i]; el.classList.add('pop');
+  }, 2500);
 }
 
 // ═══════════════════════════════════
@@ -2798,8 +3004,9 @@ function secretCheck(n) {
   el.innerHTML = `<div class="secret-card"><div style="font-size:2.2rem">🎼</div><strong>You found the secret!</strong>
     <p>You played B♭ – A – C – B.</p><p>In German, B♭ is called <b>B</b> and B is called <b>H</b>. So those notes spell <b>BACH</b>.</p>
     <p>J.S. Bach hid his own name as a tune. He used it in <i>The Art of Fugue</i>.</p>
-    <button class="btn btn-lilac" onclick="this.closest('.secret-pop').remove()">Cool!</button></div>`;
-  document.body.appendChild(el);
+    <button class="btn btn-lilac" onclick="closePops()">Cool!</button></div>`;
+  closePops(true); el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+  popOpen(el);
 }
 
 // ═══════════════════════════════════
@@ -3261,6 +3468,8 @@ const ACHIEVEMENTS = [
   { id: 'boss_4', name: 'Beat Keeper', desc: 'Beat Captain Off-Beat in Boss Battle', icon: '🥁', check: d => (d._bossBeaten || 0) >= 4 },
   { id: 'secret_bach', name: 'B-A-C-H', desc: 'Find the secret hidden in the free piano', icon: '🎼', check: d => !!d._bach },
   { id: 'secret_moonwalk', name: 'Smooth Moves', desc: 'Find the secret hidden in Note Reading', icon: '🕺', check: d => !!d._moonwalk },
+  { id: 'secret_hunter', name: 'Secret Hunter', desc: 'Find 5 hidden secrets', icon: '🔍', check: d => ((d._secrets || []).length + (d._bach ? 1 : 0) + (d._moonwalk ? 1 : 0)) >= 5 },
+  { id: 'secret_all', name: 'Egg-cellent!', desc: 'Find every hidden secret', icon: '🥚', check: d => ((d._secrets || []).length + (d._bach ? 1 : 0) + (d._moonwalk ? 1 : 0)) >= 14 },
 ];
 
 
@@ -4377,7 +4586,7 @@ function pianoDown(n, name) {
   if (pianoOscs[n]) return;
   if (S.page === 'melody_play' && S.melodyPhase === 'play') { melodyTap(n, name); return; }
   markGamePlayed('piano');
-  if (S.page === 'piano_keys') secretCheck(n);
+  if (S.page === 'piano_keys') { secretCheck(n); pianoEggs(n); }
   const ctx = getAudioCtx();
   pianoOscs[n] = startVoice(ctx, noteToFreq(n), ctx.currentTime, 0.45);
   S.pianoLastNote = name;
@@ -4961,6 +5170,7 @@ function render(page) {
       h += `<div><div style="font-size:1.1rem;font-weight:700">${streak}</div><div style="font-size:0.65rem;color:#526488">Streak</div></div>`;
       h += `</div></div>`;
       checkAchievements();
+      h += `<div class="egg-count">🥚 Secrets found: <strong>${secretsFound()} / ${SECRET_TOTAL}</strong></div>`;
       h += profileCardHtml('me');
       h += trophyCabinetHtml();
       items = [
@@ -5787,9 +5997,9 @@ function render(page) {
     h += `<div class="wk-stats"><div><b>${w.activeDays}/7</b><span>days practised</span></div><div><b>${w.mins}</b><span>minutes</span></div><div><b>${w.totalGames}</b><span>games</span></div><div><b>${w.streak}🔥</b><span>day streak</span></div></div>`;
     // one bar per day: minutes against the daily goal
     h += `<div class="card"><div class="section-label" style="margin-top:0">Minutes each day (goal: ${w.goal})</div><div class="wk-bars">`;
-    const maxM = Math.max(w.goal, ...w.days.map(d => Math.floor((w.prac[d] || 0) / 60)));
+    const maxM = Math.max(w.goal, ...w.days.map(d => Math.floor((+w.prac[d] || 0) / 60)));
     w.days.forEach(d => {
-      const m = Math.floor((w.prac[d] || 0) / 60), dt = new Date(d + 'T12:00:00');
+      const m = Math.floor((+w.prac[d] || 0) / 60), dt = new Date(d + 'T12:00:00');
       const label = dt.toLocaleDateString('en-GB', { weekday: 'short' });
       h += `<div class="wk-bar" title="${d}: ${m} min"><div class="wk-fill${m >= w.goal ? ' hit' : ''}" style="height:${Math.max(4, Math.round(m / maxM * 100))}%"></div><span>${label}</span><em>${m}</em></div>`;
     });
@@ -5801,7 +6011,7 @@ function render(page) {
     } else h += `<p class="speech">No scored games this week yet. Play one and it shows up here!</p>`;
     const g = Object.entries(w.games).sort((a, b) => b[1] - a[1]);
     if (g.length) h += `<div class="section-label">Games played</div><div class="wk-chips">` + g.map(([k, n]) => `<span class="wk-chip">${GAME_LABELS[k] || k} · ${n}</span>`).join('') + `</div>`;
-    if (w.bests.length) h += `<div class="section-label">New best scores 🏆</div><ul class="pv-list">` + w.bests.map(b => `<li>${b.name}: <strong>${b.score}</strong></li>`).join('') + `</ul>`;
+    if (w.bests.length) h += `<div class="section-label">Best scores set this week 🏆</div><ul class="pv-list">` + w.bests.map(b => `<li>${b.name}: <strong>${b.score}</strong></li>`).join('') + `</ul>`;
     if (w.tricky.length) h += `<div class="section-label">Tricky notes</div><div class="wk-chips">` + w.tricky.map(x => `<span class="wk-chip warn">${x.note} ×${x.count}</span>`).join('') + `</div><p class="caption"><a href="#" onclick="render('pouch');return false">Practise them in Tricky Notes →</a></p>`;
     h += `</div>`;
     h += `<div class="btn-row"><button id="wkCopy" class="btn btn-mint" onclick="copyWeekly()">📋 Copy report</button>${navigator.share ? `<button class="btn btn-blue" onclick="shareWeekly()">📤 Share</button>` : ''}</div>`;
@@ -5812,9 +6022,12 @@ function render(page) {
   // ── MY MUSIC PROFILE QUIZ ──
   else if (page === 'profile') {
     if (!S.pq) S.pq = { step: 0, a: {} };
-    if (S.pq.done) {
+    if (S.pq.done && !profileData()) {
+      h += `<h1>🎯 Your plan</h1><div class="card"><p class="speech">Sorry, this device wouldn't let us save your answers (private browsing can do this). Try again in a normal window.</p></div>`;
+      h += `<button class="btn btn-lilac btn-wide" onclick="S.pq=null;render('home')">Back</button>`;
+    } else if (S.pq.done) {
       const pr = profileData(), t = profileTier(pr);
-      h += `<h1>🎯 Your plan</h1><div class="card"><p class="speech">You're at the <strong>${TIER_NAMES[t]}</strong> stage. Your daily goal is now <strong>${pr.mins} minutes</strong>.</p>`;
+      h += `<h1>🎯 Your plan</h1><div class="card"><p class="speech">You're at the <strong>${TIER_NAMES[t]}</strong> stage. Your daily goal is now <strong>${practiceGoal()} minutes</strong>.</p>`;
       h += `<p class="caption">These games are on your Practice tab now. You can retake the quiz any time from the Me tab.</p></div>`;
       h += profileCardHtml('result');
       h += `<button class="btn btn-mint btn-wide" onclick="S.pq=null;S.firstRun=false;S.homeTab='practice';render('home')">Go to Practice ▶</button>`;
@@ -7305,6 +7518,7 @@ function checkNote() {
   if (['moonwalk', 'michaeljackson', 'michealjackson', 'micheljackson', 'mikejackson'].includes(secret)) {
     input.value = ''; moonwalk(); return;
   }
+  if (typedEgg(secret)) { input.value = ''; return; }
   const clean = normNoteInput(input.value);
   S.noteTries = (S.noteTries || 0) + 1;
   S.notePicked = clean;
@@ -8264,7 +8478,10 @@ function setTheme(id) {
 }
 
 function setGoal(mins) {
-  try { localStorage.setItem('pms_goal', mins); } catch(e) {}
+  try {
+    localStorage.setItem('pms_goal', mins);
+    const pr = profileData(); if (pr) { pr.mins = String(mins); localStorage.setItem('pms_profile', JSON.stringify(pr)); }   // keep the quiz answer in step
+  } catch(e) {}
   render('settings');
 }
 
@@ -8939,7 +9156,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 
 // ── Start ──
 applyMode();
-document.getElementById('app').innerHTML = '<div class="page"><div class="loading-screen"><div class="loading-spinner"></div><div class="welcome-title" style="font-size:1.6rem">PianoMind Studios</div><div style="font-size:0.9rem;color:#526488;margin-top:0.3rem">Loading your music...</div></div></div>';
+loadingScreen('Loading your music…');
 </script>
 </body>
 </html>
