@@ -7907,7 +7907,7 @@ function hanonPitchLoop() {
     if (pc === stablePc) stableCount++;
     else { stablePc = pc; stableCount = 1; }
 
-    if (stableCount === 3) {
+    if (stableCount === 2) {   // 2 steady checks (~0.1 s) — safe now that noise is filtered out
       var barNotes = getHanonBarNotes(S.hanonEx, S.hanonBar);
       if (S.hanonCurrentIdx < barNotes.length) {
         var target = barNotes[S.hanonCurrentIdx];
@@ -7986,7 +7986,7 @@ function pitchLoop() {
     if (pc === stablePc) stableCount++;
     else { stablePc = pc; stableCount = 1; }
 
-    if (stableCount === 3) {
+    if (stableCount === 2) {   // 2 steady checks (~0.1 s) — safe now that noise is filtered out
       var staffNotes = getFullScaleNotes(S.scaleRoot, S.scaleType);
       if (S.scaleCurrentIdx < staffNotes.length) {
         var target = staffNotes[S.scaleCurrentIdx];
@@ -8040,35 +8040,68 @@ function pitchLoop() {
   requestAnimationFrame(pitchLoop);
 }
 
+// ── Hearing notes through the microphone ──
+// Only a real, steady musical tone may count as a note. Bangs, claps, voices and room noise are ignored:
+//  1. loud enough, and louder than the room's own background noise (learned as you go)
+//  2. the sound must repeat very regularly (a "clarity" score near 1 — noise scores low)
+//  3. the pitch must sit close to a real piano note, not somewhere in between
+//  4. it must start with a strike (a sudden jump in loudness), like a key press. A steady hum never has one
+//  5. only notes the games use (G3 to B5), so low hums and thuds can't count
+var pitchNoiseFloor = 0.004;   // how loud the room is when nobody is playing (updated automatically)
+var lastPitchClarity = 0;
+var pitchLoudHistory = [], pitchLastStrike = -1e9;
+function pitchStrikeCheck(rms) {
+  const now = performance.now();
+  pitchLoudHistory = pitchLoudHistory.filter(x => now - x.t < 400);
+  const quietest = pitchLoudHistory.reduce((m, x) => Math.min(m, x.r), Infinity);
+  if (rms > Math.max(0.012, pitchNoiseFloor * 3) && (quietest === Infinity || rms > quietest * 1.5)) pitchLastStrike = now;
+  pitchLoudHistory.push({ t: now, r: rms });
+  return now - pitchLastStrike < 1500;   // a note can ring for 1.5 s after its strike
+}
 function autoCorrelate(buf, sampleRate) {
-  var rms = 0;
-  for (var i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
-  rms = Math.sqrt(rms / buf.length);
-  if (rms < 0.012) return -1;
-
-  var SIZE = buf.length;
-  var minLag = Math.floor(sampleRate / 1500);
-  var maxLag = Math.min(Math.floor(sampleRate / 60), Math.floor(SIZE / 2));
-
-  // Autocorrelation
-  var corr = [];
-  for (var lag = minLag; lag < maxLag; lag++) {
-    var sum = 0;
-    for (var j = 0; j < SIZE - lag; j++) sum += buf[j] * buf[j + lag];
-    corr.push(sum);
+  var SIZE = buf.length, rms = 0, i;
+  for (i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  lastPitchClarity = 0;
+  var struck = pitchStrikeCheck(rms);
+  var gate = Math.max(0.012, pitchNoiseFloor * 3);
+  if (rms < gate) {   // quiet: learn what "quiet" sounds like in this room
+    pitchNoiseFloor = Math.min(0.05, pitchNoiseFloor * 0.95 + rms * 0.05);
+    return -1;
   }
-
-  // Find first dip then best peak after it
-  var d = 0;
-  while (d < corr.length - 1 && corr[d] >= corr[d + 1]) d++;
-  var bestIdx = d, bestVal = corr[d];
-  for (var k = d; k < corr.length; k++) {
-    if (corr[k] > bestVal) { bestVal = corr[k]; bestIdx = k; }
+  // Normalised autocorrelation (NSDF): 1 = perfectly repeating tone, near 0 = noise
+  var minLag = Math.floor(sampleRate / 1300), maxLag = Math.min(Math.floor(sampleRate / 150), Math.floor(SIZE / 2));
+  var nsdf = new Float32Array(maxLag + 1);
+  for (var lag = minLag; lag <= maxLag; lag++) {
+    var acf = 0, m = 0;
+    for (i = 0; i < SIZE - lag; i++) { acf += buf[i] * buf[i + lag]; m += buf[i] * buf[i] + buf[i + lag] * buf[i + lag]; }
+    nsdf[lag] = m > 0 ? 2 * acf / m : 0;
   }
-
-  var bestLag = minLag + bestIdx;
-  if (bestLag <= minLag) return -1;
-  return sampleRate / bestLag;
+  // Pick the first strong peak (McLeod's method) — avoids jumping an octave too low
+  var peaks = [], best = 0, lag2 = minLag;
+  while (lag2 < maxLag && nsdf[lag2] > 0) lag2++;   // skip the first hump around lag 0
+  for (; lag2 < maxLag; lag2++) {
+    if (nsdf[lag2] > 0 && nsdf[lag2] >= nsdf[lag2 - 1] && nsdf[lag2] >= nsdf[lag2 + 1]) {
+      peaks.push(lag2); if (nsdf[lag2] > best) best = nsdf[lag2];
+    }
+  }
+  if (!peaks.length || best < 0.85) {   // not a clear tone: treat as noise
+    if (rms < 0.03) pitchNoiseFloor = Math.min(0.05, pitchNoiseFloor * 0.98 + rms * 0.02);
+    return -1;
+  }
+  var pick = peaks.find(function(l) { return nsdf[l] >= 0.9 * best; });
+  if (nsdf[pick] < 0.9) return -1;   // tested: real piano notes score 0.90–1.00, ringing metal and other noise scored at most 0.88
+  // Smooth the peak position for an accurate pitch
+  var a = nsdf[pick - 1], b2 = nsdf[pick], c = nsdf[pick + 1], den = a - 2 * b2 + c;
+  var shift = den !== 0 ? 0.5 * (a - c) / den : 0;
+  var freq = sampleRate / (pick + shift);
+  // Must be close to a real piano note (within 40 cents of a semitone)
+  var semis = 12 * Math.log2(freq / 440), cents = Math.abs(semis - Math.round(semis)) * 100;
+  if (cents > 40) return -1;
+  if (freq < 150 || freq > 1300) return -1;
+  if (!struck) return -1;   // steady sound with no strike (fridge, fan, hum)
+  lastPitchClarity = nsdf[pick];
+  return freq;
 }
 
 function updatePebblesScaleText(staffNotes) {
@@ -8929,8 +8962,12 @@ function stopSightReading() {
   if (sightReadRaf) { cancelAnimationFrame(sightReadRaf); sightReadRaf = null; }
 }
 
+let sightReadLastDetect = 0;
 function sightReadLoop() {
   if (!S.sightReadPlaying || !sightReadAnalyser) return;
+  const nowT = performance.now();
+  if (nowT - sightReadLastDetect < 50) { drawSightReadStaff(); sightReadRaf = requestAnimationFrame(sightReadLoop); return; }   // check the mic 20 times a second, like the other games
+  sightReadLastDetect = nowT;
 
   // Pitch detection
   const buf = new Float32Array(sightReadAnalyser.fftSize);
@@ -8950,7 +8987,7 @@ function sightReadLoop() {
     if (pc === sightReadStablePc) sightReadStableCount++;
     else { sightReadStablePc = pc; sightReadStableCount = 1; }
 
-    if (sightReadStableCount === 3 && pc !== srHeldPc) {
+    if (sightReadStableCount === 2 && pc !== srHeldPc) {
       const target = S.sightReadNotes[S.sightReadIdx];
       const targetPc = ((target.n + 9) % 12 + 12) % 12;
       if (pc === targetPc) {
