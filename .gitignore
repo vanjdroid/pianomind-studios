@@ -1,0 +1,20 @@
+# Files and folders that publish.bat should NEVER put on the website.
+# (Git reads this file. Everything listed here stays on this computer only.)
+
+# Copies of files Claude sent in chat
+Claude outputs/
+
+# Play Store kit (not using the Play Store)
+play_store_kit/
+
+# Old Python version of the app and test files
+*.py
+Untitled-1.html
+auto_publish.bat
+fix_white_bg.bat
+__pycache__/
+
+# Computer junk
+Thumbs.db
+desktop.ini
+.DS_Store

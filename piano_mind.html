@@ -165,10 +165,14 @@ h1 {
 .pebbles {
   display: block;
   margin: 0.5rem auto;
+  flex-shrink: 0;
   background: rgba(255,255,255,0.85);
   border-radius: 22%;
   padding: 4px;
 }
+
+/* Pebbles beside a speech bubble: keep him on the left, next to the words */
+[style*="display:flex"] > .pebbles { margin: 0.5rem 0; }
 
 /* ── Glass card ── */
 .card {
@@ -560,6 +564,11 @@ body.mode-neon .inst-desc, body.mode-neon .tc-plaque-l, body.mode-neon .pv-date 
 body.theme-dark #app [style*="color:#0f2744"], body.mode-neon #app [style*="color:#0f2744"],
 body.theme-dark #app [style*="color:#2c5f8a"], body.mode-neon #app [style*="color:#2c5f8a"] { color:#f4efff !important; }
 body.theme-dark #app [style*="color:#526488"], body.mode-neon #app [style*="color:#526488"] { color:#c3cbe6 !important; }
+body.theme-dark #app [style*="color:#2c3e50"], body.mode-neon #app [style*="color:#2c3e50"] { color:#e8e4f8 !important; }
+body.theme-dark .round-opt, body.theme-dark .play-btn { background:rgba(255,255,255,0.10); color:#f4efff; }
+body.theme-dark .round-opt.active { background:#c1c3ea; color:#2c3e50; }
+body.theme-dark #app [style*="color:#5b4fd6"], body.mode-neon #app [style*="color:#5b4fd6"] { color:#cfc3ff !important; }
+body.theme-dark .tl-chip.on { background:#c1c3ea; border-color:#c1c3ea; color:#1c1042; }
 body.theme-dark .btn-mint, body.theme-dark .btn-coral, body.theme-dark .btn-pink { color:#2c3e50; }
 body.theme-dark .streak-banner { background:rgba(255,255,255,0.12); color:#f4efff; }
 body.theme-dark #app a, body.mode-neon #app a { color:#cfc3ff; }
@@ -1317,7 +1326,7 @@ function saveNowButton(btn) {
   btn.disabled = true; btn.textContent = 'Saving…';
   db.collection('users').doc(currentUser.uid).get()   // a quick check that the cloud can be reached
     .then(() => cloudSave(true)).then(() => { btn.textContent = '✅ Saved'; })
-    .catch(() => { btn.textContent = 'Could not save. Try again'; btn.disabled = false; });
+    .catch(() => { btn.textContent = 'Could not save. Please try again.'; btn.disabled = false; });
 }
 function cloudKeys() {
   try { return Object.keys(localStorage).filter(k => k.startsWith('pms_') && !DEVICE_ONLY_KEYS.includes(k)); } catch(e) { return []; }
@@ -1411,7 +1420,7 @@ setInterval(function() { if (currentUser) cloudSave(); }, 30000);
 // Sign in with Google
 function signInGoogle() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(function(e) { alert('Sign in failed: ' + e.message); });
+  auth.signInWithPopup(provider).catch(function(e) { console.warn(e); if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') alert('Sign in did not work. Please try again.'); });
 }
 
 // Sign in with email/password
@@ -1422,10 +1431,10 @@ function signInEmail(email, password) {
       auth.createUserWithEmailAndPassword(email, password).catch(function(e2) {
         if (e2.code === 'auth/email-already-in-use') alert('That password is not right for this email. Please try again.');
         else if (e2.code === 'auth/weak-password') alert('New account? Your password needs at least 6 characters.');
-        else alert('Error: ' + e2.message);
+        else { console.warn(e2); alert('Sign in did not work. Please try again.'); }
       });
     } else {
-      alert('Sign in failed: ' + e.message);
+      console.warn(e); alert('Sign in did not work. Check your email and password, then try again.');
     }
   });
 }
@@ -1490,7 +1499,7 @@ async function deleteMyAccount() {
     S.deleting = false; S.delBusy = false;
     S.delMsg = e.code === 'cancelled' || e.code === 'auth/popup-closed-by-user' ? 'Cancelled. Nothing was deleted.'
       : e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Wrong password. Nothing was deleted.'
-      : 'Something went wrong (' + (e.code || 'error') + '). Please try again.';
+      : (console.warn(e), 'Something went wrong. Please try again.');
     render('delete_account');
   }
 }
@@ -1848,7 +1857,7 @@ const PIANO_WORDS = {
   CABBAGE: ['cabbage', '🥬', 'C-A-B-B-A-G-E!', 'A whole 7-letter word made only of note names.'],
   FACE:    ['face', '🙂', 'F-A-C-E!', 'F, A, C and E are the notes in the <b>spaces</b> of the treble clef, from bottom to top.'],
   CAGE:    ['cage', '🤫', 'C-A-G-E!', 'John Cage wrote a piece called <i>4′33″</i>. The pianist sits at the piano and plays nothing for 4 minutes and 33 seconds. The music is the sounds in the room!'],
-  EGG:     ['egg', '🥚', 'E-G-G!', 'You found an egg… inside an easter egg.'],
+  EGG:     ['egg', '🥚', 'E-G-G!', 'You found an egg inside an Easter egg!'],
 };
 const eggState = { letters: '', notes: [], taps: [], konami: [], logo: [], tickle: [] };
 function pianoEggs(n) {
@@ -2004,14 +2013,14 @@ const EAR_TIPS = [
   "Higher notes sound brighter, lower notes sound deeper!",
   "Try humming the note and then matching it on the keyboard!",
   "Start from a note you know and count up or down!",
-  "The more you practice, the faster you'll recognize notes!",
+  "The more you practise, the faster you'll know the notes!",
   "Close your eyes and really focus on the sound!",
   "Every musician started by guessing — keep at it!",
   "Try to remember what middle C sounds like as your anchor!",
 ];
 
 const NOTE_TIPS = [
-  "The notes in Treble clef spell out 'FACE' in the gaps!",
+  "The spaces in the treble clef spell FACE!",
   "In bass clef the gaps spell 'ACEG' — All Cows Eat Grass!",
   "Try counting up or down from a note you already know!",
   "Treble lines: Every Green Broccoli Defeats Flu (E G B D F)!",
@@ -2019,7 +2028,7 @@ const NOTE_TIPS = [
   "Middle C sits on its own little ledger line below treble or above bass!",
   "Notes go in alphabetical order: A B C D E F G, then start over!",
   "If the note is ON a line, it's a line note. BETWEEN lines = space note!",
-  "Sharps (#) raise a note by one tiny step. Flats (b) lower it by one!",
+  "A sharp (♯) raises a note by a half step. A flat (♭) lowers it by a half step!",
   "Lines and spaces go up the alphabet as you go UP the staff!",
   "The bottom line of treble clef is always E. Count up from there!",
   "The bottom line of bass clef is always G. Count up from there!",
@@ -2206,13 +2215,13 @@ const HARD_INT   = [...MEDIUM_INT,'Augmented 4th','Diminished 5th','Minor 7th','
 
 const INTERVAL_TIPS = [
   "Count both notes! C up to E = C-D-E = a 3rd!",
-  "Minor = smaller version, Major = bigger version!",
+  "A minor interval is one half step smaller than a major one!",
   "Perfect intervals: unisons, 4ths, 5ths, and octaves!",
   "Major 3rd = 4 half steps, Minor 3rd = 3!",
-  "Most 4ths are Perfect. Only F-B is Augmented!",
-  "Most 5ths are Perfect. Only B-F is Diminished!",
+  "On white keys, every 4th is Perfect except F up to B. That one is Augmented!",
+  "On white keys, every 5th is Perfect except B up to F. That one is Diminished!",
   "An octave = same letter name, 8 notes apart!",
-  "E-F and B-C are Minor 2nds. The rest are Major 2nds!",
+  "On white keys, E-F and B-C are Minor 2nds. The rest are Major 2nds!",
   "6ths and 7ths: count up from the bottom note!",
   "Same spot on the staff = Perfect Unison!",
 ];
@@ -2246,7 +2255,7 @@ const NOTE_SEMI_C = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
 const TREBLE_CHORD_H = {C:-1, D:-0.5, E:0, F:0.5, G:1, A:1.5, B:2};
 const BASS_CHORD_H = {G:0, A:0.5, B:1, C:1.5, D:2, E:2.5, F:3};
 const TREBLE_ROOT_N = {C:-9, D:-7, E:-5, F:-4, G:-2, A:0, B:2};
-const BASS_ROOT_N = {C:-21, D:-19, E:-17, F:-16, G:-14, A:-12, B:-10};
+const BASS_ROOT_N = {C:-21, D:-19, E:-17, F:-16, G:-26, A:-24, B:-22};   // G2 A2 B2 sit at the bottom of the bass staff
 
 function chordNameSteps(semi) {
   if (semi === 0) return 0;
@@ -2454,7 +2463,7 @@ const OUTFITS = [
   {id:'default', name:'Classic Pebbles', desc:'The original!'},
   {id:'cool',    name:'Cool Pebbles',    desc:'Sunglasses on!'},
   {id:'party',   name:'Party Pebbles',   desc:'Ready to celebrate!'},
-  {id:'winter',  name:'Winter Pebbles',  desc:'Cozy and warm!'},
+  {id:'winter',  name:'Winter Pebbles',  desc:'Cosy and warm!'},
   {id:'space',   name:'Space Pebbles',   desc:'To the moon!'},
   {id:'pirate',  name:'Pirate Pebbles',  desc:'Arrr matey!'},
 ];
@@ -2475,7 +2484,8 @@ const SCALE_TYPES = {
   'Major': [0,2,4,5,7,9,11,12],
   'Natural Minor': [0,2,3,5,7,8,10,12],
   'Harmonic Minor': [0,2,3,5,7,8,11,12],
-  'Pentatonic': [0,2,4,7,9,12],
+  'Melodic Minor': [0,2,3,5,7,9,11,12],   // going up; coming down it uses the natural minor
+  'Major Pentatonic': [0,2,4,7,9,12],
   'Blues': [0,3,5,6,7,10,12],
 };
 const SCALE_ROOTS = [
@@ -2507,8 +2517,8 @@ const ALT_ACC = { '-2': 'double_flat', '-1': 'flat', '0': 'natural', '1': 'sharp
 function spelledName(sp) { return sp.letter + ALT_SYM[sp.alt]; }
 // Which letter each scale note uses, counted up from the root's letter
 const SCALE_LETTER_STEPS = {
-  'Major': [0,1,2,3,4,5,6], 'Natural Minor': [0,1,2,3,4,5,6], 'Harmonic Minor': [0,1,2,3,4,5,6],
-  'Pentatonic': [0,1,2,4,5], 'Blues': [0,2,3,3,4,6],   // blues: 1 ♭3 4 ♯4 5 ♭7
+  'Major': [0,1,2,3,4,5,6], 'Natural Minor': [0,1,2,3,4,5,6], 'Harmonic Minor': [0,1,2,3,4,5,6], 'Melodic Minor': [0,1,2,3,4,5,6],
+  'Major Pentatonic': [0,1,2,4,5], 'Blues': [0,2,3,3,4,6],   // blues: 1 ♭3 4 ♯4 5 ♭7
 };
 // D♭ minor and A♭ minor would need double flats, so music uses C♯ minor and G♯ minor instead
 function scaleRootName(rootIdx, type) {
@@ -2525,7 +2535,7 @@ function getScaleSpelling(rootIdx, type) {
 function getScaleNoteNames(rootIdx, type) { return getScaleSpelling(rootIdx, type).map(spelledName); }
 const STEP_LABELS = {
   'Major':'W W H W W W H', 'Natural Minor':'W H W W H W W',
-  'Harmonic Minor':'W H W W H W+H H', 'Pentatonic':'W W W+H W W+H',
+  'Harmonic Minor':'W H W W H W+H H', 'Melodic Minor':'Up: W H W W W W H · Down: same as natural minor', 'Major Pentatonic':'W W W+H W W+H',
   'Blues':'W+H W H H W+H W',
 };
 
@@ -2535,30 +2545,33 @@ const STEP_LABELS = {
 
 const C_MAJ_SEMI = [0, 2, 4, 5, 7, 9, 11];
 const C_MAJ_NAME = ['C','D','E','F','G','A','B'];
-const HANON_BARS = 14;
 const HANON_PAIR_COLORS = ['#f7b0a6','#fbfac6','#b2ebd8','#a2cafb','#c1c3ea','#e1bcd8'];
 
+// Notes and fingering are from the real book: C.-L. Hanon, The Virtuoso Pianist, Part 1
+// (Schirmer 1900 edition, typeset by the Mutopia Project, CC BY-SA 4.0).
+// n = every right-hand note (one character each: base-36 step number + 2, 0 = C).
+// f = the book's finger for each note (0 = none printed). a = notes going up. o = octave shift.
 const HANON_EXERCISES = [
-  { num:1,  target:'4 & 5',              up:[0,2,3,4,5,4,3,2], rh:[1,2,3,4,5,4,3,2], lh:[5,4,3,2,1,2,3,4] },
-  { num:2,  target:'3 & 4',              up:[0,2,5,4,3,4,3,2], rh:[1,2,5,4,3,4,3,2], lh:[5,3,1,2,3,2,3,4] },
-  { num:3,  target:'2, 3 & 4',           up:[0,3,2,1,4,3,2,1], rh:[1,3,2,1,4,3,2,1], lh:[5,3,4,5,2,3,4,5] },
-  { num:4,  target:'3, 4 & 5',           up:[0,3,4,5,6,5,4,3], rh:[1,2,3,4,5,4,3,2], lh:[5,4,3,2,1,2,3,4] },
-  { num:5,  target:'Equalization',        up:[0,4,3,2,1,2,3,4], rh:[1,5,4,3,2,3,4,5], lh:[5,1,2,3,4,3,2,1] },
-  { num:6,  target:'5th Finger',          up:[0,5,4,3,2,3,4,5], rh:[1,5,4,3,2,3,4,5], lh:[5,1,2,3,4,3,2,1] },
-  { num:7,  target:'3, 4 & 5',           up:[0,2,1,0,4,3,2,1], rh:[1,2,1,2,5,4,3,2], lh:[5,4,5,4,1,2,3,4] },
-  { num:8,  target:'Flexibility',         up:[0,2,1,3,2,4,3,2], rh:[1,2,1,3,2,4,3,2], lh:[5,4,5,3,4,2,3,4] },
-  { num:9,  target:'Thumb Extensions',    up:[0,3,2,4,3,5,4,3], rh:[1,3,2,4,3,5,4,3], lh:[5,3,4,2,3,1,2,3] },
-  { num:10, target:'4th Finger Trill',    up:[0,3,2,4,3,4,3,2], rh:[1,3,2,4,3,4,3,2], lh:[5,3,4,2,3,2,3,4] },
-  { num:11, target:'4 & 5 Stretch',       up:[0,4,3,4,5,4,3,2], rh:[1,5,4,5,5,5,4,3], lh:[5,1,2,1,1,1,2,3] },
-  { num:12, target:'1 to 5 Stretch',      up:[0,2,4,3,5,4,3,2], rh:[1,2,4,3,5,4,3,2], lh:[5,4,2,3,1,2,3,4] },
-  { num:13, target:'3, 4 & 5',           up:[0,2,4,3,4,5,4,3], rh:[1,2,4,3,4,5,4,3], lh:[5,4,2,3,2,1,2,3] },
-  { num:14, target:'3 & 4 Trill',         up:[0,2,4,3,4,3,2,1], rh:[1,2,4,3,4,3,2,1], lh:[5,4,2,3,2,3,4,5] },
-  { num:15, target:'1 & 2 Extension',     up:[0,1,3,2,4,3,2,1], rh:[1,2,3,2,4,3,2,1], lh:[5,4,3,4,2,3,4,5] },
-  { num:16, target:'3 to 5 Extension',    up:[0,2,1,3,2,4,3,2], rh:[1,2,1,3,2,4,3,2], lh:[5,4,5,3,4,2,3,4] },
-  { num:17, target:'Stamina',             up:[0,2,4,5,6,5,4,3], rh:[1,2,3,4,5,4,3,2], lh:[5,4,3,2,1,2,3,4] },
-  { num:18, target:'Equalizing',          up:[0,2,4,3,2,3,4,3], rh:[1,2,4,3,2,3,4,3], lh:[5,4,2,3,4,3,2,3] },
-  { num:19, target:'All Fingers',         up:[0,2,4,5,4,3,2,1], rh:[1,2,4,5,4,3,2,1], lh:[5,4,2,1,2,3,4,5] },
-  { num:20, target:'Extension Prep',      up:[0,2,4,5,6,5,4,3], rh:[1,2,3,4,5,4,3,2], lh:[5,4,3,2,1,2,3,4] },
+  {"num":1,"target":"4-5","n":"2456765435678765467898765789a987689aba9879abcba98abcdcba9bcdedcbacdefedcbdefgfedcefghgfedfghihgfeghijihgfhijkjihkihgfghijhgfefghigfedefghfedcdefgedcbcdefdcbabcdecba9abcdba989abca98789ab9876789a8765678976545678654345675432345643212342","f":"12345432123454321234543212345432123454321234543212345432123454321234543212345432123454321234543212345432123454325432123454321234543212345432123454321234543212345432123454321234543212345432123454321234543212345432123454321234543212340","a":112,"o":0,"rhU":"12345432","rhD":"54321234","lhU":"54321234","lhD":"12345432"},
+  {"num":2,"target":"3-4","n":"24765654358767654698787657a9898768ba9a9879cbaba98adcbcba9bedcdcbacfededcbdgfefedcehgfgfedfihghgfegjihihgfhkjijihkhfghghijgefgfghifdefefghecdedefgdbcdcdefcabcbcdeb9ababcda89a9abc978989ab8678789a75676789645656785345456742343452","f":"125434321254343212543432125434321254343212543432125434321254343212543432125434321254343212543432125434321254343252123234521232345212323452123234521232345212323452123234521232345212323452123234521232345212323452123234521232340","a":112,"o":0,"rhU":"12543432","rhD":"52123234","lhU":"53123234","lhD":"13543432"},
+  {"num":3,"target":"2-3-4","n":"24765456358765674698767857a9878968ba989a79cba9ab8adcbabc9bedcbcdacfedcdebdgfedefcehgfefgdfihgfghegjihghifhkjihijkhfghihgjgefghgfifdefgfehecdefedgdbcdedcfcabcdcbeb9abcbada89aba9c9789a98b8678987a75678769645676585345654742345432","f":"125432341254323412543234125432341254323412543234125432341254323412543234125432341254323412543234125432341254323452123432521234325212343252123432521234325212343252123432521234325212343252123432521234325212343252123432521234320","a":112,"o":0,"rhU":"12543234","rhD":"52123432","lhU":"53123432","lhD":"13543234"},
+  {"num":4,"target":"3-4-5","n":"2324765434358765454698765657a9876768ba987879cba9898adcba9a9bedcbabacfedcbcbdgfedcdcehgfededfihgfefegjihgfgfhkjihkjkhfghijijgefghihifdefghghecdefgfgdbcdefefcabcdedeb9abcdcda89abcbc9789abab86789a9a756789896456787853456767423452","f":"121250021212500212125002121250021212500212125002121250021212500212125002121250021212500212125002121250021212500254521020545210205452102054521020545210205452102054521020545210205452102054521020545210205452102054521020545210200","a":112,"o":0,"rhU":"12125002","rhD":"54521020","lhU":"54531003","lhD":"12135030"},
+  {"num":5,"target":"1-2-3-4-5","n":"2767564538786756498978675a9a89786bab9a897cbcab9a8dcdbcab9edecdbcafefdecdbgfgefdechghfgefdihighfgejijhighfkjkijhighgihjikfgfhgihjefegfhgidedfegfhcdcedfegbcbdcedfabacbdce9a9bacbd898a9bac78798a9b6768798a5657687945465768343546572","f":"154534231545342315453423154534231545342315453423154534231545342315453423154534231545342315453423154534231545342312132435121324351213243512132435121324351213243512132435121324351213243512132435121324351213243512132435121324350","a":112,"o":0,"rhU":"15453423","rhD":"12132435","lhU":"51213243","lhD":"54534231"},
+  {"num":6,"target":"5","n":"2767574738786858498979695a9a8a7a6bab9b8b7cbcac9c8dcdbdad9edecebeafefdfcfbgfgegdgchghfhehdihigifiejijhjgjfkjkikhgkfgfhfifjefegeheidedfdgdhcdcecfcgbcbdbebfabacadae9a9b9c9d898a8b8c78797a7b6768696a56575859454647483435363723242542","f":"154535251545352515453525154535251545352515453525154535251545352515453525154535251545352515453525154535251545352551213141512131415121314151213141512131415121314151213141512131415121314151213141512131415121314151213141512131410","a":112,"o":0,"rhU":"15453525","rhD":"51213141","lhU":"51213141","lhD":"15453525"},
+  {"num":7,"target":"3-4-5","n":"2435465435465765465768765768798768798a98798a9ba98a9bacba9bacbdcbacbdcedcbdcedfedcedfegfedfegfhgfegfhgihgfhgihjihkijhighijhighfghighfgefghfgefdefgefdecdefdecdbcdecdbcabcdbcab9abcab9a89ab9a89789a89786789786756786756456756453452","f":"132435431324354313243543132435431324354313243543132435431324354313243543132435431324354313243543132435431324353353423134534231345342313453423134534231345342313453423134534231345342313453423134534231345342313453423134534231340","a":112,"o":0,"rhU":"13243543","rhD":"53423134","lhU":"53423134","lhD":"13243543"},
+  {"num":8,"target":"1-2-3-4-5","n":"246756453578675646897867579a897868ab9a8979bcab9a8acdbcab9bdecdbcacefdecdbdfgefdeceghfgefdfhighfgegijhighfhjkijhikigfhgihjhfegfhgigedfegfhfdcedfegecbdcedfdbacbdceca9bacbdb98a9baca8798a9b9768798a86576879754657686435465753243542","f":"124534231245342312453423124534231245342312453423124534231245342312453423124534231245342312453423124534231245342354213243542132435421324354213243542132435421324354213243542132435421324354213243542132435421324354213243542132430","a":112,"o":0,"rhU":"12453423","rhD":"54213243","lhU":"54213243","lhD":"12453423"},
+  {"num":9,"target":"Stretch 4-5, all fingers","n":"245465763565768746768798578798a96898a9ba79a9bacb8abacbdc9bcbdcedacdcedfebdedfegfcefegfhgdfgfhgiheghgihjifhihjikjkihighfgjhghfgefigfgefdehfefdecdgedecdbcfdcdbcabecbcab9adbab9a89ca9a8978b9897867a87867569767564586564534754534342","f":"123243541232435412324354123243541232435412324354123243541232435412324354123243541232435412324354123243541232435454342312543423125434231254342312543423125434231254342312543423125434231254342312543423125434231254342312543423120","a":112,"o":0,"rhU":"12324354","rhD":"54342312","lhU":"54342312","lhD":"12324354"},
+  {"num":10,"target":"3-4 (trill)","n":"2765454538765656498767675a9878786ba989897cba9a9a8dcbabab9edcbcbcafedcdcdbgfededechgfefefdihgfgfgejihghghfkjihihikfghihihjefghghgidefgfgfhcdefefegbcdededfabcdcdce9abcbcbd89ababac789a9a9b6789898a56787879456767683456565723454542","f":"154323231543232315432323154323231543232315432323154323231543232315432323154323231543232315432323154323231543232351000000510000005100000051000000510000005100000051000000510000005100000051000000510000005100000051000000510000000","a":112,"o":0,"rhU":"15432323","rhD":"51000000","lhU":"51234343","lhD":"15000000"},
+  {"num":11,"target":"4-5 (trill)","n":"24767656358787674698987857a9a98968baba9a79cbcbab8adcdcbc9bededcdacfefedebdgfgfefcehghgfgdfihihghegjijihifhkjkjijkhfgfghgjgefefgfifdedefehecdcdedgdbcbcdcfcababcbeb9a9abada8989a9c9787898b8676787a75656769645456585343454742323432","f":"125454341254543412545434125454341254543412545434125454341254543412545434125454341254543412545434125454341254543452121232521212325212123252121232521212325212123252121232521212325212123252121232521212325212123252121232521212320","a":112,"o":0,"rhU":"12545434","rhD":"52121232","lhU":"53121232","lhD":"13545434"},
+  {"num":12,"target":"Stretch 1-5, and 3-4-5","n":"624323428354345394654564a5765675b6876786c7987897d8a989a8e9ba9ab9facbabcagbdcbcdbhcedcdecidfedefdjegfefgekfhgfghifkijkjikejhijihjdighihgichfghgfhbgefgfegafdefedf9ecdedce8dbcdcbd7cabcbac6b9aba9b5a89a98a497898793867876827567657264565452","f":"51321231513212315132123151321231513212315132123151321231513212315132123151321231513212315132123151321231513212311534543515345435153454351534543515345435153454351534543515345435153454351534543515345435153454351534543515345435153454350","a":112,"o":0,"rhU":"51321231","rhD":"15345435","lhU":"15345435","lhD":"51321231"},
+  {"num":13,"target":"3-4-5","n":"425364565364756764758678758697898697a89a97a8b9aba8b9cabcb9cadbcdcadbecdedbecfdefecfdgefgfdgehfghgehfighihfigjhijikhjighihjgihfghgifhgefgfhegfdefegdfecdedfcedbcdcebdcabcbdacb9abac9ba89a9b8a97898a7986787968756768576456574653452","f":"314253453142534531425345314253453142534531425345314253453142534531425345314253453142534531425345314253453142534535243134352431343524313435243134352431343524313435243134352431343524313435243134352431343524313435243134352431340","a":112,"o":0,"rhU":"31425345","rhD":"35243134","lhU":"35241321","lhD":"31423532"},
+  {"num":14,"target":"3-4 (trill)","n":"23545465346565764576768756878798679898a978a9a9ba89babacb9acbcbdcabdcdcedbcededfecdfefegfdegfgfhgefhghgihfgihihjikjhihighjighghfgihfgfgefhgefefdegfdedecdfecdcdbcedbcbcabdcabab9acb9a9a89ba898978a97878679867675687565645764545342","f":"124343541243435412434354124343541243435412434354124343541243435412434354124343541243435412434354124343541243435354232313542323135423231354232313542323135423231354232313542323135423231354232313542323135423231354232313542323130","a":112,"o":0,"rhU":"12434354","rhD":"54232313","lhU":"54232313","lhD":"12434354"},
+  {"num":15,"target":"Stretch 1-2, all fingers","n":"2435465735465768465768795768798a68798a9b798a9bac8a9bacbd9bacbdceacbdcedfbdcedfegcedfegfhdfegfhgiegfhgihjfhgihjijkijhighfjhighfgeighfgefdhfgefdecgefdecdbfdecdbcaecdbcab9dbcab9a8cab9a897b9a89786a89786759786756486756453756453432","f":"121324351213243512132435121324351213243512132435121324351213243512132435121324351213243512132435121324351213243453423121534231215342312153423121534231215342312153423121534231215342312153423121534231215342312153423121534231320","a":112,"o":0,"rhU":"12132435","rhD":"53423121","lhU":"53423121","lhD":"12132435"},
+  {"num":16,"target":"Stretch 3-5, and 3-4-5","n":"2434765635458767465698785767a9896878ba9a7989cbab8a9adcbc9babedcdacbcfedebdcdgfefcedehgfgdfefihghegfgjihifhghkjijkhihfghgjghgefgfifgfdefehefecdedgdedbcdcfcdcabcbebcb9abadaba89a9c9a97898b8986787a78756769676456585653454745423432","f":"132354341323543413235434132354341323543413235434132354341323543413235434132354341323543413235434132354341323543452321232523212325232123252321232523212325232123252321232523212325232123252321232523212325232123252321232523212320","a":112,"o":0,"rhU":"13235434","rhD":"52321232","lhU":"53431232","lhD":"13235434"},
+  {"num":17,"target":"Stretch 1-2, 2-4, 4-5","n":"24768767358798784698a98957a9ba9a68bacbab79cbdcbc8adcedcd9bedfedeacfegfefbdgfhgfgcehgihghdfihjihiegjikjijfhkjlkjikhfgefgejgefdefdifdecdechecdbcdbgdbcabcafcab9ab9eb9a89a8da897897c9786786b8675675a756456496453453853423432","f":"1243543412435434124354341243543412435434124354341243543412435434124354341243543412435434124354341243543412435432532312315323123153231231532312315323123153231231532312315323123153231231532312315323123153231231532312310","a":112,"o":0,"rhU":"12435434","rhD":"53231231","lhU":"54231232","lhD":"12435435"},
+  {"num":18,"target":"1-2-3-4-5","n":"235465343465764545768756568798676798a97878a9ba8989bacb9a9acbdcababdcedbcbcedfecdcdfegfdedegfhgefefhgihfgfgihjighkjhighjijighfgihihfgefhghgefdegfgfdecdfefecdbcededbcabdcdcab9acbcb9a89baba8978a9a97867989867568787564576764534652","f":"124354231243542312435423124354231243542312435423124354231243542312435423124354231243542312435423124354231243541254231243542312435423124354231243542312435423124354231243542312435423124354231243542312435423124354231243542313541","a":112,"o":0,"rhU":"12435423","rhD":"54231243","lhU":"54231243","lhD":"12435423"},
+  {"num":19,"target":"1-2-3-4-5","n":"2756754638678657497897685a89a8796b9ab98a7cabca9b8dbcdbac9ecdecbdafdefdcebgefgedfchfghfegdighigfhejhijhgifkijkihjkfhgfhigjegfeghfidfedfgehcedcefdgbdcbdecfacbacdbe9ba9bcad8a98ab9c79879a8b6876897a57657869465467583543564724324532","f":"153453241534532415345324153453241534532415345324153453241534532415345324153453241534532415345324153453241534532451321342513213425132134251321342513213425132134251321342513213425132134251321342513213425132134251321342513213420","a":112,"o":0,"rhU":"15345324","rhD":"51321342","lhU":"51321342","lhD":"15345324"},
+  {"num":20,"target":"Stretch 2-4, 4-5, and 2-3-4","n":"469b989757aca9a868bdbab979cecbca8adfdcdb9begedecacfhfefdbdgigfgecehjhghfdfikihigegjljijhfhkmkjkigilnlkljhjmomlmkiknpnmnkpnkikjkiomjhjijhnligihigmkhfhghfljgegfgekifdfefdjhecedecigdbdcdbhfcacbcageb9bab9fda8a9a8ec979897db868786ca757675b96465659","f":"1245434212454342124543421245434212454342124543421245434212454342124543421245434212454342124543421245434212454342124543425421323154213231542132315421323154213231542132315421323154213231542132315421323154213231542132315421323154213231542132310","a":120,"o":-7,"rhU":"12454342","rhD":"54213231","lhU":"54212324","lhD":"12453435"}
 ];
 
 // Compute staff heights for scale notes (for drawing on canvas)
@@ -2588,9 +2601,11 @@ function getScaleStaffHeights(rootIdx, type) {
   return result;
 }
 // Full ascending + descending scale sequence
+const SCALE_DOWN = { 'Melodic Minor': 'Natural Minor' };   // scales that come down a different way
 function getFullScaleNotes(rootIdx, type) {
   var asc = getScaleStaffHeights(rootIdx, type);
-  return asc.concat(asc.slice().reverse().slice(1));
+  var down = SCALE_DOWN[type] ? getScaleStaffHeights(rootIdx, SCALE_DOWN[type]) : asc;
+  return asc.concat(down.slice().reverse().slice(1));
 }
 
 // ═══════════════════════════════════
@@ -2607,18 +2622,18 @@ function diatonicToName(d) {
   var deg = ((d % 7) + 7) % 7;
   return C_MAJ_NAME[deg];
 }
+function hanonAscBars(ex) { return ex.a / 8; }
+function hanonTotalBars(ex) { return Math.ceil(ex.n.length / 8); }
+function hanonFingers(str) { return str.split('').map(function(c) { return c === '0' ? '\u00b7' : c; }).join(' '); }
 function getHanonBarNotes(exIdx, barNum) {
   var ex = HANON_EXERCISES[exIdx];
-  var ascending = barNum < HANON_BARS;
-  var startD;
-  if (ascending) { startD = barNum; }
-  else { startD = (HANON_BARS - 1) - (barNum - HANON_BARS); }
-  var pattern = ascending ? ex.up : ex.up.map(function(o) { return -o; });
-  var fingers = ascending ? ex.rh : ex.lh;
-  return pattern.map(function(offset, i) {
-    var d = startD + offset;
-    return { h: diatonicToHeight(d), noteNum: diatonicToSemi(d), name: diatonicToName(d), acc: 'natural', finger: fingers[i] };
-  });
+  var out = [];
+  for (var i = barNum * 8; i < Math.min(barNum * 8 + 8, ex.n.length); i++) {
+    var d = parseInt(ex.n[i], 36) - 2 + ex.o;
+    var f = ex.f[i] === '0' ? '' : +ex.f[i];
+    out.push({ h: diatonicToHeight(d), noteNum: diatonicToSemi(d), name: diatonicToName(d), acc: 'natural', finger: f });
+  }
+  return out;
 }
 
 // Progress tracking
@@ -2863,7 +2878,7 @@ function bossQuestion() {
     const name = pick(B.chords), root = -9 + Math.floor(Math.random() * 10);
     q.notes = CHORD_SHAPES[name].map(x => root + x); q.answer = name; q.choices = B.chords.slice();
     q.ask = 'What kind of chord is this?';
-    q.why = name + ' = ' + CHORD_SHAPES[name][1] + ' then ' + (CHORD_SHAPES[name][2] - CHORD_SHAPES[name][1]) + ' half steps up from the bottom note.';
+    q.why = name + ': go up ' + CHORD_SHAPES[name][1] + ' half steps from the bottom note. Then go up ' + (CHORD_SHAPES[name][2] - CHORD_SHAPES[name][1]) + ' more from the middle note.';
   } else if (type === 'rhythm') {
     // Listen to a rhythm, then tap it back in time
     q.level = pick(B.rhythm);
@@ -3448,14 +3463,14 @@ const ALL_GAME_KEYS = ['ear','note','interval','chord','piano','scales','metrono
 const ACHIEVEMENTS = [
   { id: 'first_note', name: 'First Note', desc: 'Finish your first game', icon: '🌟', check: d => (d._played || 0) >= 1 },
   { id: 'perfect_10', name: 'Perfect 10', desc: 'Get every answer right in a game of 10 or more', icon: '💯', check: d => (d._perfectCount || 0) >= 1 },
-  { id: 'streak_3', name: 'On Fire', desc: '3 day streak', icon: '🔥', check: d => (d._streak || 0) >= 3 },
-  { id: 'streak_7', name: 'Week Warrior', desc: '7 day streak', icon: '⚡', check: d => (d._streak || 0) >= 7 },
+  { id: 'streak_3', name: 'On Fire', desc: '3-day streak', icon: '🔥', check: d => (d._streak || 0) >= 3 },
+  { id: 'streak_7', name: 'Week Warrior', desc: '7-day streak', icon: '⚡', check: d => (d._streak || 0) >= 7 },
   { id: 'level_5', name: 'Rising Star', desc: 'Reach level 5', icon: '⭐', check: d => (d._level || 1) >= 5 },
   { id: 'level_10', name: 'Music Master', desc: 'Reach level 10', icon: '👑', check: d => (d._level || 1) >= 10 },
   { id: 'all_games', name: 'Explorer', desc: 'Play every game mode', icon: '🗺️', check: d => ALL_GAME_KEYS.every(k => d._gamesPlayed && d._gamesPlayed[k]) },
   { id: 'scale_5', name: 'Scale Climber', desc: 'Complete 5 scales', icon: '🏔️', check: d => (d._scalesCompleted || 0) >= 5 },
   { id: 'chord_master', name: 'Chord Cracker', desc: 'Get 50 chords right', icon: '🎸', check: d => (d._chordCorrect || 0) >= 50 },
-  { id: 'ear_50', name: 'Golden Ear', desc: 'Get 50 ear training right', icon: '👂', check: d => (d._earCorrect || 0) >= 50 },
+  { id: 'ear_50', name: 'Golden Ear', desc: 'Get 50 ear training answers right', icon: '👂', check: d => (d._earCorrect || 0) >= 50 },
   { id: 'speed_demon', name: 'Speed Demon', desc: 'Set metronome above 180 BPM', icon: '💨', check: d => (d._maxBpm || 0) > 180 },
   { id: 'theory_1', name: 'Theory Starter', desc: 'Complete a theory lesson', icon: '📖', check: d => (d._theoryPassedCount || 0) >= 1 },
   { id: 'same_time', name: 'The Metronome', desc: 'Practise at the same time of day, 3 days in a row', icon: '🕰️', check: d => !!d._sameTime3 },
@@ -3518,7 +3533,7 @@ const THEORY_LESSONS = [
     quiz: [
       { q: 'What pattern does a Major scale follow?', choices: ['W W H W W W H','W H W W H W W','H W W H W W W','W W W H W W H'], answer: 'W W H W W W H' },
       { q: 'What notes are in C Major?', choices: ['C D E F G A B','C D E F# G A B','C D Eb F G A B','C D E F G Ab B'], answer: 'C D E F G A B' },
-      { q: 'How many notes in a Major scale?', choices: ['5','6','7','8'], answer: '7' },
+      { q: 'How many different notes are in a Major scale?', choices: ['5','6','7','8'], answer: '7' },
       { q: 'What sharp does G Major have?', choices: ['C#','F#','G#','D#'], answer: 'F#' },
     ] },
   { id: 'timesig', title: 'Time Signatures', icon: '🕐',
@@ -3527,7 +3542,7 @@ const THEORY_LESSONS = [
       { title: 'Measures', text: "Beats are grouped into <strong>measures</strong> (also called bars). A measure is like one chunk of music. In most pop songs, each measure has 4 beats." },
       { title: 'Two Numbers', text: "A <strong>time signature</strong> has two numbers stacked at the start of the music. The <strong>top number</strong> = how many beats per measure. The <strong>bottom number</strong> = which note gets one beat." },
       { title: '4/4 Time', text: "<strong>4/4</strong> means 4 beats per measure, quarter note gets 1 beat. This is the most common time signature. It's even called <strong>\"common time\"</strong>!" },
-      { title: '3/4 Time', text: "<strong>3/4</strong> means 3 beats per measure. This is the <strong>waltz</strong> feel! Count: 1-2-3, 1-2-3. The accent is always on beat 1." },
+      { title: '3/4 Time', text: "<strong>3/4</strong> means 3 beats per measure. This is the <strong>waltz</strong> feel! Count: 1-2-3, 1-2-3. The strong beat is usually beat 1." },
       { title: 'Other Time Signatures', text: "<strong>2/4</strong> = 2 beats per measure (marches).<br><strong>6/8</strong> = 6 eighth notes per measure (flowing feel).<br><br>The bottom number tells you: 4 = quarter note, 8 = eighth note, 2 = half note." },
     ],
     quiz: [
@@ -3552,7 +3567,7 @@ const THEORY_LESSONS = [
     ] },
   { id: 'circlefifths', title: 'Circle of Fifths', icon: '🔄',
     steps: [
-      { title: 'A Map of Keys', text: "The <strong>Circle of Fifths</strong> is like a clock that shows all 12 musical keys. C Major sits at the top (12 o'clock), like a home base." },
+      { title: 'A Map of Keys', text: "The <strong>Circle of Fifths</strong> is like a clock that shows all 12 major keys and their minor partners. C Major sits at the top (12 o'clock), like a home base." },
       { title: 'Going Clockwise', text: "Each step clockwise goes up a <strong>fifth</strong> (5 notes). C → G → D → A → E → B. Each new key adds one more sharp!" },
       { title: 'Going Counter-Clockwise', text: "Each step the other way goes down a fifth. C → F → B♭ → E♭ → A♭ → D♭. Each new key adds one more flat!" },
       { title: 'Why It Helps', text: "Keys next to each other on the circle sound good together! If your song is in C, the keys G and F will blend in nicely. Musicians use this to pick chords and change keys." },
@@ -3589,7 +3604,7 @@ const THEORY_LESSONS = [
       { q: 'What is a chord?', choices: ['One note','3+ notes together','A rhythm','A scale'], answer: '3+ notes together' },
       { q: 'In C Major, what chord is IV?', choices: ['F','G','D','A'], answer: 'F' },
       { q: 'How many different chords are in the pop progression I – V – vi – IV?', choices: ['2','4','8','12'], answer: '4' },
-      { q: 'What does I-IV-V mean?', choices: ['Chords on scale degrees','Fingering','Time signature','Note names'], answer: 'Chords on scale degrees' },
+      { q: 'What does I-IV-V mean?', choices: ['Chords built on the 1st, 4th and 5th notes of the scale','Fingering','Time signature','Note names'], answer: 'Chords built on the 1st, 4th and 5th notes of the scale' },
     ] },
 ];
 
@@ -3613,18 +3628,18 @@ function saveTheoryResult(lessonId, score, total) {
 
 const RHYTHM_NOTE_TYPES = {
   quarter: { beats: 1,   symbol: '♩' },
-  eighth:  { beats: 0.5, symbol: '♫' },
+  eighth:  { beats: 0.5, symbol: '♪' },
   half:    { beats: 2,   symbol: '𝅗𝅥' },
   whole:   { beats: 4,   symbol: '𝅝' },
   dotted_quarter: { beats: 1.5, symbol: '♩.' },
-  rest:    { beats: 1,   symbol: '𝄾' },
+  rest:    { beats: 1,   symbol: '\u{1D13D}' },   // crotchet (quarter) rest
 };
 const RHYTHM_LEVELS = {
   easy:   { label: 'Easy',   types: ['quarter'],                beats: 4, bpm: 80  },
   medium: { label: 'Medium', types: ['quarter','eighth'],       beats: 4, bpm: 90  },
   hard:   { label: 'Hard',   types: ['quarter','eighth','half'], beats: 4, bpm: 100 },
   dotted: { label: 'Dotted', types: ['quarter','eighth','half','dotted_quarter'], beats: 4, bpm: 90 },
-  syncopation: { label: 'Syncopation', types: ['quarter','eighth','rest'], beats: 4, bpm: 95 },
+  syncopation: { label: 'Rests', types: ['quarter','eighth','rest'], beats: 4, bpm: 95 },
   master: { label: 'Master', types: ['quarter','eighth','half','dotted_quarter','rest'], beats: 8, bpm: 120 },
 };
 
@@ -4638,6 +4653,11 @@ function showPebbles() {
   return localStorage.getItem('pms_pebbles') !== 'off';
 }
 
+function escName(n) { return String(n || '').replace(/[&<>"']/g, function(c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+function withName() {
+  var n = (typeof S !== 'undefined' && S.name) ? String(S.name) : '';
+  return n ? ', ' + n.replace(/[&<>"']/g, function(c) { return '&#' + c.charCodeAt(0) + ';'; }) : '';
+}
 function pebbles(mood, width) {
   width = width || 140;
   if (!showPebbles()) return '';
@@ -4833,7 +4853,7 @@ function apSaveFriends(f) { try { localStorage.setItem('pms_friends', JSON.strin
 function apOff() { return localStorage.getItem('pms_applause_off') === 'yes'; }
 function apErr(e) {
   const c = e && e.code || '';
-  if (c === 'permission-denied') return 'Applause is not switched on yet. A grown-up needs to add the safety rules in Firebase first.';
+  if (c === 'permission-denied') return 'Applause is not working right now. Please try again later.';
   if (!navigator.onLine || c === 'unavailable') return 'You are offline. Try again when you have internet.';
   return 'Something went wrong. Please try again.';
 }
@@ -4969,7 +4989,7 @@ function renderSidebar(page) {
   var lo = xpForLevel(g.level), hi = xpForLevel(g.level + 1);
   var pct = Math.max(0, Math.min(100, (g.xp - lo) / Math.max(1, hi - lo) * 100)).toFixed(0);
   x += `<div class="side-foot">`;
-  x += `<div class="side-user-row">${avatarHtml(34, true)}<div class="side-user">${S.name || 'Student'}</div></div>`;
+  x += `<div class="side-user-row">${avatarHtml(34, true)}<div class="side-user">${escName(S.name) || 'Student'}</div></div>`;
   x += `<div class="side-level">Level ${g.level} · ${g.xp} XP</div>`;
   x += `<div class="progress-wrap" style="height:6px;margin-top:0.4rem"><div class="progress-fill" style="width:${pct}%"></div></div>`;
   x += `</div>`;
@@ -4977,6 +4997,7 @@ function renderSidebar(page) {
 }
 
 function render(page) {
+  if (S.songListening && page !== 'song_library' && page !== 'song_play') stopSongListen();   // leaving the songs stops the tune
   const nm = cleanName(S.name);
   if (nm !== S.name) S.name = nm;
   try { if (nm && localStorage.getItem('pms_name') !== nm) localStorage.setItem('pms_name', nm); } catch(e) {}
@@ -5013,7 +5034,7 @@ function render(page) {
     h += `<button class="btn btn-blue btn-wide" style="margin-bottom:0.6rem;display:flex;align-items:center;justify-content:center;gap:0.5rem" onclick="signInGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" width="20" style="vertical-align:middle"> Sign in with Google</button>`;
     h += `<div style="margin:0.4rem 0"><input id="loginEmail" type="email" placeholder="Email" aria-label="Email" autocomplete="email" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
     h += `<div style="margin:0.4rem 0"><input id="loginPass" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password" style="width:100%;padding:0.5rem 0.7rem;border:1px solid rgba(0,0,0,0.15);border-radius:10px;font-family:Quicksand;font-size:0.9rem"></div>`;
-    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="var e=$('loginEmail'),p=$('loginPass');if(e&&p&&e.value&&p.value)signInEmail(e.value,p.value);else alert('Enter email and password')">Sign in / Sign up with email</button>`;
+    h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="var e=$('loginEmail'),p=$('loginPass');if(e&&p&&e.value&&p.value)signInEmail(e.value,p.value);else alert('Please type your email and password.')">Sign in / Sign up with email</button>`;
     h += `<p style="font-size:0.7rem;color:#526488;margin-top:0.6rem">New? Type an email and a password (6+ letters) and we'll make your account. Kids: ask a parent first. <a href="#" onclick="render('privacy');return false">Privacy</a></p>`;
     h += `</div>`;
     h += `</div>`;
@@ -5036,15 +5057,15 @@ function render(page) {
   else if (page === 'tutorial') {
     var tStep = S.tutorialStep || 0;
     var tSteps = [
-      { title: 'Welcome!', icon: '👋', text: 'This is PianoMind Studios — an app that helps you practise music skills like ear training, note reading, and more.' },
-      { title: 'Home Screen', icon: '🏠', text: 'The home screen has four tabs: Practice (the games), Tools (scales, metronome, Hanon), Learn (music theory and grade exercises), and Me (your progress, trophies and settings).' },
-      { title: 'Ear Training', icon: '🎵', text: 'You hear C first, then a mystery note. Compare the mystery note to C and pick its name. No perfect pitch needed. Six levels, from Beginner (C, D, E) up to Master.' },
-      { title: 'Note Reading', icon: '🎼', text: 'A note appears on the staff. You type its name. You can practise treble clef, bass clef, or both. Sharps and flats included at higher levels.' },
-      { title: 'Intervals & Chords', icon: '🎹', text: 'Read the distance between two notes on the staff (intervals), and name chords on the staff: major, minor, diminished and more. You can tap to hear them if you like.' },
-      { title: 'Scale Explorer', icon: '🎶', text: 'See and hear scales drawn on the staff. You can play along with your instrument using the microphone — the app listens and tracks your notes.' },
-      { title: 'Hanon Exercises', icon: '🎹', text: 'All 20 Hanon Book 1 exercises. Hear each bar, step through the full exercise, and practise along with the microphone at any speed.' },
-      { title: 'XP & Achievements', icon: '⭐', text: 'Every game earns XP. Level up and unlock achievements. Check your stats on the home screen.' },
-      { title: 'Settings', icon: '⚙️', text: 'Change your app style (Cartoon, Smooth, or Neon), pick a background theme, turn Pebbles on or off, and more. Make it yours.' },
+      { title: 'Welcome!', icon: '👋', text: 'This is PianoMind Studios. It helps you practise music skills, like ear training and note reading.' },
+      { title: 'Home Screen', icon: '🏠', text: 'The home screen has four tabs. Practice has the games. Tools has scales, the metronome and Hanon. Learn has theory lessons and grade exercises. Me shows your progress, trophies and settings.' },
+      { title: 'Ear Training', icon: '🎵', text: 'You hear C first, then a mystery note. Compare it to C and pick its name. You don\'t need perfect pitch (naming notes with no help). There are six levels.' },
+      { title: 'Note Reading', icon: '🎼', text: 'A note appears on the staff. You type its name. Practise treble clef, bass clef, or both. Higher levels add sharps and flats.' },
+      { title: 'Intervals & Chords', icon: '🎹', text: 'An interval is the distance between two notes. Name it from the staff. Then name chords, like major and minor. Tap to hear them if you like.' },
+      { title: 'Scale Explorer', icon: '🎶', text: 'See and hear scales on the staff. Play along on your piano. The app listens with the microphone and follows your notes.' },
+      { title: 'Hanon Exercises', icon: '🎹', text: 'Hanon wrote 20 famous finger exercises. Hear each bar, then play along with the microphone at any speed.' },
+      { title: 'XP & Achievements', icon: '⭐', text: 'Every game earns XP (experience points). Earn enough to go up a level. Win trophies as you play.' },
+      { title: 'Settings', icon: '⚙️', text: 'Pick an app style: Cartoon, Smooth or Neon. Choose a background. Turn Pebbles on or off. Make it yours!' },
       { title: 'You are ready!', icon: '🚀', text: 'That is everything you need to know. Pick any game and start practising. Have fun!' }
     ];
     var step = tSteps[tStep];
@@ -5099,10 +5120,10 @@ function render(page) {
     h += `<div class="home-hero-top">`;
     h += avatarHtml(60, true);
     h += `<div style="flex:1;min-width:0">`;
-    h += `<div class="home-hello">${played ? 'Welcome back' : 'Welcome'}${S.name ? `, <span style="color:var(--accent)">${S.name}</span>` : ''}!</div>`;
+    h += `<div class="home-hello">${played ? 'Welcome back' : 'Welcome'}${S.name ? `, <span style="color:var(--accent)">${escName(S.name)}</span>` : ''}!</div>`;
     h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
     h += `</div></div>`;
-    h += `<input id="nameIn" class="home-name" type="text" value="${S.name}" placeholder="Your name..." aria-label="Your name" maxlength="24">`;
+    h += `<input id="nameIn" class="home-name" type="text" value="${escName(S.name)}" placeholder="Your name..." aria-label="Your name" maxlength="24">`;
     h += `<div class="streak-banner${playedToday ? ' done' : streak > 0 ? ' warn' : ''}">${streakMsg}</div>`;
     { const g = practiceGoal(), m = practiceMinutesToday();
       h += `<div class="goal-bar" title="Daily goal: change it in Settings"><span>${m >= g ? '🎯 Daily goal done!' : '⏱️ Today: ' + m + ' of ' + g + ' min'}</span><div class="goal-track"><div style="width:${Math.min(100, Math.round(m / g * 100))}%"></div></div></div>`; }
@@ -5142,7 +5163,7 @@ function render(page) {
     } else if (S.homeTab === 'learn') {
       items = [
         {go:"startFromHome('theory')",icon:'📖',name:'Music Theory',desc:'Step-by-step lessons covering the staff, accidentals, scales, time signatures, intervals, and the circle of fifths'},
-        {go:"startFromHome('exercises')",icon:'📝',name:'Grade Exercises',desc:'Multiple-choice theory questions sorted by grade — from Grade 1 basics to Grade 6 and beyond'},
+        {go:"startFromHome('exercises')",icon:'📝',name:'Grade Exercises',desc:'Theory questions for Grades 1 to 6. Pick the right answer.'},
         {go:"startFromHome('songs')",icon:'🎵',name:'Song Library',desc:'Pick a song, see the notes on the staff, and play along at your own pace — the app waits for each note'},
         {go:"render('homework')",icon:'🖨️',name:'Printable Homework',desc:'Make a printable worksheet (with answer key) for notes, intervals or chords at your level — practise away from the screen'},
         {go:"render('chord_mixer')",icon:'🎛',name:'Chord Mixer',desc:'Build chord progressions by tapping I, IV, V, vi — hear how pop, blues, and classical songs use chords'},
@@ -5158,7 +5179,7 @@ function render(page) {
       }
       h += `<div class="home-profile">`;
       h += `<div style="margin-bottom:0.3rem;display:flex;justify-content:center">${avatarHtml(84, true)}</div><div style="font-size:0.72rem"><a href="#" onclick="render('avatar');return false">Change picture</a></div>`;
-      h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${S.name || 'Student'}</div>`;
+      h += `<div style="font-size:1.1rem;font-weight:700;color:#0f2744">${escName(S.name) || 'Student'}</div>`;
       h += vibeHtml();
       if (currentUser) h += `<div style="font-size:0.72rem;color:#526488">${currentUser.email || ''}</div>`;
       else h += `<div style="font-size:0.72rem;color:#526488">Guest · saved on this device only · <a href="#" onclick="render('login');return false">Sign in</a></div>`;
@@ -5190,7 +5211,7 @@ function render(page) {
         {go:"startFromHome('ear')",icon:'🎵',name:'Ear Training',desc:'You hear C first, then a mystery note. Work out the mystery note by comparing it to C — no perfect pitch needed'},
         {go:"startFromHome('note')",icon:'🎼',name:'Note Reading',desc:'A note appears on the staff and you name it — treble, bass, sharps, flats, and double accidentals'},
         {go:"startFromHome('interval')",icon:'🎶',name:'Intervals',desc:'Two notes on the staff — name the distance between them, from 3rds and 5ths up to compound intervals'},
-        {go:"startFromHome('chord')",icon:'🎸',name:'Chords',desc:'Hear a chord and identify it — Major, Minor, Diminished, Augmented, and 7ths at higher levels'},
+        {go:"startFromHome('chord')",icon:'🎸',name:'Chords',desc:'Read or hear a chord and name it. More chord types at higher levels.'},
         {go:"startFromHome('melody')",icon:'🎶',name:'Melody Echo',desc:'The app plays a short melody, then you tap it back in order on the piano — tests your musical memory'},
         {go:"render('mystery_level')",icon:'🕵️',name:'Mystery Melody',desc:'A tune plays twice. One note changes the second time. Can you spot which one?'},
         {go:"render('boss_home')",icon:'⚔️',name:'Boss Battle',desc:'Chords, tunes and intervals on the staff. Right answers hit the boss. Wrong answers cost a heart. Beat all 4 bosses!'},
@@ -5214,7 +5235,7 @@ function render(page) {
   else if (page === 'ear_level') {
     h += `<h1>🎵 Ear Training</h1>`;
     h += `<div class="card">`;
-    h += `<p class="speech"><strong>Pebbles says:</strong> 'Pick your level, ${S.name}!'</p>`;
+    h += `<p class="speech"><strong>Pebbles says:</strong> 'Pick your level${withName()}!'</p>`;
     h += `<p style="font-weight:700;font-size:0.9rem;margin:0.5rem 0 0.2rem">How many rounds?</p>`;
     h += `<div class="round-picker">`;
     [5,10,15,20].forEach(n => {
@@ -5274,7 +5295,7 @@ function render(page) {
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next →</button>`;
     } else if (fb === 'correct2') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${earKeyName(S.earTargetN)}</strong>. No point this time, but now you know how to find it.</div>`;
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${earKeyName(S.earTargetN)}</strong>. This one doesn't score, but now you know how to find it.</div>`;
       h += earWhyHtml(S.earCrossed[0]);
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('ear')">Next →</button>`;
     } else if (fb === 'wrong') {
@@ -5313,7 +5334,7 @@ function render(page) {
   else if (page === 'note_level') {
     h += `<h1>🎼 Note Reading</h1>`;
     h += `<div class="card">`;
-    h += `<p class="speech"><strong>Pebbles says:</strong> 'Pick your level, ${S.name}!'</p>`;
+    h += `<p class="speech"><strong>Pebbles says:</strong> 'Pick your level${withName()}!'</p>`;
     h += `<p style="font-weight:700;font-size:0.9rem;margin:0.5rem 0 0.2rem">How many rounds?</p>`;
     h += `<div class="round-picker">`;
     [5,10,15,20].forEach(n => {
@@ -5332,7 +5353,7 @@ function render(page) {
             <button class="btn btn-pink" onclick="startGame('note','4',selectedRounds)">⚡ Bass Clef</button>
             <button class="btn btn-lilac" onclick="startGame('note','5',selectedRounds)">👑 Master</button>
           </div>`;
-    h += `<p class="caption">Beginner = C, D, E only · Easy = naturals · Medium = sharps/flats · Hard = extended · Master = everything</p>`;
+    h += `<p class="caption">Beginner: C, D and E. Easy: no sharps or flats. Medium: sharps and flats. Hard: more ledger lines and double sharps or flats. Master: everything.</p>`;
     h += `</div>`;
   }
 
@@ -5340,7 +5361,7 @@ function render(page) {
   else if (page === 'note_clef') {
     h += `<h1>🎼 Choose Your Clef</h1>`;
     h += `<div class="card">`;
-    h += `<p class="speech"><strong>Pebbles says:</strong> 'Which clef, ${S.name}?'</p>`;
+    h += `<p class="speech"><strong>Pebbles says:</strong> 'Which clef${withName()}?'</p>`;
     h += `<div class="btn-row">
             <button class="btn btn-blue" onclick="startGame('note','1',S.total,'treble')">🎵 Treble Clef</button>
             <button class="btn btn-mint" onclick="startGame('note','1',S.total,'bass')">🎵 Bass Clef</button>
@@ -5390,7 +5411,7 @@ function render(page) {
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next →</button>`;
     } else if (fb === 'correct2') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${prettyNote(S.noteFullName)}</strong>. No point this time, but now you know how to read it.</div>`;
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${prettyNote(S.noteFullName)}</strong>. This one doesn't score, but now you know how to read it.</div>`;
       h += noteWhyHtml();
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('note')">Next →</button>`;
     } else if (fb === 'wrong') {
@@ -5429,7 +5450,7 @@ function render(page) {
   else if (page === 'interval_level') {
     h += `<h1>🎶 Interval Training</h1>`;
     h += `<div class="card">`;
-    h += `<p class="speech"><strong>Pebbles says:</strong> 'Name the interval, ${S.name}!'</p>`;
+    h += `<p class="speech"><strong>Pebbles says:</strong> 'Name the interval${withName()}!'</p>`;
     h += `<p style="font-weight:700;font-size:0.9rem;margin:0.5rem 0 0.2rem">How many rounds?</p>`;
     h += `<div class="round-picker">`;
     [5,10,15,20].forEach(n => {
@@ -5479,7 +5500,7 @@ function render(page) {
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
     } else if (fb === 'correct2') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's a <strong>${S.intCorrect}</strong>. No point this time, but now you know how to work it out.</div>`;
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's a <strong>${S.intCorrect}</strong>. This one doesn't score, but now you know how to work it out.</div>`;
       h += `<div class="card why-card">${intWhyHtml()}</div>`;
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('interval')">Next →</button>`;
     } else if (fb === 'wrong') {
@@ -5521,7 +5542,7 @@ function render(page) {
   else if (page === 'chord_level') {
     h += `<h1>🎸 Chord Training</h1>`;
     h += `<div class="card">`;
-    h += `<p class="speech"><strong>Pebbles says:</strong> 'Name the chord, ${S.name}!'</p>`;
+    h += `<p class="speech"><strong>Pebbles says:</strong> 'Name the chord${withName()}!'</p>`;
     h += `<p style="font-weight:700;font-size:0.9rem;margin:0.5rem 0 0.2rem">How many rounds?</p>`;
     h += `<div class="round-picker">`;
     [5,10,15,20].forEach(n => {
@@ -5576,7 +5597,7 @@ function render(page) {
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next →</button>`;
     } else if (fb === 'correct2') {
       h += pebbles('happy');
-      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${S.chordAnswer}</strong>. No point this time, but now you know how to work it out.</div>`;
+      h += `<div class="alert alert-success"><strong>Got it with a hint!</strong> It's <strong>${S.chordAnswer}</strong>. This one doesn't score, but now you know how to work it out.</div>`;
       S.chordPicked = S.chordCrossed[0];
       h += chordWhyHtml();
       h += `<button class="btn btn-lilac btn-wide" onclick="nextRound('chord')">Next →</button>`;
@@ -5661,7 +5682,7 @@ function render(page) {
     h += `<h1>👗 Pebbles Wardrobe</h1>`;
     h += pebbles('happy', 120);
     h += `<div class="card">`;
-    h += `<p class="speech"><strong>Pebbles says:</strong> 'Dress me up, ${S.name}!'</p>`;
+    h += `<p class="speech"><strong>Pebbles says:</strong> 'Dress me up${withName()}!'</p>`;
     h += `<div class="outfit-grid">`;
     OUTFITS.forEach(o => {
       const active = currentOutfit === o.id ? ' active' : '';
@@ -5708,10 +5729,10 @@ function render(page) {
     h += `<h1>⚙️ Settings</h1>`;
     if (showPebbles()) {
       h += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.4rem">${pebbles('happy', 90)}
-              <p class="speech"><strong>Pebbles says:</strong> 'Make the app your own, ${S.name}!'</p>
+              <p class="speech"><strong>Pebbles says:</strong> 'Make the app your own${withName()}!'</p>
             </div>`;
     } else {
-      h += `<p class="speech" style="margin-bottom:0.4rem">Make the app your own, ${S.name}!</p>`;
+      h += `<p class="speech" style="margin-bottom:0.4rem">Make the app your own${withName()}!</p>`;
     }
 
     // Mode picker
@@ -5847,7 +5868,7 @@ function render(page) {
       h += `<div class="av-pick${on ? ' active' : ''}" style="background:${col}" onclick="pickAvatarEmoji('${e}')">${e}</div>`;
     });
     h += `</div><p class="section-label" style="margin-top:0.8rem">Background colour</p><div class="av-colors">`;
-    AVATAR_COLORS.forEach(c => { h += `<div class="av-color${c === col ? ' active' : ''}" style="background:${c}" onclick="pickAvatarColor('${c}')"></div>`; });
+    AVATAR_COLORS.forEach((c, i) => { h += `<div class="av-color${c === col ? ' active' : ''}" style="background:${c}" onclick="pickAvatarColor('${c}')" aria-label="${['Purple','Blue','Green','Orange','Pink','Violet'][i] || 'Colour'} background" aria-pressed="${c === col}"></div>`; });
     h += `</div></div>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="S.homeTab='me';render('home')">⬅ Back</button>`;
   }
@@ -5968,6 +5989,7 @@ function render(page) {
 
   // ── TEACHER LINKS ──
   else if (page === 'teacher') {
+    if (!S.tg || !TEACH_GAMES[S.tg]) S.tg = 'note';
     const G = TEACH_GAMES[S.tg] || TEACH_GAMES.note;
     if (!S.tl || !G.levels.some(l => l[0] === S.tl)) S.tl = G.levels[0][0];
     S.tn = S.tn || 10;
@@ -6056,7 +6078,7 @@ function render(page) {
     const f = S.fb;
     h += `<h1>💬 Send feedback</h1>`;
     if (f.sent) {
-      h += `<div class="card"><p class="speech">✅ Sent! Thank you. Amaya reads every message.</p><button class="btn btn-blue btn-wide" onclick="S.fb.sent=false;render('feedback')">Send another</button></div>`;
+      h += `<div class="card"><p class="speech">✅ Sent! Thank you. We read every message.</p><button class="btn btn-blue btn-wide" onclick="S.fb.sent=false;render('feedback')">Send another</button></div>`;
     } else {
       h += `<div class="card"><p class="speech">Found a bug? Have an idea? Tell us here.</p><p class="caption">What is it about?</p><div class="fb-kinds">`;
       FB_KINDS.forEach(([k, label]) => { h += `<button class="fb-kind${f.kind === k ? ' on' : ''}" onclick="S.fb.draft=(document.getElementById('fbText')||{}).value||S.fb.draft;S.fb.kind='${k}';render('feedback')">${label}</button>`; });
@@ -6101,7 +6123,7 @@ function render(page) {
       if (myCode) {
         h += `<div class="ap-code">${myCode}</div><p class="caption">Only give this code to friends you know in real life.</p>`;
         h += `<button class="btn btn-lilac" ${S.ap.busy ? 'disabled' : ''} onclick="apMakeCode()">Get a new code</button>`;
-        h += `<p class="caption">A new code stops everyone who has your old code.</p>`;
+        h += `<p class="caption">With a new code, people with your old code can't find you.</p>`;
       } else {
         h += `<p class="caption">Make a code. Friends type it in to add you.</p><button class="btn btn-blue" ${S.ap.busy ? 'disabled' : ''} onclick="apMakeCode()">Make my code</button>`;
       }
@@ -6237,7 +6259,7 @@ function render(page) {
     h += `<p style="font-size:1.05rem;line-height:1.7;color:#2c3e50;margin:0.8rem 0">As every child\u2019s musical journey unfolds, PianoMind Studios evolves right alongside them. We are continuously improving our platform, adding new features, and listening closely to feedback from families and educators to make the experience even more magical.</p>`;
     h += `</div>`;
     h += `<div class="card">`;
-    h += `<p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.2rem 0"><strong>Piano sound:</strong> Salamander Grand Piano by Alexander Holm, used under the Creative Commons Attribution 3.0 licence (CC BY 3.0).</p><p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.6rem 0 0.2rem"><strong>Please note:</strong> This app helps you practise skills like those in graded aural tests. It is not affiliated with, endorsed by, or using material from any exam board.</p>`;
+    h += `<p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.2rem 0"><strong>Piano sound:</strong> Salamander Grand Piano by Alexander Holm, used under the Creative Commons Attribution 3.0 licence (CC BY 3.0).</p><p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.6rem 0 0.2rem"><strong>Hanon exercises:</strong> notes and fingering from C.-L. Hanon, <em>The Virtuoso Pianist</em> (Schirmer, 1900), as typeset by the <a href="https://www.mutopiaproject.org/" target="_blank" rel="noopener">Mutopia Project</a> under CC BY-SA 4.0.</p><p style="font-size:0.95rem;line-height:1.6;color:#2c3e50;margin:0.6rem 0 0.2rem"><strong>Please note:</strong> This app helps you practise skills like those in graded aural tests. It is not affiliated with, endorsed by, or using material from any exam board.</p>`;
     h += `</div>`;
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.8rem" onclick="render('settings')">\u2B05 Back to Settings</button>`;
   }
@@ -6398,7 +6420,7 @@ function render(page) {
             <button class="btn btn-mint" onclick="S.melodyLevel='medium';S.melodyTotal=5;S.isDaily=false;S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🤔 Medium</button>
             <button class="btn btn-coral" onclick="S.melodyLevel='hard';S.melodyTotal=5;S.isDaily=false;S.melodyScore=0;S.melodyRound=0;newMelodyRound();render('melody_play')">🔥 Hard</button>
           </div>`;
-    h += `<p class="caption">Beginner = 2 notes, C-D-E · Easy = 3 notes · Medium = 4 notes · Hard = 5 notes with sharps</p>`;
+    h += `<p class="caption">Beginner: 2-note tunes on C, D and E. Easy: 3 notes. Medium: 4 notes. Hard: 5 notes, with black keys too.</p>`;
     h += `</div>`;
     h += `<button class="btn btn-lilac btn-wide" style="margin-top:0.4rem" onclick="render('home')">Home</button>`;
   }
@@ -6473,7 +6495,7 @@ function render(page) {
     h += `<div style="display:flex;align-items:center;gap:1rem;margin-top:1rem">
             ${pebbles('happy', 100)}
             <div>
-              <p class="speech"><strong>Pebbles says:</strong> 'Tap the keys and make music, ${S.name}!'</p>
+              <p class="speech"><strong>Pebbles says:</strong> 'Tap the keys and make music${withName()}!'</p>
             </div>
           </div>`;
     h += `<div class="card" style="text-align:center">`;
@@ -6506,7 +6528,7 @@ function render(page) {
     h += `</div>`;
     h += `<div style="text-align:center;margin:0.8rem 0">`;
     h += `<div style="font-size:1.4rem;font-weight:700;color:#0f2744">${scaleRootLabel(S.scaleRoot, S.scaleType)} ${S.scaleType}</div>`;
-    h += `<div style="font-size:1.05rem;font-weight:600;color:#2c5f8a;margin:0.3rem 0">${noteNames.join(' — ')}</div>`;
+    h += `<div style="font-size:1.05rem;font-weight:600;color:#2c5f8a;margin:0.3rem 0">${SCALE_DOWN[S.scaleType] ? 'Up: ' + noteNames.join(' — ') + '<br>Down: ' + [scaleRootLabel(S.scaleRoot, S.scaleType)].concat(getScaleNoteNames(S.scaleRoot, SCALE_DOWN[S.scaleType]).slice(1).reverse(), [scaleRootLabel(S.scaleRoot, S.scaleType)]).join(' — ') : noteNames.join(' — ')}</div>`;
     h += `<div style="font-size:0.8rem;color:#526488">${STEP_LABELS[S.scaleType] || ''}</div>`;
     h += `</div>`;
     h += `<div class="play-btn" onclick="playScale()">Hear the scale</div>`;
@@ -6545,7 +6567,7 @@ function render(page) {
     } else if (S.scaleCorrect > 0 && S.scaleCurrentIdx >= staffNotes.length) {
       pTxt = pick(['That was great!','Pebbles is proud of you!']);
     } else {
-      pTxt = 'Pick a scale and play along, ' + S.name + '!';
+      pTxt = 'Pick a scale and play along' + withName() + '!';
     }
     h += `<div style="display:flex;align-items:center;gap:0.7rem;margin:0.4rem 0">`;
     h += pebbles(pMood, 55);
@@ -6559,9 +6581,12 @@ function render(page) {
   else if (page === 'hanon') {
     var hEx = HANON_EXERCISES[S.hanonEx];
     var hBarNotes = getHanonBarNotes(S.hanonEx, S.hanonBar);
-    var hAsc = S.hanonBar < HANON_BARS;
-    var hBarLabel = hAsc ? 'Ascending' : 'Descending';
-    var hBarDisplay = hAsc ? (S.hanonBar + 1) : (S.hanonBar - HANON_BARS + 1);
+    var hUp = hanonAscBars(hEx), hTot = hanonTotalBars(hEx);
+    if (S.hanonBar >= hTot) S.hanonBar = hTot - 1;
+    var hAsc = S.hanonBar < hUp;
+    var hBarLabel = hAsc ? 'Going up' : 'Coming down';
+    var hBarDisplay = hAsc ? (S.hanonBar + 1) : (S.hanonBar - hUp + 1);
+    var hBarCount = hAsc ? hUp : (hTot - hUp);
 
     h += `<h1>🎹 Hanon Exercises</h1>`;
 
@@ -6571,22 +6596,22 @@ function render(page) {
       'This one strengthens your 3rd and 4th fingers!',
       'This one works fingers 2, 3 and 4 together!',
       'This one builds your 3rd, 4th and 5th fingers!',
-      'This one helps all your fingers play evenly!',
+      'This one helps all five fingers play evenly!',
       'This one gives your 5th finger a real workout!',
-      'This one trains fingers 3, 4 and 5 with tricky jumps!',
-      'This one builds flexibility between all your fingers!',
-      'This one stretches your thumb and extends your reach!',
-      'This one prepares your 4th finger for trills!',
-      'This one stretches fingers 4 and 5 apart!',
-      'This one stretches all the way from finger 1 to 5!',
+      'This one is very important for fingers 3, 4 and 5!',
+      'This one is very important for all five fingers!',
+      'This one stretches fingers 4 and 5, and works every finger!',
+      'This one gets fingers 3 and 4 ready for trills!',
+      'This one gets fingers 4 and 5 ready for trills!',
+      'This one stretches from finger 1 to 5, and trains 3, 4 and 5!',
       'This one strengthens fingers 3, 4 and 5 together!',
-      'This one prepares your 3rd and 4th fingers for trills!',
-      'This one extends the reach of fingers 1 and 2!',
-      'This one extends the stretch from finger 3 to 5!',
-      'This one builds stamina across all fingers!',
-      'This one helps all your fingers play at equal strength!',
+      'This one is more trill practice for fingers 3 and 4!',
+      'This one stretches fingers 1 and 2, and works every finger!',
+      'This one stretches fingers 3 to 5, and trains 3, 4 and 5!',
+      'This one stretches 1 to 2, 2 to 4 and 4 to 5!',
+      'This one helps all five fingers play evenly!',
       'This one trains every finger to be independent!',
-      'This one prepares your hand for big stretches!'
+      'This one stretches 2 to 4 and 4 to 5, and trains 2, 3 and 4!'
     ];
     h += `<div style="display:flex;align-items:center;gap:0.8rem;margin:0.5rem 0">`;
     h += pebbles('asking', 80);
@@ -6615,7 +6640,9 @@ function render(page) {
     // Exercise info — fingering + pattern + progress
     var exProg = hanonProg['ex' + hEx.num] || {};
     h += `<div class="card" style="text-align:center">`;
-    h += `<div style="font-size:0.8rem;color:#526488;margin:0.2rem 0">RH: ${hEx.rh.join(' \u2013 ')}  \u00b7  LH: ${hEx.lh.join(' \u2013 ')}</div>`;
+    h += `<div style="font-size:0.85rem;font-weight:700;color:#2c5f8a;margin:0.2rem 0">Fingers: ${hEx.target}</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488;margin:0.2rem 0">Going up \u2014 RH: ${hanonFingers(hEx.rhU)} \u00b7 LH: ${hanonFingers(hEx.lhU)}</div>`;
+    h += `<div style="font-size:0.8rem;color:#526488;margin:0.2rem 0">Coming down \u2014 RH: ${hanonFingers(hEx.rhD)} \u00b7 LH: ${hanonFingers(hEx.lhD)}</div>`;
     h += `<div style="font-size:0.8rem;color:#526488">Notes: ${hBarNotes.map(function(n){return n.name}).join(' \u2013 ')}</div>`;
     if (exProg.bestBpm) h += `<div style="font-size:0.8rem;color:#4CAF50;font-weight:700;margin-top:0.2rem">Best: ${exProg.bestBpm} BPM ✓</div>`;
     h += `</div>`;
@@ -6624,8 +6651,8 @@ function render(page) {
     h += `<div class="card" style="padding:0.8rem">`;
     h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">`;
     h += `<button class="btn btn-blue" style="padding:0.3rem 0.7rem;font-size:0.9rem" onclick="S.hanonBar=Math.max(0,S.hanonBar-1);S.hanonCurrentIdx=0;S.hanonCorrect=0;stopHanonPractice();stopHanonPlay();render('hanon')">\u25C0</button>`;
-    h += `<span style="font-weight:700;font-size:0.85rem;color:#2c5f8a">${hBarLabel} \u2014 Bar ${hBarDisplay} of ${HANON_BARS}</span>`;
-    h += `<button class="btn btn-blue" style="padding:0.3rem 0.7rem;font-size:0.9rem" onclick="S.hanonBar=Math.min(${HANON_BARS*2-1},S.hanonBar+1);S.hanonCurrentIdx=0;S.hanonCorrect=0;stopHanonPractice();stopHanonPlay();render('hanon')">\u25B6</button>`;
+    h += `<span style="font-weight:700;font-size:0.85rem;color:#2c5f8a">${hBarLabel} \u2014 Bar ${hBarDisplay} of ${hBarCount}</span>`;
+    h += `<button class="btn btn-blue" style="padding:0.3rem 0.7rem;font-size:0.9rem" onclick="S.hanonBar=Math.min(${hTot-1},S.hanonBar+1);S.hanonCurrentIdx=0;S.hanonCorrect=0;stopHanonPractice();stopHanonPlay();render('hanon')">\u25B6</button>`;
     h += `</div>`;
     h += `<div style="overflow:hidden;border-radius:14px">`;
     h += `<canvas id="hanonStaffCanvas" width="460" height="220" style="transition:transform 0.28s ease;display:block;max-width:100%"></canvas>`;
@@ -6683,7 +6710,7 @@ function render(page) {
       else if (S.hanonCurrentIdx === 0) hpTxt = 'Play: ' + hBarNotes[0].name;
       else hpTxt = 'Next: ' + hBarNotes[S.hanonCurrentIdx].name;
     } else {
-      hpTxt = 'Pick an exercise and practise, ' + S.name + '!';
+      hpTxt = 'Pick an exercise and practise' + withName() + '!';
     }
     h += `<div style="display:flex;align-items:center;gap:0.7rem;margin:0.4rem 0">`;
     h += pebbles(hpMood, 55);
@@ -6698,7 +6725,7 @@ function render(page) {
   else if (page === 'metronome') {
     h += `<h1>⏱ Metronome</h1>`;
     h += `<div style="display:flex;align-items:center;gap:1rem">${pebbles(S.metroRunning?'happy':'asking',90)}
-      <p class="speech"><strong>Pebbles says:</strong> '${S.metroRunning?"Keep the beat!":"Set your tempo, "+S.name+"!"}'</p></div>`;
+      <p class="speech"><strong>Pebbles says:</strong> '${S.metroRunning?"Keep the beat!":"Set your tempo"+withName()+"!"}'</p></div>`;
     h += `<div class="card" style="text-align:center">`;
 
     // Pendulum
@@ -6751,9 +6778,10 @@ function render(page) {
     h += `<div style="display:flex;align-items:center;gap:1rem">${pebbles('asking',90)}
       <p class="speech"><strong>Pebbles says:</strong> 'Pick a time signature!'</p></div>`;
     const groups = [
-      { label: 'Simple (quarter note beat)', sigs: ['1/4','2/4','3/4','4/4','5/4','6/4','7/4'] },
-      { label: 'Half note beat', sigs: ['1/2','2/2','3/2','4/2'] },
-      { label: 'Compound (eighth note beat)', sigs: ['3/8','6/8','9/8','12/8'] },
+      { label: 'Simple time: quarter note beat', sigs: ['1/4','2/4','3/4','4/4','5/4','7/4'] },
+      { label: 'Simple time: half note beat', sigs: ['1/2','2/2','3/2','4/2'] },
+      { label: 'Simple time: eighth note beat', sigs: ['3/8'] },
+      { label: 'Compound time: dotted beat (the metronome clicks every small note)', sigs: ['6/8','9/8','12/8','6/4'] },
     ];
     groups.forEach(g => {
       h += `<div class="card" style="margin-bottom:0.6rem">`;
@@ -6773,7 +6801,7 @@ function render(page) {
     h += `<h1>🥁 Rhythm Training</h1>`;
     h += `<div class="card">`;
     h += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.4rem">${pebbles('asking',90)}
-      <p class="speech"><strong>Pebbles says:</strong> 'Listen close, then tap it back, ${S.name}!'</p></div>`;
+      <p class="speech"><strong>Pebbles says:</strong> 'Listen closely, then tap it back${withName()}!'</p></div>`;
     h += `<div class="btn-row">
             <button class="btn btn-blue" onclick="startRhythmLevel('easy')">😊 Easy</button>
             <button class="btn btn-mint" onclick="startRhythmLevel('medium')">🤔 Medium</button>
@@ -6784,7 +6812,7 @@ function render(page) {
             <button class="btn btn-lilac" onclick="startRhythmLevel('syncopation')">🎭 Syncopation</button>
             <button class="btn btn-coral" onclick="startRhythmLevel('master')">👑 Master</button>
           </div>`;
-    h += `<p class="caption">Easy-Hard = basics · Dotted = dotted quarters · Syncopation = rests · Master = 8 beats @ 120 BPM</p>`;
+    h += `<p class="caption">Easy to Hard: the basics. Dotted: dotted quarter notes. Rests: some beats are silent. Master: 8 beats, fast.</p>`;
     h += `</div>`;
     h += `<button class="btn btn-lilac btn-wide" onclick="render('home')">Home</button>`;
   }
@@ -6842,7 +6870,7 @@ function render(page) {
     const theoryProgress = loadTheoryProgress();
     h += `<h1>📖 Music Theory</h1>`;
     h += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.4rem">${pebbles('happy',90)}
-      <p class="speech"><strong>Pebbles says:</strong> 'Pick a lesson to learn, ${S.name}!'</p></div>`;
+      <p class="speech"><strong>Pebbles says:</strong> 'Pick a lesson to learn${withName()}!'</p></div>`;
     THEORY_LESSONS.forEach(l => {
       const prog = theoryProgress[l.id];
       const passed = prog && prog.passed;
@@ -6930,7 +6958,7 @@ function render(page) {
     h += `<h1>🎵 Song Library</h1>`;
     h += `<div class="card">`;
     h += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.4rem">${pebbles('happy',90)}
-      <p class="speech"><strong>Pebbles says:</strong> 'Pick a song and play along, ${S.name}!'</p></div>`;
+      <p class="speech"><strong>Pebbles says:</strong> 'Pick a song and play along${withName()}!'</p></div>`;
     const diffs = [{d:1,label:'Easy',color:'btn-blue'},{d:2,label:'Medium',color:'btn-mint'},{d:3,label:'Hard',color:'btn-coral'},{d:4,label:'Expert',color:'btn-pink'}];
     diffs.forEach(df => {
       const songs = SONG_LIBRARY.filter(s => s.d === df.d);
@@ -6938,8 +6966,10 @@ function render(page) {
       h += `<h3 style="margin:0.8rem 0 0.3rem;font-size:1rem">${df.label}</h3>`;
       songs.forEach(song => {
         const notes = parseSong(song.s);
-        h += `<button class="btn ${df.color}" style="width:100%;margin:0.15rem 0;text-align:left;font-size:0.85rem;padding:0.5rem 0.8rem" onclick="startSongPlay('${song.id}')">
-          🎵 ${song.t} <span style="opacity:0.6;font-size:0.75rem">— ${song.c} · ${notes.length} notes</span></button>`;
+        const on = S.songListening === song.id;
+        h += `<div style="display:flex;gap:0.3rem;margin:0.15rem 0"><button class="btn ${df.color}" style="flex:1;margin:0;text-align:left;font-size:0.85rem;padding:0.5rem 0.8rem" onclick="stopSongListen();startSongPlay('${song.id}')">
+          🎵 ${song.t} <span style="opacity:0.6;font-size:0.75rem">— ${song.c} · ${notes.length} notes</span></button>
+          <button class="btn ${df.color}" style="flex:0 0 auto;margin:0;padding:0.5rem 0.8rem;font-size:0.85rem" aria-label="${on ? 'Stop' : 'Listen to'} ${song.t}" onclick="${on ? 'stopSongListen();render(S.page)' : `listenSong('${song.id}')`}">${on ? '⏹ Stop' : '🔊 Listen'}</button></div>`;
       });
     });
     h += `</div>`;
@@ -6963,7 +6993,8 @@ function render(page) {
         h += `<div class="alert alert-warning"><strong>Pebbles says:</strong> '${pick(P.MEH)}'</div>`;
       }
       h += `<div class="btn-row">
-              <button class="btn btn-mint" onclick="startSongPlay('${song?song.id:''}')">🔄 Try Again</button>
+              <button class="btn btn-mint" onclick="stopSongListen();startSongPlay('${song?song.id:''}')">🔄 Try Again</button>
+              <button class="btn btn-blue" onclick="${S.songListening ? 'stopSongListen();render(S.page)' : `listenSong('${song?song.id:''}')`}">${S.songListening ? '⏹ Stop' : '🔊 Listen'}</button>
               <button class="btn btn-lilac" onclick="render('song_library')">🎵 Songs</button>
             </div>`;
     } else {
@@ -6979,7 +7010,7 @@ function render(page) {
     h += `<h1>📝 Grade Exercises</h1>`;
     h += `<div class="card">`;
     h += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.4rem">${pebbles('asking',90)}
-      <p class="speech"><strong>Pebbles says:</strong> 'Pick a grade and test yourself, ${S.name}!'</p></div>`;
+      <p class="speech"><strong>Pebbles says:</strong> 'Pick a grade and test yourself${withName()}!'</p></div>`;
     for (let g = 1; g <= 6; g++) {
       const exs = GRADE_EXERCISES.filter(e => e.g === g);
       const doneCount = exs.filter(e => gxDone(g, e.n)).length;
@@ -7057,7 +7088,7 @@ function render(page) {
     h += `<h1>📖 Sight Reading</h1>`;
     h += `<div class="card">`;
     h += `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.4rem">${pebbles('asking',90)}
-      <p class="speech"><strong>Pebbles says:</strong> 'Notes will scroll across. Play them on your piano, ${S.name}!'</p></div>`;
+      <p class="speech"><strong>Pebbles says:</strong> 'Notes will scroll across. Play them on your piano${withName()}!'</p></div>`;
     h += `<div class="btn-row">
             <button class="btn btn-blue" onclick="S.songPlayPage=false;S.sightReadLevel='easy';S.sightReadNotes=generateSightReadNotes('easy');startSightReading()">😊 Easy</button>
             <button class="btn btn-mint" onclick="S.songPlayPage=false;S.sightReadLevel='medium';S.sightReadNotes=generateSightReadNotes('medium');startSightReading()">🤔 Medium</button>
@@ -7437,6 +7468,31 @@ function startFromHome(game) {
 }
 
 // ── Song Play ──
+// ── Listen to a song: the app plays the whole tune at the song's speed ──
+let songVoices = [], songListenTimer = null;
+function stopSongListen() {
+  try { const now = getAudioCtx().currentTime; songVoices.forEach(v => v.release(now)); } catch(e) {}
+  songVoices = []; clearTimeout(songListenTimer); S.songListening = null;
+}
+function listenSong(songId) {
+  const song = SONG_LIBRARY.find(s => s.id === songId);
+  if (!song) return;
+  stopSongListen();
+  S.songListening = songId;
+  render(S.page);
+  whenPianoReady(() => {
+    if (S.songListening !== songId) return;
+    const ctx = getAudioCtx(); ctx.resume();
+    const beat = 60 / song.bpm;
+    let t = ctx.currentTime + 0.1;
+    parseSong(song.s).forEach(n => {
+      songVoices.push(makeNote(ctx, noteToFreq(n.n), t, n.dur * beat * 0.95, 0.3));
+      t += n.dur * beat;
+    });
+    songListenTimer = setTimeout(() => { songVoices = []; S.songListening = null; if (S.page === 'song_library' || S.page === 'song_play') render(S.page); },
+      (t - ctx.currentTime) * 1000 + 400);
+  });
+}
 function startSongPlay(songId) {
   const song = SONG_LIBRARY.find(s => s.id === songId);
   if (!song) return;
@@ -7628,7 +7684,7 @@ function playScale() {
     makeNote(ctx, noteToFreq(root.n + semi), now + i * 0.35, 0.33, 0.3);
   });
   // descending (skip the top note since it just played)
-  const desc = [...intervals].reverse().slice(1);
+  const desc = [...SCALE_TYPES[SCALE_DOWN[S.scaleType] || S.scaleType]].reverse().slice(1);
   desc.forEach((semi, i) => {
     makeNote(ctx, noteToFreq(root.n + semi), now + intervals.length * 0.35 + i * 0.35, 0.33, 0.3);
   });
@@ -7705,7 +7761,7 @@ function playHanonFull() {
   var beatDur = 60 / S.hanonBpm;
   var now = ctx.currentTime + 0.05;
   var idx = 0;
-  for (var bar = 0; bar < HANON_BARS * 2; bar++) {
+  for (var bar = 0; bar < hanonTotalBars(HANON_EXERCISES[S.hanonEx]); bar++) {
     var notes = getHanonBarNotes(S.hanonEx, bar);
     notes.forEach(function(note) {
       makeNote(ctx, noteToFreq(note.noteNum), now + idx * beatDur, beatDur * 0.85, 0.25);
@@ -7726,7 +7782,7 @@ function playHanonFullAuto() {
   S.hanonBar = 0;
 
   function advanceBar(bar) {
-    if (bar >= HANON_BARS * 2 || !S.hanonPlaying) {
+    if (bar >= hanonTotalBars(HANON_EXERCISES[S.hanonEx]) || !S.hanonPlaying) {
       S.hanonPlaying = false;
       render('hanon');
       return;
@@ -7792,11 +7848,12 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
   }
 
   var ex = HANON_EXERCISES[S.hanonEx];
-  var asc = S.hanonBar < HANON_BARS;
+  var hu = hanonAscBars(ex);
+  var asc = S.hanonBar < hu;
   ctx.fillStyle = sc.text;
   ctx.font = '700 13px Quicksand';
   ctx.textAlign = 'center';
-  ctx.fillText('Ex. ' + ex.num + ' \u2014 ' + (asc ? 'Ascending' : 'Descending') + ' bar ' + (asc ? S.hanonBar + 1 : S.hanonBar - HANON_BARS + 1), W / 2, 15);
+  ctx.fillText('Ex. ' + ex.num + ' \u2014 ' + (asc ? 'Going up' : 'Coming down') + ' bar ' + (asc ? S.hanonBar + 1 : S.hanonBar - hu + 1), W / 2, 15);
 
   var total = staffNotes.length;
   var noteStart = staffLeft + 30;
@@ -7901,7 +7958,7 @@ function hanonPitchLoop() {
   micAnalyser.getFloatTimeDomainData(buf);
   var freq = autoCorrelate(buf, getAudioCtx().sampleRate);
 
-  if (freq > 60 && freq < 1500) {
+  if (freq > 60 && freq < 1900) {
     var noteNum = Math.round(12 * Math.log2(freq / 440));
     var pc = ((noteNum + 9) % 12 + 12) % 12;
     if (pc === stablePc) stableCount++;
@@ -7924,7 +7981,7 @@ function hanonPitchLoop() {
             setTimeout(function() {
               if (canvas) canvas.style.transform = '';
               if (S.hanonCurrentIdx >= barNotes.length) {
-                if (S.hanonBar < HANON_BARS * 2 - 1) {
+                if (S.hanonBar < hanonTotalBars(HANON_EXERCISES[S.hanonEx]) - 1) {
                   S.hanonBar++;
                   S.hanonCurrentIdx = 0;
                   S.hanonCorrect = 0;
@@ -7980,7 +8037,7 @@ function pitchLoop() {
   micAnalyser.getFloatTimeDomainData(buf);
   var freq = autoCorrelate(buf, getAudioCtx().sampleRate);
 
-  if (freq > 60 && freq < 1500) {
+  if (freq > 60 && freq < 1900) {
     var noteNum = Math.round(12 * Math.log2(freq / 440));
     var pc = ((noteNum + 9) % 12 + 12) % 12;
     if (pc === stablePc) stableCount++;
@@ -8070,7 +8127,7 @@ function autoCorrelate(buf, sampleRate) {
     return -1;
   }
   // Normalised autocorrelation (NSDF): 1 = perfectly repeating tone, near 0 = noise
-  var minLag = Math.floor(sampleRate / 1300), maxLag = Math.min(Math.floor(sampleRate / 150), Math.floor(SIZE / 2));
+  var minLag = Math.floor(sampleRate / 1900), maxLag = Math.min(Math.floor(sampleRate / 150), Math.floor(SIZE / 2));
   var nsdf = new Float32Array(maxLag + 1);
   for (var lag = minLag; lag <= maxLag; lag++) {
     var acf = 0, m = 0;
@@ -8098,7 +8155,7 @@ function autoCorrelate(buf, sampleRate) {
   // Must be close to a real piano note (within 40 cents of a semitone)
   var semis = 12 * Math.log2(freq / 440), cents = Math.abs(semis - Math.round(semis)) * 100;
   if (cents > 40) return -1;
-  if (freq < 150 || freq > 1300) return -1;
+  if (freq < 150 || freq > 1900) return -1;
   if (!struck) return -1;   // steady sound with no strike (fridge, fan, hum)
   lastPitchClarity = nsdf[pick];
   return freq;
@@ -8124,18 +8181,13 @@ let tapTimes = [];
 let pendulumRaf = null;
 
 function getTempoMarking(bpm) {
-  if (bpm < 40) return 'Grave';
-  if (bpm < 55) return 'Largo';
-  if (bpm < 65) return 'Larghetto';
-  if (bpm < 73) return 'Adagio';
-  if (bpm < 86) return 'Andante';
-  if (bpm < 98) return 'Moderato';
-  if (bpm < 109) return 'Allegretto';
-  if (bpm < 132) return 'Allegro';
-  if (bpm < 168) return 'Vivace';
-  if (bpm < 200) return 'Presto';
-  return 'Prestissimo';
+  // Rough guide only: books disagree on the exact numbers (ranges from Wikipedia, "Tempo").
+  var m = bpm < 40 ? ['Grave', 'very slow'] : bpm < 66 ? ['Largo', 'slow'] : bpm < 108 ? ['Andante', 'walking speed'] :
+    bpm < 120 ? ['Moderato', 'medium speed'] : bpm < 156 ? ['Allegro', 'fast'] : bpm < 168 ? ['Vivace', 'lively and fast'] :
+    bpm < 200 ? ['Presto', 'very fast'] : ['Prestissimo', 'as fast as possible'];
+  return 'about ' + m[0] + ' (' + m[1] + ')';
 }
+
 
 function startPendulum() {
   const arm = document.getElementById('pendulumArm');
@@ -8549,75 +8601,59 @@ function parseSong(str){
   }).filter(Boolean);
 }
 
+// Melodies taken from public-domain scores: Mutopia Project (mutopiaproject.org, CC licences)
+// and Wikipedia score excerpts. Ode to Joy is the standard simplified version.
 const SONG_LIBRARY=[
   // ── Difficulty 1: Easy ──
   {id:'ode_joy',t:'Ode to Joy',c:'Beethoven',d:1,bpm:95,
    s:'E4q E4q F4q G4q G4q F4q E4q D4q C4q C4q D4q E4q E4dq D4e D4h E4q E4q F4q G4q G4q F4q E4q D4q C4q C4q D4q E4q D4dq C4e C4h D4q D4q E4q C4q D4q E4e F4e E4q C4q D4q E4e F4e E4q D4q C4q D4q G3h E4q E4q F4q G4q G4q F4q E4q D4q C4q C4q D4q E4q D4dq C4e C4h E4q E4q F4q G4q G4q F4q E4q D4q C4q C4q D4q E4q E4dq D4e D4h E4q E4q F4q G4q G4q F4q E4q D4q C4q C4q D4q E4q D4dq C4e C4h D4q D4q E4q C4q D4q E4e F4e E4q C4q D4q E4e F4e E4q D4q C4q D4q G3h E4q E4q F4q G4q G4q F4q E4q D4q C4q C4q D4q E4q D4dq C4e C4w'},
   {id:'saints',t:'When the Saints Go Marching In',c:'Traditional',d:1,bpm:100,
-   s:'C4q E4q F4q G4w C4q E4q F4q G4w C4q E4q F4q G4h E4q C4q E4q D4w E4q E4q D4q C4q E4q G4q G4q F4h F4q E4q F4q G4h E4q C4q D4q C4h C4q E4q F4q G4w C4q E4q F4q G4w C4q E4q F4q G4h E4q C4q E4q D4w E4q E4q D4q C4q E4q G4q G4q F4h F4q E4q F4q G4h E4q C4q D4q E4h C5q E5q F5q G5w C5q E5q F5q G5w C5q E5q F5q G5h E5q C5q E5q D5w E5q E5q D5q C5q E5q G5q G5q F5h F5q E5q F5q G5h E5q C5q D5q C5h C4q E4q F4q G4w C4q E4q F4q G4w C4q E4q F4q G4h E4q C4q E4q D4w E4q E4q D4q C4q E4q G4q G4q F4h F4q E4q F4q G4h E4q C4q D4q C4w'},
-  {id:'korobeiniki',t:'Korobeiniki (Tetris Theme)',c:'Russian Traditional',d:1,bpm:90,
-   s:'E5q B4e C5e D5q C5e B4e A4q A4e C5e E5q D5e C5e B4q B4e C5e D5q E5q C5q A4q A4h D5q F5q A5q G5e F5e E5q C5e E5q D5e C5e B4q B4e C5e D5q E5q C5q A4q A4h E5q B4e C5e D5q C5e B4e A4q A4e C5e E5q D5e C5e B4q B4e C5e D5q E5q C5q A4q A4h D5q F5q A5q G5e F5e E5q C5e E5q D5e C5e B4q B4e C5e D5q E5q C5q A4q A4h E5q B4e C5e D5q C5e B4e A4q A4e C5e E5q D5e C5e B4q B4e C5e D5q E5q C5q A4q E5q D5q C5q B4q A4w'},
+   s:'C4e E4e F4e G4h C4e E4e F4e G4h C4e E4e F4e G4q E4q C4q E4q D4h E4e E4e D4e C4h E4q G4q G4e F4dq E4e F4e G4q E4q C4q D4q C4h C4e E4e F4e G4h C4e E4e F4e G4h C4e E4e F4e G4q E4q C4q E4q D4h E4e E4e D4e C4h E4q G4q G4e F4dq E4e F4e G4q E4q C4q D4q C4h'},
+  {id:'korobeiniki',t:'Korobeiniki',c:'Russian folk song',d:1,bpm:90,
+   s:'E4dq G#4e B4q G#4e E4e A4dq C5e E5q D5e C5e B4dq C5e D5q E5q C5q A4q A4h F5dq G5e A5q G5e F5e E5dq F5e E5q D5e C5e B4dq C5e D5q E5q C5q A4q A4h F5dq G5e A5q G5e F5e E5dq F5e E5q D5e C5e B4dq C5e D5q E5q C5q A4q A4h'},
   // ── Difficulty 2: Medium ──
   {id:'canon_d',t:'Canon in D',c:'Pachelbel',d:2,bpm:72,
-   s:'F#5q E5q D5q C#5q B4q A4q B4q C#5q D5q C#5q B4q A4q G4q F#4q G4q A4q D5e F#5e A5e F#5e D5e F#5e A5e F#5e B4e D5e F#5e D5e B4e D5e F#5e D5e G4e B4e D5e B4e G4e B4e D5e B4e A4e C#5e E5e C#5e A4e C#5e E5e C#5e F#4e A4e D5e A4e F#4e A4e D5e A4e G4e B4e D5e B4e A4e C#5e E5e C#5e D5e F#5e A5e G5e F#5e E5e D5e C#5e B4e D5e G5e D5e B4e G4e B4e D5e D5q F#5q A5q F#5q D5q B4q D5q F#5q G5q F#5q E5q D5q C#5q D5q E5q A4q D5q E5q F#5q G5q A5q G5q F#5q E5q D5w'},
-  {id:'can_can',t:'Can Can (Infernal Galop)',c:'Offenbach',d:2,bpm:110,
-   s:'D5e E5e F#5e D5e A4e D5e F#5e D5e E5e F#5e G5e E5e B4e E5e G5e E5e F#5e E5e D5e C#5e B4e A4e G4e F#4e G4e A4e B4e G4e D4e G4e B4e G4e A4e B4e C#5e A4e E4e A4e C#5e A4e B4e A4e G4e F#4e E4e F#4e G4e A4e D5e E5e F#5e D5e A4e D5e F#5e D5e E5e F#5e G5e E5e B4e E5e G5e E5e F#5e E5e D5e C#5e B4e A4e G4e F#4e G4e A4e B4e G4e D4e G4e B4e G4e A4e B4e C#5e A4e E4e A4e C#5e A4e B4e A4e G4e F#4e E4e F#4e G4e A4e D5q F#5q A5q D5w'},
+   s:'F#5q E5q D5q C#5q B4q A4q B4q C#5q D5q C#5q B4q A4q G4q F#4q G4q E4q D4e F#4e A4e G4e F#4e D4e F#4e E4e D4e B3e D4e A4e G4e B4e A4e G4e F#4e D4e E4e C#5e D5e F#5e A5e A4e B4e G4e A4e F#4e D4e D5e D5e C#5e'},
   {id:'mountain_king',t:'In the Hall of the Mountain King',c:'Grieg',d:2,bpm:80,
-   s:'B3e C#4e D4e E4e F#4e D4e F#4q E4e C4e E4q D4e B3e D4q B3e C#4e D4e E4e F#4e D4e F#4q E4e C4e E4q D4e B3e B3q B3e C#4e D4e E4e F#4e D4e F#4q E4e C4e E4q D4e B3e D4q B3e C#4e D4e E4e F#4e D4e F#4q E4e C4e E4q D4e B3e B3q B4e C#5e D5e E5e F#5e D5e F#5q E5e C5e E5q D5e B4e D5q B4e C#5e D5e E5e F#5e D5e F#5q E5e C5e E5q D5e B4e B4q B4e C#5e D5e E5e F#5e D5e F#5q E5e C5e E5q D5e B4e D5q B4e C#5e D5e E5e F#5e D5e F#5q E5e D5e E5e F5e F#5e G5e G#5e A5e B5w'},
+   s:'B4e C#5e D5e E5e F#5e D5e F#5q E#5e C#5e E#5q E5e C5e E5q B4e C#5e D5e E5e F#5e D5e F#5e B5e A5e F#5e D5e F#5e A5h F#4e G#4e A#4e B4e C#5e A#4e C#5q D5e A#4e D5q C#5e A#4e C#5q F#4e G#4e A#4e B4e C#5e A#4e C#5q D5e A#4e D5q C#5h'},
   {id:'hava_nagila',t:'Hava Nagila',c:'Hebrew Traditional',d:2,bpm:90,
-   s:'E4q F4q G#4q A4h G#4q F4q E4h E4q F4q G#4q A4q B4q B4h E4q F4q G#4q A4h G#4q F4q E4h E4q F4q G#4q A4q B4q B4h B4e C5e B4e A4e G#4e A4e B4e C5e B4e C5e B4e A4e G#4e A4e B4e A4e G#4e A4e B4e C5e D5e C5e B4e A4e G#4e A4e B4e C5e B4e A4e G#4e A4e E4e F4e G#4e A4e B4e C5e D5e E5e D5e C5e B4e A4e G#4e A4e B4e C5e D5e E5e D5e C5e B4e A4e G#4e F4e E4e F4e G#4e A4e B4e C5e D5e E5e E4q F4q G#4q A4h G#4q F4q E4h E4q F4q G#4q A4q B4q E5w'},
+   s:'D4q D4dq F#4e Eb4e D4e F#4q F#4dq A4e G4e F#4e G4q G4dq Bb4e A4e G4e F#4q Eb4s D4s Eb4e D4h F#4e F#4q Eb4e D4e D4e D4q Eb4e Eb4q D4e C4e C4e C4q C4q Eb4e D4e C4e C4e G4q F#4q Eb4s D4s Eb4e D4h G4h G4h G4q G4q G4q G4q G4e G4e Bb4e A4e G4e Bb4e A4e G4e A4e A4e C5e Bb4e A4e C5e Bb4e A4e A4e A4e D5q D4e D4e D5q D4e D4e D4e Bb4e A4e G4e F#4e G4dh'},
   // ── Difficulty 3: Hard ──
-  {id:'fur_elise',t:'Fur Elise',c:'Beethoven',d:3,bpm:75,
-   s:'E5e D#5e E5e D#5e E5e B4e D5e C5e A4q C4e E4e A4e B4q E4e G#4e B4e C5q E4e E5e D#5e E5e D#5e E5e B4e D5e C5e A4q C4e E4e A4e B4q E4e C5e B4e A4q A4e B4e C5e D5e E5q G4e F5e E5e D5q F4e E5e D5e C5q E4e D5e C5e B4q E4e E5e D#5e E5e D#5e E5e B4e D5e C5e A4q C4e E4e A4e B4q E4e C5e B4e A4q E5e D#5e E5e D#5e E5e B4e D5e C5e A4q C4e E4e A4e B4q E4e G#4e B4e C5q E4e E5e D#5e E5e D#5e E5e B4e D5e C5e A4q C4e E4e A4e B4q E4e C5e B4e A4w'},
-  {id:'turkish_march',t:'Turkish March',c:'Mozart',d:3,bpm:100,
-   s:'B4s A4s G#4s A4s C5q B4s A4s G#4s A4s D5q C5s B4s A4s B4s E5q D5s C5s B4s C5s D5s C5s B4s A4s G#4s B4s A4q B4s A4s G#4s A4s C5q B4s A4s G#4s A4s D5q C5s B4s A4s B4s E5q D5s C5s B4s C5s D5s C5s B4s A4s G#4s B4s A4q A4q C#5q E5q A5q G#5e F#5e E5e F#5e G#5e A5e B5e A5e G#5e F#5e E5e D5e C#5e D5e E5e F#5e E5e D5e C#5e B4e A4q B4s A4s G#4s A4s C5q B4s A4s G#4s A4s D5q C5s B4s A4s B4s E5q D5s C5s B4s C5s D5s C5s B4s A4s G#4s B4s A4w'},
+  {id:'fur_elise',t:'Für Elise',c:'Beethoven',d:3,bpm:75,
+   s:'E5s D#5s E5s D#5s E5s B4s D5s C5s A4e C4s E4s A4s B4e E4s G#4s B4s C5e E4s E5s D#5s E5s D#5s E5s B4s D5s C5s A4e C4s E4s A4s B4e E4s C5s B4s A4q E5s D#5s E5s D#5s E5s B4s D5s C5s A4e C4s E4s A4s B4e E4s G#4s B4s C5e E4s E5s D#5s E5s D#5s E5s B4s D5s C5s A4e C4s E4s A4s B4e E4s C5s B4s A4e'},
+  {id:'turkish_march',t:'Turkish March',c:'Mozart',d:4,bpm:100,
+   s:'B4s A4s G#4s A4s C5e D5s C5s B4s C5s E5e F5s E5s D#5s E5s B5s A5s G#5s A5s B5s A5s G#5s A5s C6q A5e C6e B5e A5e G5e A5e B5e A5e G5e A5e B5e A5e G5e F#5e E5q E5e F5e G5e G5e A5s G5s F5s E5s E5e F5e G5e G5e A5s G5s F5s E5s D5q C5e D5e E5e E5e F5s E5s D5s C5s C5e D5e E5e E5e F5s E5s D5s C5s B4q'},
   {id:'entertainer',t:'The Entertainer',c:'Scott Joplin',d:3,bpm:85,
-   s:'D4e D#4e E4e C5q E4e C5q E4e C5q C5e D5e D#5e E5e C5e D5e E5e B4e D5q C5h C5e D5e E5e C5e A4e B4e G4q C4e D4e E4e G4e A4e B4e C5e D5e E5e D5e C5e B4e A4e G4e F4e E4e D4q D4e D#4e E4e C5q E4e C5q E4e C5q C5e D5e D#5e E5e C5e D5e E5e B4e D5q C5h C5e D5e E5e C5e A4e B4e G4q C4e D4e E4e G4e A4e B4e C5e D5e E5e D5e C5e B4e A4e G4e F4e E4e D4q D4e D#4e E4e C5q E4e C5q E4e C5q C5e D5e D#5e E5e C5e D5e E5e B4e D5q C5w'},
+   s:'D4s D#4s E4s C5e E4s C5e E4s C5dq C5s D5s D#5s E5s C5s D5s E5e B4s D5e C5dq D4s D#4s E4s C5e E4s C5e E4s C5s C5q C5e A4s G4s F#4s A4s C5s E5e D5s C5s A4s D5dq D4s D#4s E4s C5e E4s C5e E4s C5dq C5s D5s D#5s E5s C5s D5s E5e B4s D5e C5dq C5s D5s E5s C5s D5s E5e C5s D5s C5s E5s C5s D5s E5e C5s D5s C5s E5s C5s D5s E5e B4s D5e C5dq'},
   {id:'greensleeves',t:'Greensleeves',c:'Traditional English',d:3,bpm:80,
-   s:'E4q G4q A4e B4dq C5e B4q A4q F#4q D4q E4e F#4q G4q E4q E4q D#4e E4q F#4h B3h E4q G4q A4e B4dq C5e B4q A4q F#4q D4q E4e F#4q G4q E4q E4q D#4e E4q F#4h B3h D5q D5q C5e B4dq A4e B4q A4q F#4q D4q E4e F#4q G4q E4q E4q D#4e E4q F#4h B3h D5q D5q C5e B4dq A4e B4q A4q F#4q D4q E4e F#4q G4q E4q E4q D#4e E4q F#4h B3h E4q G4q A4e B4dq C5e B4q A4q F#4q D4q E4e F#4q G4q E4q E4q D#4e E4q F#4h B3h D5q D5q C5e B4dq A4e B4q A4q F#4q D4q E4e F#4q G4q E4q E4q D#4e E4q F#4h B3w'},
-  {id:'habanera',t:'Habanera (Carmen)',c:'Bizet',d:3,bpm:72,
-   s:'D5q D5q C#5q D5q D5q C#5q C5q B4q Bb4q B4q C5q B4q Bb4q A4q Ab4q A4q G4q A4q Bb4q A4q G4q F4q E4q D4q D5q D5q C#5q D5q D5q C#5q C5q B4q Bb4q B4q C5q B4q Bb4q A4q Ab4q A4q G4q A4q Bb4q A4q G4q F4q E4q D4q D5q D5q C#5q D5q D5q C#5q C5q B4q Bb4q B4q C5q B4q Bb4q A4q Ab4q A4q G4q A4q Bb4q A4q G4q F4q E4q D4q A4q Bb4q C5q D5q Eb5q D5q C5q Bb4q A4q G4q F4q E4q F4q G4q A4q Bb4q A4q G4q F4q G4q A4q Bb4q C5q D5q Eb5q D5q C5q Bb4q A4q G4q F4q E4q D4w'},
+   s:'A4q C5h D5q E5dq F5e E5q D5h B4q G4dq A4e B4q C5h A4q A4dq G#4e A4q B4h G#4q E4h A4q C5h D5q E5dq F5e E5q D5h B4q G4dq A4e B4q C5dq B4e A4q G#4dq F#4e G#4q A4dh A4dh G5dh G5dq F5e E5q D5h B4q G4dq A4e B4q C5h A4q A4dq G#4e A4q B4h G#4q E4dh G5dh G5dq F5e E5q D5h B4q G4dq A4e B4q C5dq B4e A4q G#4dq F#4e G#4q A4dh A4dh'},
   // ── Difficulty 4: Expert ──
-  {id:'william_tell',t:'William Tell Overture (Finale)',c:'Rossini',d:4,bpm:100,
-   s:'G4e G4e G4q G4e G4e G4q B4e B4e B4q A4e A4e A4q G4e G4e B4q D5e D5e D5q B4e A4e G4q F#4e G4e A4q B4q D5q G5q F#5q E5q D5q C5q B4q A4q B4q C5q D5q G4q G4e G4e G4q G4e G4e G4q B4e B4e B4q A4e A4e A4q G4e G4e B4q D5e D5e D5q B4e A4e G4q F#4e G4e A4q B4q D5q G5q F#5q E5q D5q C5q B4q A4q B4q C5q D5q G4q G4e G4e G4q G4e G4e G4q B4e B4e B4q A4e A4e A4q G4e G4e B4q D5e D5e D5q B4e A4e G4q F#4e G4e A4q D5q G5q B5q G5w'},
-  {id:'swan_lake',t:'Swan Lake Theme',c:'Tchaikovsky',d:4,bpm:70,
-   s:'A4q B4q C5q E5q D5q C5q B4q A4q G4q A4q B4q C5q D5q C5q B4q A4h E5q D5q C5q B4q A4q G4q A4q B4q C5q B4q A4q G4q F4q E4q D4q E4q A4h A4e B4e C5e D5e E5q D5e C5e B4e A4e G4q A4q B4q C5q D5q E5q D5q C5q B4q A4h A4q B4q C5q E5q D5q C5q B4q A4q G4q A4q B4q C5q D5q C5q B4q A4h E5q D5q C5q B4q A4q G4q A4q B4q C5q B4q A4q G4q F4q E4q D4q E4q A4h A4e B4e C5e D5e E5q D5e C5e B4e A4e G4q A4q B4q C5q D5q E5q D5q C5q B4q A4w'},
-  {id:'hungarian5',t:'Hungarian Dance No. 5',c:'Brahms',d:4,bpm:90,
-   s:'A4e A4e G4e F#4e G4q A4q B4e C5e B4e A4e G4q F#4q E4e E4e D4e C4e D4q E4q F#4e G4e F#4e E4e D4q C4q A4q B4q C5h D5q C5q B4h A4q G4q A4h B4q A4q G4h E5e D5e C5e B4e A4e G4e F#4e E4e D4e E4e F#4e G4e A4e B4e C5e D5e E5e D5e C5e B4e A4e G4e F#4e E4e D4e C4e B3e A3e G3e A3e B3e C4e A4e A4e G4e F#4e G4q A4q B4e C5e B4e A4e G4q F#4q E4e E4e D4e C4e D4q E4q F#4e G4e F#4e E4e D4q C4q D4e E4e F#4e G4e A4e B4e A4q A4w'},
   // ── Easy (continued) ──
   {id:'beethoven5',t:'Symphony No. 5',c:'Beethoven',d:1,bpm:108,
-   s:'G4e G4e G4e Eb4h G4e G4e G4e Eb4h F4e F4e F4e D4h F4e F4e F4e D4h G4e G4e G4e Eb4q F4e F4e F4e D4q G4e G4e G4e Eb4q Ab4e Ab4e Ab4e G4q G4e G4e G4e Eb4h F4e F4e F4e D4h G4e G4e G4e Eb4q F4e F4e F4e D4q Eb4q G4q Bb4q Eb5q D5q C5q Bb4q Ab4q G4q F4q Eb4q D4q C4q Bb3q Ab3q G3q G4e G4e G4e Eb4h F4e F4e F4e D4h G4e G4e G4e Eb4q Ab4e Ab4e Ab4e G4h Eb4q G4q Bb4q Eb5q D5q C5q Bb4q Ab4q G4q F4q Eb4q D4q Eb4q F4q G4q Ab4q Bb4q C5q D5q Eb5w'},
+   s:'G4e G4e G4e Eb4h F4e F4e F4e D4w G4e G4e G4e Eb4e Ab4e Ab4e Ab4e G4e Eb5e Eb5e Eb5e C5h C5e G4e G4e G4e D4e Ab4e Ab4e Ab4e G4h F5e F5e F5e D5h D5e G5e G5e F5e Eb5h D5e G5e G5e F5e Eb5h D5e G5e G5e F5e Eb5q C5q G5h'},
   {id:'la_cucaracha',t:'La Cucaracha',c:'Traditional Mexican',d:1,bpm:100,
-   s:'C4e C4e C4e F4q F4q C4e C4e C4e F4q F4q F4q E4q D4q C4q Bb3q A3q C4e C4e C4e F4q F4q C4e C4e C4e F4q F4q F4q E4q D4q C4q Bb3q A3q F4q F4q E4q E4q D4q D4q C4h F4q F4q E4q E4q D4q D4q C4h C4e C4e C4e F4q F4q C4e C4e C4e F4q F4q F4q E4q D4q C4q Bb3q A3q C4e C4e C4e F4q F4q C4e C4e C4e F4q F4q F4q E4q D4q C4q Bb3q A3q F4q F4q E4q E4q D4q D4q C4h F4q F4q E4q E4q D4q D4q C4h C4e C4e C4e F4q F4q C4e C4e C4e F4q F4w'},
+   s:'C4e C4e C4e F4q A4e C4e C4e C4e F4q A4h F4e F4e E4e E4e D4e D4e C4dq C4e C4e C4e E4q G4e C4e C4e C4e E4q G4h C5e D5e C5e Bb4e A4e G4e F4dh C4e C4e F4e F4e A4e A4e C5q A4h C5e D5e C5e Bb4e A4e C5e Bb4q G4h C4e C4e E4e E4e G4e G4e Bb4q G4h C5e D5e C5e Bb4e A4e G4e A4q F4h'},
   {id:'blue_danube',t:'Blue Danube Waltz',c:'Strauss II',d:1,bpm:80,
-   s:'D4h D4q F#4q A4q D5h D5h C#5q A4q F#4q D4h A3h A3q C#4q E4q A4h A4h G#4q E4q C#4q A3h D4h D4q F#4q A4q D5h D5h E5q D5q C#5q B4q A4q G4q F#4q E4q D4h A3h A3q C#4q E4q A4h A4h G#4q E4q C#4q A3h D4q F#4q A4q D5q F#5q D5q A4q F#4q D4q A4q D5q F#5q A5q F#5q D5q A4q D4q F#4q A4q D5q F#5q D5q A4q F#4q D5h D5h C#5q A4q F#4q D4h A3h A3q C#4q E4q A4h A4h G#4q E4q C#4q A3h D4h D4q F#4q A4q D5h D5h E5q D5q C#5q B4q A4q G4q F#4q E4q D4w'},
+   s:'C4q C4q E4q G4q G4h G5q G5h E5q E5h C4q C4q E4q G4q G4h G5q G5h F5q F5h B3q B3q D4q A4q A4h A5q A5h F5q F5h B3q B3q D4q A4q A4h A5q A5h E5q E5h C4q C4q E4q G4q C5h C6q C6h G5q G5h C4q C4q E4q G4q C5h C6q C6h A5q A5h D4q D4q F4q A4q A4w F#4q G4q E5w C5q E4q E4h D4q A4h G4q C4dq C5e C5q C5q'},
   // ── Medium (continued) ──
   {id:'eine_kleine',t:'Eine Kleine Nachtmusik',c:'Mozart',d:2,bpm:100,
-   s:'G4q G4q B4q B4q D5q B4q G4q D5q D5q F#5q F#5q A5q F#5q D5q G5q F#5q E5q D5q C5q B4q A4q G4q F#4q G4q A4q B4q C5q D5q G4q G4q B4q B4q D5q B4q G4q D5q D5q F#5q F#5q A5q F#5q D5q G5q F#5q E5q D5q C5q B4q A4q G4q G4e A4e B4e C5e D5e E5e F#5e G5e A5e G5e F#5e E5e D5e C5e B4e A4e G4e A4e B4e C5e D5e E5e F#5e G5e G4q G4q B4q B4q D5q B4q G4q D5q D5q F#5q F#5q A5q F#5q D5q G5q F#5q E5q D5q C5q B4q A4q G4q F#4q G4q A4q B4q C5q D5q G4w'},
+   s:'G4q D4e G4q D4e G4e D4e G4e B4e D5q C5q A4e C5q A4e C5e A4e F#4e A4e D4q G4e G4dq B4e A4e G4e G4e F#4e F#4dq A4e C5e F#4e A4e G4e G4dq B4e A4e G4e G4e F#4e F#4dq A4e C5e F#4e G4e G4e F#4e E4s F#4s G4e G4e A4e G4s A4s B4e B4e C5e B4s C5s D5q'},
   {id:'toreador',t:'Toreador Song (Carmen)',c:'Bizet',d:2,bpm:95,
-   s:'F4q F4q F4e E4e F4q A4q G4q F4q E4q D4q C4q F4q F4q F4e E4e F4q A4q G4q F4q E4q D4q C4q Bb3q A3q Bb3q C4q D4q E4q F4q G4q A4q Bb4q C5q D5q C5q Bb4q A4q G4q F4q E4q D4q C4q F4q F4q F4e E4e F4q A4q G4q F4q E4q D4q C4q F4q F4q F4e E4e F4q A4q G4q F4q E4q D4q C4q Bb3q A3q Bb3q C4q D4q E4q F4q G4q A4q Bb4q C5q D5q C5q Bb4q A4q G4q F4q E4q D4q C4q F4q A4q C5q F5q E5q D5q C5q Bb4q A4q G4q F4q G4q A4q Bb4q C5q F4w'},
-  {id:'kalinka',t:'Kalinka',c:'Russian Traditional',d:2,bpm:95,
-   s:'E4q E4q E4q D4q E4q F#4q G4q A4q B4q B4q A4q G4q F#4q E4q E4e E4e F#4e G4e A4e B4e B4e A4e G4e F#4e E4e D4e E4e E4e F#4e G4e A4e B4e B4e A4e G4e F#4e E4e D4e E4q E4q E4q D4q E4q F#4q G4q A4q B4q B4q A4q G4q F#4q E4q E4e E4e F#4e G4e A4e B4e B4e A4e G4e F#4e E4e D4e E4e E4e F#4e G4e A4e B4e B4e A4e G4e F#4e E4e D4e E4q E4q E4q D4q E4q F#4q G4q A4q B4q B4q A4q G4q F#4q E4q B4e A4e G4e F#4e E4e D4e E4e F#4e G4e A4e B4q E4w'},
-  {id:'radetzky',t:'Radetzky March',c:'Strauss I',d:2,bpm:100,
-   s:'C5e C5e C5q E5q C5q G4q E4q G4q C5e C5e C5q D5q B4q G4q D4q G4q C5e C5e C5q E5q C5q A4q F4q A4q C5q B4q A4q G4q F4q E4q D4q C4q C5e C5e C5q E5q C5q G4q E4q G4q C5e C5e C5q D5q B4q G4q D4q G4q C5e C5e C5q E5q C5q A4q F4q A4q C5q B4q A4q G4q F4q E4q D4q C4q G4q A4q B4q C5q D5q E5q F5q G5q A5q G5q F5q E5q D5q C5q B4q A4q G4q A4q B4q C5q D5q E5q F5q G5q C5e C5e C5q E5q C5q G4q E4q G4q C5q B4q A4q G4q F4q E4q D4q C4w'},
+   s:'C5q D5e C5e A4q A4q A4e G4e A4e Bb4e A4dq Bb4q G4e C5e A4dq F4q D4e G4e C4dq G4h G4e D5e C5e Bb4e A4e G4e A4e Bb4e A4dq E4q A4q A4q G#4e B4e E5w E5e D5s E5s D5s C5e D5e G4e A4e Bb4dq A4s Bb4s A4s F4e D5e C5dq'},
   // ── Hard (continued) ──
-  {id:'danse_macabre',t:'Danse Macabre',c:'Saint-Saens',d:3,bpm:85,
-   s:'D5q D5q Eb5q D5q C5q Bb4q A4q G4q A4q Bb4q C5q D5q Eb5q D5q C5q Bb4q A4q G4e A4e Bb4e C5e D5e Eb5e D5e C5e Bb4e A4e G4e F#4e G4q D5q D5q Eb5q D5q C5q Bb4q A4q G4q A4q Bb4q C5q D5q Eb5q D5q C5q Bb4q A4q G4e A4e Bb4e C5e D5e Eb5e D5e C5e Bb4e A4e G4e F#4e G4q G5q F#5q Eb5q D5q C5q Bb4q A4q G4q F#4q G4q A4q Bb4q C5q D5q Eb5q D5q C5q Bb4q A4q G4q F#4q G4q A4q Bb4q C5q D5q Eb5q D5q C5q Bb4q A4q G4e A4e Bb4e C5e D5e Eb5e F5e Eb5e D5e C5e Bb4e A4e G4w'},
-  {id:'spring_vivaldi',t:'Spring (Four Seasons)',c:'Vivaldi',d:3,bpm:95,
-   s:'E5q E5e D#5e E5e D#5e E5q E5e D#5e E5e D#5e E5q G#5q F#5q E5q D#5q C#5q B4q A4q G#4q F#4q E4q F#4q G#4q A4q B4q C#5q D#5q E5q E5q E5e D#5e E5e D#5e E5q E5e D#5e E5e D#5e E5q G#5q F#5q E5q D#5q C#5q B4q A4q G#4q F#4q E4q F#4q G#4q A4q B4q C#5q D#5q E5q E5e F#5e G#5e A5e G#5e F#5e E5e D#5e C#5e B4e A4e G#4e F#4e G#4e A4e B4e C#5e D#5e E5e F#5e G#5e A5e G#5e F#5e E5e D#5e C#5e B4e E5q E5e D#5e E5e D#5e E5q G#5q F#5q E5q D#5q C#5q B4q E5q G#5q B5q E5w'},
+  {id:'spring_vivaldi',t:'Spring (Four Seasons)',c:'Vivaldi',d:4,bpm:95,
+   s:'E4e G#4e G#4e G#4e F#4s E4s B4dq B4s A4s G#4e G#4e G#4e F#4s E4s B4dq B4s A4s G#4e A4s B4s A4e G#4e F#4e D#4e B3e E4e G#4e G#4e G#4e F#4s E4s B4dq B4s A4s G#4e G#4e G#4e F#4s E4s B4dq B4s A4s G#4e A4s B4s A4e G#4e F#4q E4e B4e A4s G#4s A4e B4e C#5e B4q E4e B4e A4s G#4s A4e B4e C#5e B4q E4e C#5e B4q A4e G#4e F#4s E4s F#4q E4q E4e B4e A4s G#4s A4e B4e C#5e B4q E4e B4e A4s G#4s A4e B4e C#5e B4q E4e C#5e B4q A4e G#4e F#4s E4s F#4q E4q'},
   {id:'carmen_prelude',t:'Carmen Prelude',c:'Bizet',d:3,bpm:110,
-   s:'A4e A4e A4e A4e A4e B4e C#5e D5e E5q E5q D5e C#5e B4e A4e A4e A4e A4e A4e A4e B4e C#5e D5e E5q E5q D5e C#5e B4e A4e E5e E5e E5e E5e E5e F#5e G#5e A5e B5q B5q A5e G#5e F#5e E5e A4e A4e A4e A4e A4e B4e C#5e D5e E5q E5q D5e C#5e B4e A4e A4e A4e A4e A4e A4e B4e C#5e D5e E5q E5q D5e C#5e B4e A4e E5e E5e E5e E5e E5e F#5e G#5e A5e B5q B5q A5e G#5e F#5e E5e A4e B4e C#5e D5e E5e F#5e G#5e A5e B5q A5q G#5q F#5q E5q D5q C#5q B4q A4w'},
+   s:'A4e A4s A4s A4s E4s D4s E4s A4e A4s A4s A4s B4s C#5s B4s A4e A4s A4s B4s A4s G#4s A4s B4h D5e D5s D5s D5s A4s G4s A4s D5e D5s D5s D5s E5s F#5s E5s D5e D5s C#5s B4e B4s A4s G#4h A4e A4s A4s A4s E4s D4s E4s'},
   {id:'minute_waltz',t:'Minute Waltz',c:'Chopin',d:3,bpm:90,
-   s:'D5e E5e F#5e E5e D5e C#5e B4e A4e G4e F#4e E4e D4e D5e E5e F#5e E5e D5e C#5e B4e A4e G4e F#4e E4e D4e F#5q F#5q E5q D5q C#5q B4q A4q G4q F#4q E4q D4q E4q F#4q G4q A4q B4q C#5q D5q D5e E5e F#5e E5e D5e C#5e B4e A4e G4e F#4e E4e D4e D5e E5e F#5e E5e D5e C#5e B4e A4e G4e F#4e E4e D4e F#5q F#5q E5q D5q C#5q B4q A4q G4q F#4q E4q D4q E4q F#4q G4q A4q B4q C#5q D5q A4q B4q C#5q D5q E5q F#5q G5q F#5q E5q D5q C#5q B4q A4q G4q F#4q E4q D4w'},
+   s:'Ab4q G4e Ab4e C5e Bb4e G4e Ab4e Bb4e Ab4e C5e Bb4e G4e Ab4e C5e Bb4e G4e Ab4e C5e Bb4e G4e Ab4e C5e Bb4e G4e Ab4e C5e Bb4e G4e Ab4e C5e Bb4e G4e Ab4e C5e Bb4e G4e Ab4e C5e Bb4e G4e Ab4e Bb4e C5e Db5e Eb5e F5e Gb5e Bb5dq Ab5e Gb5e F5e F5e Eb5e Eb5e D5e Eb5q Bb5dq Ab5e Gb5e F5e F5e Eb5e D5e Eb5e F5e Bb4e'},
   // ── Expert (continued) ──
-  {id:'flight_bumblebee',t:'Flight of the Bumblebee',c:'Rimsky-Korsakov',d:4,bpm:80,
-   s:'E5s F5s E5s D#5s E5s D5s C#5s D5s C5s B4s C5s A4s B4s C5s D5s D#5s E5s F5s E5s D#5s E5s D5s C#5s D5s C5s B4s C5s A4s B4s C5s D5s D#5s E5s F5s F#5s G5s G#5s A5s G#5s G5s F#5s F5s E5s D#5s D5s C#5s C5s B4s A4s G#4s A4s B4s C5s C#5s D5s D#5s E5s F5s E5s D#5s E5s D5s C#5s D5s C5s B4s C5s A4s B4s C5s D5s D#5s E5s F5s E5s D#5s E5s D5s C#5s D5s C5s B4s C5s A4s B4s C5s D5s D#5s E5s F5s F#5s G5s G#5s A5s G#5s G5s F#5s F5s E5s D#5s D5s C#5s C5s B4s A4s G#4s A4s B4s C5s C#5s D5s D#5s E5s A5w'},
   {id:'maple_leaf_rag',t:'Maple Leaf Rag',c:'Scott Joplin',d:4,bpm:85,
-   s:'A4e C#5e E5e A5e G#5e F#5e E5e D5e C#5e B4e A4e G#4e A4q C#5q E5q A4e C#5e E5e A5e G#5e F#5e E5e D5e C#5e B4e A4e G#4e A4q C#5q E5q E5e D5e C#5e B4e A4e G#4e A4e B4e C#5e D5e E5e F#5e G#5e A5e G#5e F#5e E5e D5e C#5e B4e A4e C#5e E5e A5e G#5e F#5e E5e D5e C#5e B4e A4e G#4e A4q C#5q E5q A4e C#5e E5e A5e G#5e F#5e E5e D5e C#5e B4e A4e G#4e A4q C#5q E5q E5e D5e C#5e B4e A4e G#4e A4e B4e C#5e D5e E5e F#5e G#5e A5e G#5e F#5e E5e D5e C#5e B4e A4w'},
+   s:'Ab4s Eb5s Ab4s C5s Eb5e G4s Eb5s G4s Bb4s Eb5q Eb5s Ab4s Eb5s Ab4s C5s Eb5e G4s Eb5s G4s Bb4s Eb5e Eb5s Eb5s Ab4s Cb5s Fb5s Eb5s Eb5s Ab4s Cb5s Fb5s Eb5s Ab5e Ab5s Ab5e Ab5e Ab5s Ab5e Eb5s F5s C5s Eb5s F5e Ab4e Bb4s Cb5s Ab4s Bb4s C5e Ab4s C5s Ab4s Bb4e Ab4e'},
   {id:'hungarian_rhap',t:'Hungarian Rhapsody No. 2',c:'Liszt',d:4,bpm:85,
-   s:'D4e F4e A4e D5e F5e D5e A4e F4e D4e F4e A4e D5e F5e D5e A4e F4e E4e G4e Bb4e E5e G5e E5e Bb4e G4e E4e G4e Bb4e E5e G5e E5e Bb4e G4e D4e F4e A4e D5e F5e A5e F5e D5e A4e F4e D4e F4e A4e D5e E5e F5e G5e A5e Bb5e A5e G5e F5e E5e D5e C#5e D5e D4e F4e A4e D5e F5e D5e A4e F4e D4e F4e A4e D5e F5e D5e A4e F4e E4e G4e Bb4e E5e G5e E5e Bb4e G4e E4e G4e Bb4e E5e G5e E5e Bb4e G4e D4e F4e A4e D5e F5e A5e F5e D5e A4e F4e D4e F4e A4e D5e E5e F5e G5e A5e Bb5e A5e G5e F5e E5e D5e C#5e D5w'},
+   s:'B#4e C#5e B4e C#5e B#4e C#5e B4e C#5e B#4e C#5e A#4e C#5e B#4e C#5e A#4e C#5e B#4e C#5e D#5e C#5e B#4e C#5e D#5e C#5e B#4e C#5e F#5e C#5e B#4e C#5e F#5q'},
   {id:'toccata_dm',t:'Toccata in D minor',c:'Bach',d:4,bpm:70,
-   s:'D5e C#5e D5q A4q D4q D5e C#5e D5e E5e F5e C#5e D5e E5e F5e G5e A5q Bb5q A5q G5q F5q E5q D5q C#5q D5q F5q A5q D5e C#5e D5q A4q D4q D5e C#5e D5e E5e F5e C#5e D5e E5e F5e G5e A5q Bb5q A5q G5q F5q E5q D5q C#5q D5q A4q D4q F4q A4q D5q F5q A5q D5e C#5e D5q A4e G4e F4e E4e D4e C#4e D4e E4e F4e G4e A4e Bb4e A4e G4e F4e E4e D4e C#4e D4e E4e F4e G4e A4e Bb4e C5e D5e Eb5e D5e C5e Bb4e A4e G4e F4e E4e D4e C#4e D4e E4e F4e D4w'},
+   s:'A5e G5s F5s E5s D5s C#5s D5s A4e E4s F4s C#4s D4s E4h D4q C#4s D4s E4s C#4s D4s E4s C#4s D4s E4s C#4s D4s E4s F4s G4s E4s F4s G4s E4s F4s G4s E4s F4s G4s A4s Bb4s G4s A4s Bb4s G4s A4s Bb4s G4s A4s C#5s D5s E5s C#5s D5s E5s C#5s D5s E5s C#5s D5s E5s F5s G5s E5s F5s G5s E5s F5s G5s E5s F5s G5s A5s Bb5s G5s A5s Bb5s G5s A5s Bb5s G5s A5s A5s'},
 ];
 
 // ═══════════════════════════════════
@@ -8739,7 +8775,7 @@ const GRADE_EXERCISES=[
 {g:3,n:5,t:'Transposition',icon:'🔄',qs:[
 {q:'Transposing up an octave means?',c:['Same notes louder','8 notes higher','Changing key','Doubling speed'],a:'8 notes higher'},
 {q:'If C goes up a 5th it becomes?',c:['F','G','A','D'],a:'G'},
-{q:'Transposing means?',c:['Playing faster','Moving all notes same interval','Changing time sig','Repeating'],a:'Moving all notes same interval'},
+{q:'Transposing means?',c:['Playing faster','Moving every note by the same interval','Changing the time signature','Repeating'],a:'Moving every note by the same interval'},
 {q:'C major transposed up a whole step?',c:['C# major','D major','E major','F major'],a:'D major'},
 ]},
 {g:3,n:6,t:'More Key Signatures',icon:'🔑',qs:[
@@ -8752,7 +8788,7 @@ const GRADE_EXERCISES=[
 {q:'In 4/4, eighth notes are beamed in groups of?',c:['2','3','4','Both 2 and 4'],a:'Both 2 and 4'},
 {q:'In 6/8, eighths are beamed in groups of?',c:['2','3','4','6'],a:'3'},
 {q:'A tie connects two notes of the?',c:['Same pitch','Different pitch','Same duration','Different clef'],a:'Same pitch'},
-{q:'In 3/4, how are eighth notes grouped?',c:['Groups of 2','Groups of 3','Groups of 4','Not beamed'],a:'Groups of 2'},
+{q:'In 3/4, eighth notes are usually beamed in groups of…',c:['2 (one beat each)','3','4','Not beamed'],a:'2 (one beat each)'},
 ]},
 // ── GRADE 4 ──
 {g:4,n:1,t:'All Key Signatures',icon:'🗝',qs:[
@@ -8764,8 +8800,8 @@ const GRADE_EXERCISES=[
 {g:4,n:2,t:'Chromatic Scales',icon:'🌈',qs:[
 {q:'A chromatic scale moves by?',c:['Whole steps','Half steps','3rds','5ths'],a:'Half steps'},
 {q:'How many different notes in a chromatic octave?',c:['7','8','12','13'],a:'12'},
-{q:'After C, C# in chromatic ascending?',c:['D','Db','D#','Eb'],a:'D'},
-{q:'Chromatic means?',c:['Stepwise','Colorful/by half steps','Fast','Slow'],a:'Colorful/by half steps'},
+{q:'In a rising chromatic scale, what comes after C and C♯?',c:['D','Db','D#','Eb'],a:'D'},
+{q:'Chromatic means?',c:['Moving by whole steps','Moving by half steps','Fast','Slow'],a:'Moving by half steps'},
 ]},
 {g:4,n:3,t:'Double Sharps & Flats',icon:'✖',qs:[
 {q:'A double sharp raises a note by?',c:['1 half step','2 half steps','3 half steps','1 whole step and a half'],a:'2 half steps'},
@@ -8789,7 +8825,7 @@ const GRADE_EXERCISES=[
 {q:'A trill means?',c:['Play softly','Rapidly alternate 2 notes','Skip a note','Hold longer'],a:'Rapidly alternate 2 notes'},
 {q:'An acciaccatura is?',c:['A chord','A quick grace note','A rest','A dynamic'],a:'A quick grace note'},
 {q:'A turn plays notes?',c:['Above, note, below, note','Below only','Random order','Same note repeated'],a:'Above, note, below, note'},
-{q:'A mordent quickly alternates the note with the note?',c:['Above or below','Two octaves up','Same note','A 5th up'],a:'Above or below'},
+{q:'A mordent quickly swaps a note with the note…',c:['Above or below','Two octaves up','Same note','A 5th up'],a:'Above or below'},
 ]},
 {g:4,n:7,t:'More Intervals',icon:'📏',qs:[
 {q:'A tritone = how many semitones?',c:['4','5','6','7'],a:'6'},
@@ -8980,7 +9016,7 @@ function sightReadLoop() {
   }
   if (freq <= 60) { sightReadStablePc = -1; sightReadStableCount = 0; }   // silence: start counting fresh for the next note
 
-  if (freq > 60 && freq < 1500 && S.sightReadIdx < S.sightReadNotes.length) {
+  if (freq > 60 && freq < 1900 && S.sightReadIdx < S.sightReadNotes.length) {
     const noteNum = Math.round(12 * Math.log2(freq / 440));
     const pc = ((noteNum + 9) % 12 + 12) % 12;
     if (pc !== srHeldPc && srHeldPc >= 0) srHeldPc = -1;
