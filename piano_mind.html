@@ -174,6 +174,20 @@ h1 {
 /* Pebbles beside a speech bubble: keep him on the left, next to the words */
 [style*="display:flex"] > .pebbles { margin: 0.5rem 0; }
 
+/* message under the name box */
+.name-msg { font-size:0.8rem; color:#c0392b; min-height:0; margin:0.15rem 0 0; }
+.name-msg:empty { display:none; }
+body.theme-dark .name-msg, body.mode-neon .name-msg { color:#ffb3a7; }
+
+#delayTapBtn.pressed { transform: scale(0.96); filter: brightness(0.95); }
+
+.ios-tip { position:relative; font-size:0.82rem; line-height:1.4; background:rgba(255,255,255,0.6); border:1px solid rgba(124,111,239,0.3); border-radius:12px; padding:0.5rem 2rem 0.5rem 0.7rem; margin:0.4rem 0; color:#2c3e50; }
+.ios-tip-x { position:absolute; top:0.25rem; right:0.3rem; background:none; border:none; font-size:0.9rem; cursor:pointer; color:#526488; }
+body.theme-dark .ios-tip, body.mode-neon .ios-tip { background:rgba(255,255,255,0.1); color:#f4efff; }
+
+/* No double-tap-to-zoom wait on buttons and piano keys (pages can still scroll) */
+button, .btn, [role=button], .round-opt, .play-btn, .p-white, .p-black, .nk-key { touch-action: manipulation; }
+
 /* ── Glass card ── */
 .card {
   background: var(--card-bg, rgba(255,255,255,0.35));
@@ -636,6 +650,13 @@ body.mode-smooth .btn:hover {
   background: #e4e4e4 !important;
   box-shadow: 0 3px 12px rgba(0,0,0,0.1);
 }
+/* Smooth look: a whisper of colour on the buttons (pale pink, lavender, seafoam) */
+body.mode-smooth .btn-coral, body.mode-smooth .btn-pink { background: #fcf1f3 !important; border-color: #efd3da !important; }
+body.mode-smooth .btn-lilac, body.mode-smooth .btn-blue { background: #f4f1fb !important; border-color: #dcd4ef !important; }
+body.mode-smooth .btn-mint { background: #edf8f4 !important; border-color: #cfe9df !important; }
+body.mode-smooth .btn-coral:hover, body.mode-smooth .btn-pink:hover { background: #f8e5e9 !important; }
+body.mode-smooth .btn-lilac:hover, body.mode-smooth .btn-blue:hover { background: #ebe5f7 !important; }
+body.mode-smooth .btn-mint:hover { background: #e0f2eb !important; }
 body.mode-smooth .welcome-card {
   background: rgba(255,255,255,0.85);
   border: 1px solid #ddd;
@@ -1300,7 +1321,40 @@ var currentUser = null;
 var authReady = false;
 
 // A player's name is shown inside the page, so it may not contain HTML characters
-function cleanName(n) { return String(n || '').replace(/[<>"'&`\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24); }
+// ── Name filter: rude words can't be used as a name ──
+// Letters can repeat (fuuun), swap for numbers or symbols (h3ll0), or have spaces between them.
+// Words in BAD_WHOLE only count as a whole word, so names like Cassandra, Dickson or Essex are fine.
+const BAD_ANY = ['fuck','fuk','fck','shit','sh1t','bitch','biatch','cunt','whore','slut','nigg','nigga','faggot','fagot','retard','porn','penis','vagina','pussy','dildo','wank','twat','bastard','asshole','arsehole','dumbass','jackass','bollock','motherf','hitler','nazi','killyourself','putangina','tangina','putang','pakyu','tarantado','kupal','fvck','phuck'];
+const BAD_WHOLE = ['ass','arse','dick','cock','cum','tit','tits','boob','boobs','fag','fags','sex','sexy','rape','kys','hoe','hoes','piss','puta','damn','crap','wtf','stfu','bobo','tanga','gago','ulol'];
+const NAME_OK = ['scunthorpe'];
+function nameLetters(n) {
+  return String(n || '').toLowerCase()
+    .replace(/[0@4]/g, m => ({ '0': 'o', '@': 'a', '4': 'a' })[m]).replace(/[1!|]/g, 'i').replace(/3/g, 'e')
+    .replace(/[5$]/g, 's').replace(/7/g, 't').replace(/8/g, 'b').replace(/9/g, 'g');
+}
+function badWordRe(w) { return w.split('').map(c => c + '+').join(''); }   // "fuck" -> f+u+c+k+ (catches fuuuck)
+const BAD_ANY_RE = new RegExp(BAD_ANY.map(badWordRe).join('|'));
+const BAD_WHOLE_RE = new RegExp('(^| )(' + BAD_WHOLE.map(badWordRe).join('|') + ')( |$)');
+function isRudeName(n) {
+  const t = nameLetters(n);
+  if (NAME_OK.some(ok => t.replace(/[^a-z]/g, '').includes(ok))) return false;
+  const words = t.replace(/[^a-z]+/g, ' ').trim();       // "big-butt_99" -> "big butt"
+  const joined = words.replace(/ /g, '');                // "f u c k" -> "fuck"
+  return BAD_ANY_RE.test(joined) || BAD_WHOLE_RE.test(words) || BAD_WHOLE_RE.test(joined);
+}
+function cleanName(n) {
+  const c = String(n || '').replace(/[<>"'&`\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+  return isRudeName(c) ? '' : c;
+}
+function checkNameInput(el) {
+  const raw = el.value.trim(), msg = $('nameMsg');
+  if (raw && isRudeName(raw)) {
+    el.value = ''; S.name = '';
+    try { localStorage.removeItem('pms_name'); } catch(e) {}
+    if (msg) msg.textContent = 'That name is not allowed. Please pick a kind name.';
+    announce && announce('That name is not allowed. Please pick a kind name.');
+  } else { if (msg) msg.textContent = ''; S.name = cleanName(raw); }
+}
 
 // Grade Exercises you have passed, stored as {"1_3": 1, ...}
 function gxData() { try { return JSON.parse(localStorage.getItem('pms_gradeex') || '{}'); } catch(e) { return {}; } }
@@ -1320,7 +1374,7 @@ function gxMark(g, n) { const d = gxData(); d[g + '_' + n] = 1; try { localStora
 
 // ── Cloud save ──
 // Keys that belong to this device, not to a person. They are never sent to the cloud.
-const DEVICE_ONLY_KEYS = ['pms_guest', 'pms_owner', 'pms_fb_last'];
+const DEVICE_ONLY_KEYS = ['pms_guest', 'pms_owner', 'pms_fb_last', 'pms_midi', 'pms_audio_delay', 'pms_colour_notes', 'pms_ios_tip'];   // settings for this device only
 function saveNowButton(btn) {
   if (!navigator.onLine || !cloudReady) { alert("You're offline. Your progress is safe on this device and will save to the cloud when you're back online."); return; }
   btn.disabled = true; btn.textContent = 'Saving…';
@@ -2926,8 +2980,39 @@ function brPlayPattern() {
 }
 // Sound reaches your ears a little late (more with Bluetooth). The browser tells us roughly how late.
 function audioDelayMs() {
+  try { const m = parseInt(localStorage.getItem('pms_audio_delay'), 10); if (m >= 0 && m <= 500) return m; } catch(e) {}
   try { const c = getAudioCtx(); return Math.min(500, Math.max(0, ((c.outputLatency || 0) + (c.baseLatency || 0)) * 1000)); } catch(e) { return 0; }
 }
+// Tap-to-the-beat check (Settings): 12 clicks; the taps after the first 4 show how late the sound reaches you.
+let delayCheck = null;
+function startDelayCheck() {
+  const ctx = getAudioCtx(); ctx.resume();
+  if (delayCheck) delayCheck.timers.forEach(clearTimeout);
+  const beat = 600, t0 = performance.now() + 400;
+  delayCheck = { t0, beat, taps: [], timers: [], done: false, result: null };
+  for (let i = 0; i < 12; i++) delayCheck.timers.push(setTimeout(() => metroClick(i % 4 === 0), 400 + i * beat));
+  delayCheck.timers.push(setTimeout(finishDelayCheck, 400 + 12 * beat + 300));
+  render('settings');
+}
+function delayTap() {
+  if (!delayCheck || delayCheck.done) return;
+  const t = performance.now(), i = Math.round((t - delayCheck.t0) / delayCheck.beat);
+  if (i >= 4 && i < 12) delayCheck.taps.push(t - (delayCheck.t0 + i * delayCheck.beat));
+  const b = $('delayTapBtn'); if (b) { b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 90); }
+}
+function finishDelayCheck() {
+  if (!delayCheck) return;
+  delayCheck.done = true;
+  const d = delayCheck.taps.slice().sort((a, b) => a - b);
+  if (d.length >= 5) {
+    const mid = d[Math.floor(d.length / 2)];
+    const ms = Math.max(0, Math.min(500, Math.round(mid)));
+    delayCheck.result = ms;
+    try { localStorage.setItem('pms_audio_delay', String(ms)); } catch(e) {}
+  } else delayCheck.result = -1;   // not enough taps
+  if (S.page === 'settings') render('settings');
+}
+function resetDelayCheck() { try { localStorage.removeItem('pms_audio_delay'); } catch(e) {} delayCheck = null; render('settings'); }
 function brStartTapping() {
   const q = S.boss.q; brClear(); getAudioCtx().resume();
   q.phase = 'tap'; q.taps = []; q.start = null; render('boss_play');
@@ -3398,6 +3483,7 @@ function logPracticeSession(data) {
   (data._sessions[today] = data._sessions[today] || []).push(mins);
   Object.keys(data._sessions).forEach(k => { if (k < localDay(7)) delete data._sessions[k]; });   // keep one week
   if (now.getHours() >= 22) data._lateSession = true;
+  if (now.getHours() >= 5 && now.getHours() < 8) data._earlySession = true;
   // The Metronome: a session today that has a match (within 30 min) on each of the 2 days before
   const near = (list, m) => (list || []).some(x => Math.abs(x - m) <= 30);
   if (near(data._sessions[localDay(1)], mins) && near(data._sessions[localDay(2)], mins)) data._sameTime3 = true;
@@ -3414,7 +3500,20 @@ function recordCorrectAnswer(counterKey) {
 }
 
 // Marks a game mode as played (for the Explorer achievement)
+let persistAsked = false;
+function askPersistStorage() {   // asks the browser not to clear this app's saved progress when space runs low
+  if (persistAsked) return; persistAsked = true;
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => { if (!p) navigator.storage.persist(); }).catch(() => {}); } catch(e) {}
+}
+function iosGuestTip() {   // iPhone/iPad Safari can wipe saved data after days unused, unless the app is on the Home Screen
+  try {
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const standalone = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    return ios && !standalone && !currentUser && localStorage.getItem('pms_ios_tip') !== 'hide';
+  } catch(e) { return false; }
+}
 function markGamePlayed(key) {
+  askPersistStorage();
   const data = loadScores();
   data._gamesPlayed = data._gamesPlayed || {};
   if (!data._gamesPlayed[key]) {
@@ -3475,6 +3574,7 @@ const ACHIEVEMENTS = [
   { id: 'theory_1', name: 'Theory Starter', desc: 'Complete a theory lesson', icon: '📖', check: d => (d._theoryPassedCount || 0) >= 1 },
   { id: 'same_time', name: 'The Metronome', desc: 'Practise at the same time of day, 3 days in a row', icon: '🕰️', check: d => !!d._sameTime3 },
   { id: 'midnight', name: 'Midnight Mozart', desc: 'Finish a practice session after 10 PM', icon: '🌙', check: d => !!d._lateSession },
+  { id: 'early_bird', name: 'Early Bird', desc: 'Finish a practice session before 8 AM', icon: '🌅', check: d => !!d._earlySession },
   { id: 'one_hit', name: 'One-Hit Wonder', desc: '10 ear training answers right in a row, without pressing replay', icon: '🎯', check: d => (d._earRunBest || 0) >= 10 },
   { id: 'mystery_10', name: 'Sharp Ears', desc: 'Spot 10 changed notes in Mystery Melody', icon: '🕵️', check: d => (d._mysteryCorrect || 0) >= 10 },
   { id: 'boss_1', name: 'Clef Crusher', desc: 'Beat Grumbleclef in Boss Battle', icon: '👾', check: d => (d._bossBeaten || 0) >= 1 },
@@ -3719,6 +3819,10 @@ window.addEventListener('load', () => setTimeout(prefetchPianoSamples, 600));
 // Browsers only allow sound after a real tap/click/key. On phones and iPads a touch only
 // counts when the finger LIFTS (pointerup/touchend), not when it lands. So we wake the
 // sound on every one of these, and also wake it again if the phone paused it (e.g. after a call).
+// Coming back to the app (after a text or a phone call): wake the sound up again
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { try { const c = getAudioCtx(); if (c.state !== 'running') c.resume().catch(() => {}); } catch(e) {} }
+});
 ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach(ev => document.addEventListener(ev, () => {
   const c = getAudioCtx();
   if (c.state !== 'running') c.resume().catch(() => {});
@@ -3976,6 +4080,17 @@ function staffColors() {
 }
 
 // Draw a real clef sign at the start of a staff (font: Noto Music, loaded from Google Fonts)
+// Optional colour notes (Settings). Each letter has its own colour; the black outline keeps normal notation visible.
+const NOTE_COLOURS = { C: '#e05a5a', D: '#ee9440', E: '#d9b72a', F: '#4fae62', G: '#2f9fbf', A: '#5b6fd6', B: '#a25bc8' };
+function colourNotesOn() { try { return localStorage.getItem('pms_colour_notes') === 'on'; } catch(e) { return false; } }
+function letterAtHeight(h, clef) { return LET7[(((Math.round(h * 2) + (clef === 'bass' ? 4 : 2)) % 7) + 7) % 7]; }
+// Fill a notehead in its colour (if colour notes are on), then outline it so it still reads as a normal note
+function paintHead(ctx, letter, base) {
+  if (letter && colourNotesOn() && NOTE_COLOURS[letter]) {
+    ctx.fillStyle = NOTE_COLOURS[letter]; ctx.fill();
+    ctx.strokeStyle = base; ctx.lineWidth = 2; ctx.stroke();
+  } else { ctx.fillStyle = base; ctx.fill(); }
+}
 function drawClef(ctx, clef, x, yOf, color) {
   ctx.save(); ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   if (clef === 'bass') { ctx.font = "112px 'Noto Music','Segoe UI Symbol','Apple Symbols',serif"; ctx.fillText('𝄢', x, yOf(BASS_CLEF_Y)); }
@@ -4019,10 +4134,9 @@ function drawStaff(canvasId, noteHeight, accidental, clef) {
   if (noteHeight >= 6)  { const y = yOf(6);  ctx.beginPath(); ctx.moveTo(noteX-ledgerHalf, y); ctx.lineTo(noteX+ledgerHalf, y); ctx.stroke(); }
 
   const ny = yOf(noteHeight);
-  ctx.fillStyle = sc.note;
   ctx.beginPath();
   ctx.ellipse(noteX, ny, 12, 9, -0.2, 0, Math.PI * 2);
-  ctx.fill();
+  paintHead(ctx, letterAtHeight(noteHeight, clef), sc.note);
 
   ctx.fillStyle = sc.note;
   ctx.textAlign = 'center';
@@ -4074,8 +4188,8 @@ function drawIntervalStaff(canvasId, h1, h2) {
     if (h <= -2) { const y=yOf(-2); ctx.beginPath(); ctx.moveTo(x-lh,y); ctx.lineTo(x+lh,y); ctx.stroke(); }
     if (h >= 5)  { const y=yOf(5);  ctx.beginPath(); ctx.moveTo(x-lh,y); ctx.lineTo(x+lh,y); ctx.stroke(); }
     if (h >= 6)  { const y=yOf(6);  ctx.beginPath(); ctx.moveTo(x-lh,y); ctx.lineTo(x+lh,y); ctx.stroke(); }
-    ctx.fillStyle = sc.note;
-    ctx.beginPath(); ctx.ellipse(x, yOf(h), 12, 9, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, yOf(h), 12, 9, -0.2, 0, Math.PI * 2);
+    paintHead(ctx, letterAtHeight(h, 'treble'), sc.note);
   });
 
   ctx.fillStyle = sc.text;
@@ -4121,8 +4235,8 @@ function drawChordStaff(canvasId, heights, accidentals, clef) {
   let prevAccX = -999;
   heights.forEach((h, i) => {
     const ny = yOf(h);
-    ctx.fillStyle = sc.note;
-    ctx.beginPath(); ctx.ellipse(noteX, ny, 12, 9, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(noteX, ny, 12, 9, -0.2, 0, Math.PI * 2);
+    paintHead(ctx, letterAtHeight(h, clef), sc.note);
     const acc = accidentals[i];
     if (acc !== 'natural') {
       let accX = noteX - 30;
@@ -4205,11 +4319,10 @@ function drawScaleStaff(canvasId, staffNotes, currentIdx) {
       color = S.scaleErrorFlash ? '#e53935' : '#7c6fef';
     }
 
-    // Note head
-    ctx.fillStyle = color;
+    // Note head (colour notes only for notes not yet played, so green/purple progress still shows)
     ctx.beginPath();
     ctx.ellipse(x, y, NR, NRY, -0.15, 0, Math.PI * 2);
-    ctx.fill();
+    paintHead(ctx, color === sc.note ? (note.name || '').charAt(0) : '', color);
 
     // Accidental (only show once per unique note in sequence)
     if (note.acc !== 'natural') {
@@ -4877,7 +4990,8 @@ async function apMakeCode() {
 }
 async function apAddFriend() {
   const code = ($('apCode').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const nick = ($('apNick').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16);
+  let nick = ($('apNick').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16);
+  if (isRudeName(nick)) { S.ap.msg = 'That nickname is not allowed. Please pick a kind one.'; render('applause'); return; }
   if (code.length !== 6) { S.ap.msg = 'A friend code has 6 letters and numbers.'; render('applause'); return; }
   if (!nick) { S.ap.msg = 'Give your friend a nickname. Only you will see it.'; render('applause'); return; }
   if (code === localStorage.getItem('pms_friend_code')) { S.ap.msg = 'That is your own code!'; render('applause'); return; }
@@ -4999,7 +5113,10 @@ function renderSidebar(page) {
 function render(page) {
   if (S.songListening && page !== 'song_library' && page !== 'song_play') stopSongListen();   // leaving the songs stops the tune
   const nm = cleanName(S.name);
-  if (nm !== S.name) S.name = nm;
+  if (nm !== S.name) {
+    if (S.name && isRudeName(S.name)) { S.nameBlocked = true; try { localStorage.removeItem('pms_name'); } catch(e) {} }
+    S.name = nm;
+  }
   try { if (nm && localStorage.getItem('pms_name') !== nm) localStorage.setItem('pms_name', nm); } catch(e) {}
   if (page !== 'scale_explorer' && S.scalePracticing) stopScalePractice();
   if (page !== 'hanon' && S.hanonPracticing) stopHanonPractice();
@@ -5123,7 +5240,10 @@ function render(page) {
     h += `<div class="home-hello">${played ? 'Welcome back' : 'Welcome'}${S.name ? `, <span style="color:var(--accent)">${escName(S.name)}</span>` : ''}!</div>`;
     h += `<div class="home-sub">Level ${lvl} · What will you practise today?</div>`;
     h += `</div></div>`;
-    h += `<input id="nameIn" class="home-name" type="text" value="${escName(S.name)}" placeholder="Your name..." aria-label="Your name" maxlength="24">`;
+    h += `<input id="nameIn" class="home-name" type="text" value="${escName(S.name)}" placeholder="Your name..." aria-label="Your name" maxlength="24" onchange="checkNameInput(this)" aria-describedby="nameMsg">`;
+    h += `<div id="nameMsg" class="name-msg" role="status">${S.nameBlocked ? 'That name is not allowed. Please pick a kind name.' : ''}</div>`;
+    S.nameBlocked = false;
+    if (iosGuestTip()) h += `<div class="ios-tip" role="note">📱 On iPhone or iPad? Tap <strong>Share → Add to Home Screen</strong>, or sign in, so your progress is never lost. <button class="ios-tip-x" aria-label="Hide this tip" onclick="localStorage.setItem('pms_ios_tip','hide');render('home')">✕</button></div>`;
     h += `<div class="streak-banner${playedToday ? ' done' : streak > 0 ? ' warn' : ''}">${streakMsg}</div>`;
     { const g = practiceGoal(), m = practiceMinutesToday();
       h += `<div class="goal-bar" title="Daily goal: change it in Settings"><span>${m >= g ? '🎯 Daily goal done!' : '⏱️ Today: ' + m + ' of ' + g + ' min'}</span><div class="goal-track"><div style="width:${Math.min(100, Math.round(m / g * 100))}%"></div></div></div>`; }
@@ -5786,6 +5906,45 @@ function render(page) {
     h += `<div class="btn-row">
             <button class="btn ${sfxOn ? 'btn-mint' : 'btn-lilac'}" onclick="setSfx(true)">On</button>
             <button class="btn ${!sfxOn ? 'btn-coral' : 'btn-lilac'}" onclick="setSfx(false)">Off</button>
+          </div>`;
+    h += `</div>`;
+
+    // MIDI keyboard
+    h += `<div class="card">`;
+    h += `<p class="section-label">🎹 MIDI Keyboard</p>`;
+    h += `<p class="caption" style="margin:0.2rem 0 0.5rem">Plug a digital piano or keyboard into this device with a USB cable. Then play real keys to answer in Ear Training, Note Reading, Melody Echo, Scales, Hanon, Sight Reading and Songs.</p>`;
+    if (S.midiStatus === 'unsupported') h += `<p class="speech" style="margin:0">This browser can't use MIDI keyboards. Safari on iPhone, iPad and Mac doesn't support them yet. Try Chrome or Edge on a computer, or Chrome on Android.</p>`;
+    else if (S.midiStatus === 'connected') h += `<p class="speech" style="margin:0 0 0.4rem">✅ Connected: <strong>${escName(midiInputs.join(', '))}</strong></p><button class="btn btn-lilac btn-wide" onclick="disconnectMidi()">Turn off MIDI</button>`;
+    else if (S.midiStatus === 'none') h += `<p class="speech" style="margin:0 0 0.4rem">MIDI is on, but no keyboard is plugged in. Plug one in and it will connect by itself.</p><button class="btn btn-lilac btn-wide" onclick="disconnectMidi()">Turn off MIDI</button>`;
+    else if (S.midiStatus === 'denied') h += `<p class="speech" style="margin:0 0 0.4rem">The browser said no. Allow MIDI in the browser's site settings, then try again.</p><button class="btn btn-blue btn-wide" onclick="connectMidi(true)">Try again</button>`;
+    else h += `<button class="btn btn-blue btn-wide" onclick="connectMidi(true)">Connect MIDI keyboard</button>`;
+    h += `</div>`;
+
+    // Sound delay check
+    {
+      let saved = null; try { const v = localStorage.getItem('pms_audio_delay'); if (v !== null) saved = parseInt(v, 10); } catch(e) {}
+      h += `<div class="card">`;
+      h += `<p class="section-label">⏱️ Sound Delay Check</p>`;
+      h += `<p class="caption" style="margin:0.2rem 0 0.5rem">Bluetooth headphones make sound arrive a little late. Tap along with 12 clicks, so rhythm games can match your timing.</p>`;
+      if (delayCheck && !delayCheck.done) {
+        h += `<button id="delayTapBtn" class="btn btn-mint btn-wide" style="font-size:1.2rem;padding:1.2rem" onpointerdown="event.preventDefault();delayTap()" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();delayTap()}">Tap on every click!</button>`;
+        h += `<p class="caption" style="text-align:center">Listen to the first 4 clicks, then tap along.</p>`;
+      } else {
+        if (delayCheck && delayCheck.result === -1) h += `<p class="speech" style="margin:0 0 0.4rem">Not enough taps. Try again and tap on every click.</p>`;
+        h += `<p class="speech" style="margin:0 0 0.4rem">${saved !== null && !isNaN(saved) ? `Your sound delay: <strong>${saved} ms</strong> (milliseconds, thousandths of a second).` : `Using the browser's guess: <strong>${Math.round(audioDelayMs())} ms</strong>.`}</p>`;
+        h += `<div class="btn-row"><button class="btn btn-blue" onclick="startDelayCheck()">Start check</button>${saved !== null ? `<button class="btn btn-lilac" onclick="resetDelayCheck()">Use browser's guess</button>` : ''}</div>`;
+      }
+      h += `</div>`;
+    }
+
+    // Colour notes
+    var colOn = colourNotesOn();
+    h += `<div class="card">`;
+    h += `<p class="section-label">🌈 Colour Notes</p>`;
+    h += `<p class="caption" style="margin:0.2rem 0 0.5rem">Give every note letter its own colour on the staff: ${Object.keys(NOTE_COLOURS).map(l => `<span style="display:inline-block;width:1.4em;text-align:center;border-radius:6px;font-weight:700;color:#fff;background:${NOTE_COLOURS[l]}">${l}</span>`).join(' ')}. The notes keep their normal outline.</p>`;
+    h += `<div class="btn-row">
+            <button class="btn ${colOn ? 'btn-mint' : 'btn-lilac'}" onclick="localStorage.setItem('pms_colour_notes','on');render('settings')">On</button>
+            <button class="btn ${!colOn ? 'btn-coral' : 'btn-lilac'}" onclick="localStorage.setItem('pms_colour_notes','off');render('settings')">Off</button>
           </div>`;
     h += `</div>`;
 
@@ -7709,16 +7868,85 @@ function micQuietError(err) { return err === 'busy' || err === 'left'; }
 let micStream = null, micAnalyser = null, micSource = null;
 let stablePc = -1, stableCount = 0, lastDetectTime = 0;
 
+// ═══════════════════════════════════
+//  MIDI KEYBOARD (a digital piano plugged in with a USB cable)
+// ═══════════════════════════════════
+// MIDI note 60 is middle C. The app counts notes from A4 (= 0), so app note = MIDI note − 69.
+// Works in Chrome, Edge, Firefox and Chrome on Android. Safari (Mac, iPhone, iPad) has no MIDI support.
+let midiAccess = null, midiInputs = [], midiQueue = [];
+S.midiStatus = !navigator.requestMIDIAccess ? 'unsupported' : 'off';
+function midiOn() { return midiInputs.length > 0; }
+function takeMidiNote() { return midiQueue.length ? midiQueue.shift() : null; }
+function midiNoteName(n) {   // name for a key, the way the on-screen piano names it (C, C#/Db …)
+  const pc = ((n % 12) + 12 + 9) % 12;
+  const k = [...PIANO_WHITE, ...PIANO_BLACK].find(x => ((x.n % 12) + 12 + 9) % 12 === pc);
+  return k ? (k.flat ? k.name + '/' + k.flat : k.name) : '';
+}
+function connectMidi(fromButton) {
+  if (!navigator.requestMIDIAccess) { S.midiStatus = 'unsupported'; if (S.page === 'settings') render('settings'); return; }
+  navigator.requestMIDIAccess().then(acc => {
+    midiAccess = acc;
+    const hook = () => {
+      midiInputs = [];
+      acc.inputs.forEach(inp => { midiInputs.push(inp.name || 'Keyboard'); inp.onmidimessage = onMidiMessage; });
+      S.midiStatus = midiInputs.length ? 'connected' : 'none';
+      if (S.page === 'settings') render('settings');
+    };
+    hook(); acc.onstatechange = hook;
+    try { localStorage.setItem('pms_midi', 'on'); } catch(e) {}
+    if (fromButton && midiInputs.length) announce('MIDI keyboard connected');
+  }).catch(() => { S.midiStatus = 'denied'; if (S.page === 'settings') render('settings'); });
+}
+function disconnectMidi() {
+  if (midiAccess) { midiAccess.inputs.forEach(inp => { inp.onmidimessage = null; }); midiAccess.onstatechange = null; }
+  midiAccess = null; midiInputs = []; midiQueue = [];
+  S.midiStatus = navigator.requestMIDIAccess ? 'off' : 'unsupported';
+  try { localStorage.removeItem('pms_midi'); } catch(e) {}
+  render('settings');
+}
+function onMidiMessage(e) {
+  const d = e.data; if (!d || d.length < 3) return;
+  const cmd = d[0] & 0xf0, n = d[1] - 69, vel = d[2];
+  if (cmd === 0x90 && vel > 0) midiNoteOn(n);
+  else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) { if (S.page === 'piano_keys') { const k = $('pianoKey' + n); if (k) k.classList.remove('pressed'); } }
+}
+// Where a key press goes depends on the game on screen. The keyboard makes its own sound, so the app stays quiet.
+function midiNoteOn(n) {
+  if (S.scalePracticing || S.hanonPracticing || S.sightReadPlaying) {   // scales, Hanon, sight-reading, songs
+    midiQueue.push(n); if (midiQueue.length > 8) midiQueue.shift(); return;
+  }
+  const name = midiNoteName(n);
+  if (S.page === 'melody_play' && S.melodyPhase === 'play') { melodyTap(n, name.split('/')[0]); return; }
+  if (S.page === 'ear_play' && S.earChoices && S.earChoices.length && (!S.earFeedback || S.earFeedback === 'retry')) {   // only while waiting for an answer
+    const hit = S.earChoices.find(c => c === name) || S.earChoices.find(c => c.split('/').includes(name.split('/')[0]));
+    earAnswer(hit || name); return;
+  }
+  if (S.page === 'note_play' && $('noteAns') && S.noteFullName && (!S.noteFeedback || S.noteFeedback === 'retry')) {
+    const t = parseNoteName(S.noteFullName.replace(/[0-9]/g, ''));
+    const targetPc = (((NAT_SEMI[t.letter] + t.alt) % 12) + 12) % 12;
+    const keyPc = ((n % 12) + 12 + 9) % 12;
+    $('noteAns').value = keyPc === targetPc ? S.noteFullName : name.split('/')[0];
+    checkNote(); return;
+  }
+  if (S.page === 'piano_keys') {
+    markGamePlayed('piano'); secretCheck(n); pianoEggs(n);
+    const disp = $('pianoDisplay'); if (disp) disp.textContent = name;
+  }
+}
+try { if (localStorage.getItem('pms_midi') === 'on' && navigator.requestMIDIAccess) setTimeout(() => connectMidi(false), 800); } catch(e) {}
+
 function startScalePractice() {
   const ctx = getAudioCtx();
   ctx.resume();
-  askMic(['scale_explorer']).then(function(stream) {
+  (midiOn() ? Promise.resolve(null) : askMic(['scale_explorer'])).then(function(stream) {   // MIDI keyboard connected: no microphone needed
     if (micStream) micStream.getTracks().forEach(function(t) { t.stop(); });
-    micStream = stream;
-    micSource = ctx.createMediaStreamSource(stream);
-    micAnalyser = ctx.createAnalyser();
-    micAnalyser.fftSize = 2048;
-    micSource.connect(micAnalyser);
+    micStream = stream; midiQueue = [];
+    if (stream) {
+      micSource = ctx.createMediaStreamSource(stream);
+      micAnalyser = ctx.createAnalyser();
+      micAnalyser.fftSize = 2048;
+      micSource.connect(micAnalyser);
+    }
     S.scalePracticing = true;
     S.scaleCurrentIdx = 0;
     S.scaleCorrect = 0;
@@ -7883,10 +8111,9 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
       }
     }
 
-    ctx.fillStyle = color;
     ctx.beginPath();
     ctx.ellipse(x, y, NR, NRY, 0, 0, Math.PI * 2);
-    ctx.fill();
+    paintHead(ctx, color === sc.note ? (note.name || '').charAt(0) : '', color);
 
     ctx.fillStyle = color;
     ctx.font = '600 10px Quicksand';
@@ -7918,13 +8145,15 @@ function drawHanonStaff(canvasId, staffNotes, currentIdx) {
 function startHanonPractice() {
   var ctx = getAudioCtx();
   ctx.resume();
-  askMic(['hanon']).then(function(stream) {
+  (midiOn() ? Promise.resolve(null) : askMic(['hanon'])).then(function(stream) {   // MIDI keyboard connected: no microphone needed
     if (micStream) micStream.getTracks().forEach(function(t) { t.stop(); });
-    micStream = stream;
-    micSource = ctx.createMediaStreamSource(stream);
-    micAnalyser = ctx.createAnalyser();
-    micAnalyser.fftSize = 2048;
-    micSource.connect(micAnalyser);
+    micStream = stream; midiQueue = [];
+    if (stream) {
+      micSource = ctx.createMediaStreamSource(stream);
+      micAnalyser = ctx.createAnalyser();
+      micAnalyser.fftSize = 2048;
+      micSource.connect(micAnalyser);
+    }
     S.hanonPracticing = true;
     S.hanonCurrentIdx = 0;
     S.hanonCorrect = 0;
@@ -7949,18 +8178,23 @@ function stopHanonPractice() {
 }
 
 function hanonPitchLoop() {
-  if (!S.hanonPracticing || !micAnalyser) return;
+  if (!S.hanonPracticing || (!micAnalyser && !midiOn())) return;
   var now = performance.now();
   if (now - lastDetectTime < 50) { requestAnimationFrame(hanonPitchLoop); return; }
   lastDetectTime = now;
 
-  var buf = new Float32Array(micAnalyser.fftSize);
-  micAnalyser.getFloatTimeDomainData(buf);
-  var freq = autoCorrelate(buf, getAudioCtx().sampleRate);
+  var midiN = takeMidiNote(), freq = -1;
+  if (midiN !== null) freq = noteToFreq(midiN);
+  else if (micAnalyser) {
+    var buf = new Float32Array(micAnalyser.fftSize);
+    micAnalyser.getFloatTimeDomainData(buf);
+    freq = autoCorrelate(buf, getAudioCtx().sampleRate);
+  }
 
   if (freq > 60 && freq < 1900) {
     var noteNum = Math.round(12 * Math.log2(freq / 440));
     var pc = ((noteNum + 9) % 12 + 12) % 12;
+    if (midiN !== null) { stablePc = pc; stableCount = 1; }   // a key press counts straight away
     if (pc === stablePc) stableCount++;
     else { stablePc = pc; stableCount = 1; }
 
@@ -8028,18 +8262,23 @@ function hanonPitchLoop() {
 }
 
 function pitchLoop() {
-  if (!S.scalePracticing || !micAnalyser) return;
+  if (!S.scalePracticing || (!micAnalyser && !midiOn())) return;
   var now = performance.now();
   if (now - lastDetectTime < 50) { requestAnimationFrame(pitchLoop); return; }
   lastDetectTime = now;
 
-  var buf = new Float32Array(micAnalyser.fftSize);
-  micAnalyser.getFloatTimeDomainData(buf);
-  var freq = autoCorrelate(buf, getAudioCtx().sampleRate);
+  var midiN = takeMidiNote(), freq = -1;
+  if (midiN !== null) freq = noteToFreq(midiN);
+  else if (micAnalyser) {
+    var buf = new Float32Array(micAnalyser.fftSize);
+    micAnalyser.getFloatTimeDomainData(buf);
+    freq = autoCorrelate(buf, getAudioCtx().sampleRate);
+  }
 
   if (freq > 60 && freq < 1900) {
     var noteNum = Math.round(12 * Math.log2(freq / 440));
     var pc = ((noteNum + 9) % 12 + 12) % 12;
+    if (midiN !== null) { stablePc = pc; stableCount = 1; }   // a key press counts straight away
     if (pc === stablePc) stableCount++;
     else { stablePc = pc; stableCount = 1; }
 
@@ -8654,6 +8893,29 @@ const SONG_LIBRARY=[
    s:'B#4e C#5e B4e C#5e B#4e C#5e B4e C#5e B#4e C#5e A#4e C#5e B#4e C#5e A#4e C#5e B#4e C#5e D#5e C#5e B#4e C#5e D#5e C#5e B#4e C#5e F#5e C#5e B#4e C#5e F#5q'},
   {id:'toccata_dm',t:'Toccata in D minor',c:'Bach',d:4,bpm:70,
    s:'A5e G5s F5s E5s D5s C#5s D5s A4e E4s F4s C#4s D4s E4h D4q C#4s D4s E4s C#4s D4s E4s C#4s D4s E4s C#4s D4s E4s F4s G4s E4s F4s G4s E4s F4s G4s E4s F4s G4s A4s Bb4s G4s A4s Bb4s G4s A4s Bb4s G4s A4s C#5s D5s E5s C#5s D5s E5s C#5s D5s E5s C#5s D5s E5s F5s G5s E5s F5s G5s E5s F5s G5s E5s F5s G5s A5s Bb5s G5s A5s Bb5s G5s A5s Bb5s G5s A5s A5s'},
+  // ── Added October 2026 (from Mutopia Project and Wikipedia scores) ──
+  {id:'twinkle',t:'Twinkle, Twinkle, Little Star',c:'Traditional (French)',d:1,bpm:100,
+   s:'C4q C4q G4q G4q A4q A4q G4h F4q F4q E4q E4q D4q D4q C4h G4q G4q F4q F4q E4q E4q D4h G4q G4q F4q F4q E4q E4q D4h C4q C4q G4q G4q A4q A4q G4h F4q F4q E4q E4q D4q D4q C4h'},
+  {id:'frere_jacques',t:'Frère Jacques',c:'Traditional (French)',d:1,bpm:100,
+   s:'F4q G4q A4q F4q F4q G4q A4q F4q A4q Bb4q C5h A4q Bb4q C5h C5e D5e C5e Bb4e A4q F4q C5e D5e C5e Bb4e A4q F4q F4q C4q F4h F4q C4q F4h'},
+  {id:'amazing_grace',t:'Amazing Grace',c:'Traditional',d:1,bpm:80,
+   s:'D4q G4h B4e G4e B4h A4q G4h E4q D4h D4q G4h B4e G4e B4h A4q D5h B4q D5dq B4e D5e B4e G4h D4q E4dq G4e G4e E4e D4h D4q G4h B4e G4e B4h A4q G4dh'},
+  {id:'brahms_lullaby',t:'Lullaby (Wiegenlied)',c:'Brahms',d:1,bpm:72,
+   s:'G4e G4e Bb4dq G4e G4q Bb4q G4e Bb4e Eb5q D5dq C5e C5q Bb4q F4e G4e Ab4q F4q F4e G4e Ab4q F4e Ab4e D5e C5e Bb4q D5q Eb5q Eb4e Eb4e Eb5h C5e Ab4e Bb4h G4e Eb4e Ab4q Bb4q C5q Bb4h Eb4e Eb4e Eb5h C5e Ab4e Bb4h G4e Eb4e Ab4q G4q F4q Eb4h'},
+  {id:'schumann_melody',t:'Melody (Album for the Young No. 1)',c:'Schumann',d:2,bpm:80,
+   s:'E5q D5q C5q B4q A4e C5e B4e D5e C5q G4q G5q F5q E5q C5q B4q A4q G4q D5q C5q B4q F5q E5q D5q A5q G5q F5q E5q D5e F5e E5e G5e F5dq D5e E5q D5q C5q B4q A4e C5e B4e D5e C5q G4q A5q G5q F5q E5q D5e F5e B4e D5e C5q D5q C5q B4q F5q E5q D5q A5q G5q F5q E5q D5e F5e E5e G5e F5dq D5e E5q D5q C5q B4q A4e C5e B4e D5e C5q G4q A5q G5q F5q E5q D5e F5e B4e D5e C5q'},
+  {id:'happy_farmer',t:'The Happy Farmer',c:'Schumann',d:2,bpm:100,
+   s:'C4e F4dq A4e C5dq F4e Bb4e D5e F5e D5e C5dq A4e Bb4e G4e C4e Bb4e A4e F4e C4e A4e E4q D4q C4q C4e F4dq A4e C5dq F4e Bb4e D5e F5e D5e C5dq A4e Bb4e G4e C4e Bb4e A4e F4e C4e A4e E4q D4q C4q C4e G4dq F4e E4dq C4e G4e F4e E4e D4e E4dq C4e F4dq A4e C5dq F4e Bb4e D5e F5e D5e C5dq A4e Bb4e G4e C4e Bb4e A4e F4e C4e A4e G4q E4q F4q'},
+  {id:'minuet_g',t:'Minuet in G',c:'Petzold',d:2,bpm:100,
+   s:'D5q G4e A4e B4e C5e D5q G4q G4q E5q C5e D5e E5e F#5e G5q G4q G4q C5q D5e C5e B4e A4e B4q C5e B4e A4e G4e F#4q G4e A4e B4e G4e A4dh D5q G4e A4e B4e C5e D5q G4q G4q E5q C5e D5e E5e F#5e G5q G4q G4q C5q D5e C5e B4e A4e B4q C5e B4e A4e G4e A4q B4e A4e G4e F#4e G4dh'},
+  {id:'musette_d',t:'Musette in D',c:'Bach (attributed)',d:2,bpm:92,
+   s:'A5q G5s F#5s E5s D5s A5q G5s F#5s E5s D5s F#4s G4s A4e G4e F#4e E4e A4e F#4e D4e A5q G5s F#5s E5s D5s A5q G5s F#5s E5s D5s F#4s G4s A4e G4e F#4e E4e A4e D4q C#5s D5s E5e C#5s D5s E5e A5e E5e E5q A5e E5e A5e E5e D5s C#5s B4s A4s B4e E4e E5e D#5e E4e D5q C#5e A5e G#5e E5e D#5e E4e D5q C#5e A5e G#5e E5s D#5s C#5s D#5s E5s D#5s C#5s D#5s E5e G#4e A4e D5e C#5s D5s E5e A4e D4e C#4s D4s E4e A3q'},
+  {id:'wild_rider',t:'The Wild Rider',c:'Schumann',d:2,bpm:120,
+   s:'E4e A4e E4e A4e C5e A4e C5e E5e C5e F5e E5e C5e A4e B4e G#4e C5e B4e G#4e E4e A4e E4e C5e B4e E4e A4e E4e A4e C5e A4e C5e E5e C5e F5e E5e C5e A4e B4e G#4e C5e B4e G#4e E4e A4e E4e G#4e A4e'},
+  {id:'prelude_c',t:'Prelude in C',c:'Bach',d:3,bpm:66,
+   s:'G4s C5s E5s G4s C5s E5s G4s C5s E5s G4s C5s E5s A4s D5s F5s A4s D5s F5s A4s D5s F5s A4s D5s F5s G4s D5s F5s G4s D5s F5s G4s D5s F5s G4s D5s F5s G4s C5s E5s G4s C5s E5s G4s C5s E5s G4s C5s E5s A4s E5s A5s A4s E5s A5s A4s E5s A5s A4s E5s A5s F#4s A4s D5s F#4s A4s D5s F#4s A4s D5s F#4s A4s D5s G4s D5s G5s G4s D5s G5s G4s D5s G5s G4s D5s G5s E4s G4s C5s E4s G4s C5s E4s G4s C5s E4s G4s C5s'},
+  {id:'clementi_sonatina',t:'Sonatina in C, Op. 36 No. 1',c:'Clementi',d:3,bpm:120,
+   s:'C5q E5e C5e G4q G4q C5q E5e C5e G4q G5q F5e E5e D5e C5e B4e C5e B4e C5e D5e C5e B4e A4e G4q C5q E5e C5e G4q G4q E5q G5e E5e C5q E5e C5e D5e B4e C5e A4e B4e G4e A4e F#4e G4e A4e B4e C5e D5e E5e F#5e G5e A4q A5q A5q A5q B4e C5e D5e E5e F#5e G5e A5e B5e C5q C6q C6q C6q'}
 ];
 
 // ═══════════════════════════════════
@@ -8967,13 +9229,15 @@ function startSightReading() {
   if (!S.songPlayPage) markGamePlayed('sightread');   // counts for Explorer even without a microphone
   const ctx = getAudioCtx();
   ctx.resume();
-  askMic(['sightread_level', 'sightread_play', 'song_play']).then(function(stream) {
+  (midiOn() ? Promise.resolve(null) : askMic(['sightread_level', 'sightread_play', 'song_play'])).then(function(stream) {
     if (sightReadMicStream) sightReadMicStream.getTracks().forEach(t => t.stop());
-    sightReadMicStream = stream;
-    sightReadSource = ctx.createMediaStreamSource(stream);
-    sightReadAnalyser = ctx.createAnalyser();
-    sightReadAnalyser.fftSize = 2048;
-    sightReadSource.connect(sightReadAnalyser);
+    sightReadMicStream = stream; midiQueue = [];
+    if (stream) {
+      sightReadSource = ctx.createMediaStreamSource(stream);
+      sightReadAnalyser = ctx.createAnalyser();
+      sightReadAnalyser.fftSize = 2048;
+      sightReadSource.connect(sightReadAnalyser);
+    }
     S.sightReadPlaying = true;
     S.sightReadIdx = 0;
     S.sightReadScore = 0;
@@ -9000,21 +9264,28 @@ function stopSightReading() {
 
 let sightReadLastDetect = 0;
 function sightReadLoop() {
-  if (!S.sightReadPlaying || !sightReadAnalyser) return;
+  if (!S.sightReadPlaying || (!sightReadAnalyser && !midiOn())) return;
   const nowT = performance.now();
   if (nowT - sightReadLastDetect < 50) { drawSightReadStaff(); sightReadRaf = requestAnimationFrame(sightReadLoop); return; }   // check the mic 20 times a second, like the other games
   sightReadLastDetect = nowT;
 
   // Pitch detection
-  const buf = new Float32Array(sightReadAnalyser.fftSize);
-  sightReadAnalyser.getFloatTimeDomainData(buf);
-  const freq = autoCorrelate(buf, getAudioCtx().sampleRate);
-  let rms = 0; for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i]; rms = Math.sqrt(rms / buf.length);
-  if (srHeldPc >= 0) {
-    srQuietest = Math.min(srQuietest, rms);
-    if (freq <= 60 || rms > srQuietest * 1.8) { srHeldPc = -1; sightReadStablePc = -1; sightReadStableCount = 0; }   // silence, or a new attack: free again
+  const midiN = takeMidiNote();
+  let freq = -1, rms = 0;
+  if (midiN !== null) {   // a key press: always a fresh note, counted straight away
+    freq = noteToFreq(midiN); srHeldPc = -1;
+    sightReadStablePc = ((midiN + 9) % 12 + 12) % 12; sightReadStableCount = 1;
+  } else if (sightReadAnalyser) {
+    const buf = new Float32Array(sightReadAnalyser.fftSize);
+    sightReadAnalyser.getFloatTimeDomainData(buf);
+    freq = autoCorrelate(buf, getAudioCtx().sampleRate);
+    for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i]; rms = Math.sqrt(rms / buf.length);
+    if (srHeldPc >= 0) {
+      srQuietest = Math.min(srQuietest, rms);
+      if (freq <= 60 || rms > srQuietest * 1.8) { srHeldPc = -1; sightReadStablePc = -1; sightReadStableCount = 0; }   // silence, or a new attack: free again
+    }
+    if (freq <= 60) { sightReadStablePc = -1; sightReadStableCount = 0; }   // silence: start counting fresh for the next note
   }
-  if (freq <= 60) { sightReadStablePc = -1; sightReadStableCount = 0; }   // silence: start counting fresh for the next note
 
   if (freq > 60 && freq < 1900 && S.sightReadIdx < S.sightReadNotes.length) {
     const noteNum = Math.round(12 * Math.log2(freq / 440));
@@ -9114,8 +9385,8 @@ function drawSightReadStaff() {
       if (note.hit) color = '#4CAF50';
       else if (realIdx === S.sightReadIdx) color = sc.accent;
 
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.ellipse(x, y, 8, 6, -0.15, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x, y, 8, 6, -0.15, 0, Math.PI * 2);
+      paintHead(ctx, color === sc.note ? (note.name || '').charAt(0) : '', color); ctx.fillStyle = color;
       if (note.acc === 'sharp' || note.acc === 'flat') {   // draw the sharp or flat sign in front of the note
         ctx.font = '700 14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(note.acc === 'sharp' ? '♯' : '♭', x - 15, y); ctx.textBaseline = 'alphabetic';
@@ -9166,8 +9437,8 @@ function drawSightReadStaff() {
       else if (note.missed) color = '#e53935';
       else if (i === S.sightReadIdx) color = sc.accent;
 
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.ellipse(x, y, 9, 7, -0.15, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x, y, 9, 7, -0.15, 0, Math.PI * 2);
+      paintHead(ctx, color === sc.note ? (note.name || '').charAt(0) : '', color);
       ctx.fillStyle = color;
       ctx.font = '600 10px Quicksand';
       ctx.textAlign = 'center';
